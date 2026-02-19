@@ -296,7 +296,7 @@ export default function ProductPage() {
 
       const regionParam = regionId ? `&region_id=${regionId}` : ""
       const productFields =
-        "id,title,handle,description,thumbnail,created_at,metadata,status,options.id,options.title,options.values,variants.id,variants.title,variants.sku,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity,variants.options,images.id,images.url,categories.id,categories.name,categories.handle"
+        "id,title,handle,subtitle,description,thumbnail,created_at,metadata,status,options.id,options.title,options.values,variants.id,variants.title,variants.sku,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity,variants.options,images.id,images.url,categories.id,categories.name,categories.handle"
 
       // 2. Fetch product by handle
       const prodRes = await fetch(

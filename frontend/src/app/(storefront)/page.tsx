@@ -267,7 +267,7 @@ export default function HomePage() {
         regionId = inrRegion?.id || regData.regions?.[0]?.id || ""
       } catch {}
 
-      const productFields = "id,title,handle,thumbnail,created_at,metadata,variants.id,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity,images.url"
+      const productFields = "id,title,handle,subtitle,thumbnail,created_at,metadata,variants.id,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity,images.url"
       const regionParam = regionId ? `&region_id=${regionId}` : ""
 
       // Fetch all data in parallel
