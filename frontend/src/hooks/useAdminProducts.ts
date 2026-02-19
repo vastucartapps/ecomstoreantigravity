@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { medusa } from "@/lib/medusa"
+import { medusa, adminFetch as libAdminFetch } from "@/lib/medusa"
 import type {
   Product,
   ProductDetail,
@@ -341,9 +341,8 @@ function buildUpdatePayload(data: Partial<ProductDetail>): any {
 
 export function useAdminProducts() {
   const adminFetch = useCallback(
-    async (path: string, options?: { method?: string; body?: any; headers?: Record<string, string> }) => {
-      const res = await (medusa.client.fetch as any)(path, options)
-      return res
+    async (path: string, options?: { method?: string; body?: unknown }) => {
+      return libAdminFetch(path, options)
     },
     []
   )

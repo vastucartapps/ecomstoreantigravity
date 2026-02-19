@@ -158,7 +158,7 @@ export function useAdminIntegrations() {
    */
   async function fetchConfig(): Promise<IntegrationsConfig> {
     const store = await readStore()
-    const saved = (store?.metadata as any)?.integrations_config
+    const saved = (store?.metadata as Record<string, unknown> | undefined)?.integrations_config as IntegrationsConfig | undefined
 
     if (!saved) return { ...DEFAULT_CONFIG }
 

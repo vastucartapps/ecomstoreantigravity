@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { medusa } from "@/lib/medusa"
+import { medusa, adminFetch as libAdminFetch } from "@/lib/medusa"
 import type { Category, CategoryOption, CategoryGoogleMerchant } from "@/types/admin-category"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -139,8 +139,8 @@ function buildCategoryPayload(data: Partial<Category>): any {
 // ---------------------------------------------------------------------------
 
 export function useAdminCategories() {
-  const adminFetch = useCallback(async (path: string, options?: { method?: string; body?: any; headers?: Record<string, string> }) => {
-    return (medusa.client.fetch as any)(path, options)
+  const adminFetch = useCallback(async (path: string, options?: { method?: string; body?: unknown }) => {
+    return libAdminFetch(path, options)
   }, [])
 
   /**

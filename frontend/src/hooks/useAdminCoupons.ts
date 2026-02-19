@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { medusa } from "@/lib/medusa"
+import { medusa, adminFetch } from "@/lib/medusa"
 import type {
   CouponRow,
   CouponDetail,
@@ -211,7 +211,7 @@ export function useAdminCoupons() {
     try {
       const params = new URLSearchParams({ limit: "100" })
       if (search) params.set("q", search)
-      const res = await medusa.client.fetch(`/admin/promotions?${params}`) as any
+      const res = await adminFetch<{ promotions: any[]; count?: number }>(`/admin/promotions?${params}`)
       const promotions: any[] = res.promotions || []
       return {
         coupons: promotions.map(mapPromotionToRow),
@@ -225,7 +225,7 @@ export function useAdminCoupons() {
   const fetchCouponDetail = useCallback(
     async (id: string): Promise<CouponDetail | null> => {
       try {
-        const res = await medusa.client.fetch(`/admin/promotions/${id}`) as any
+        const res = await adminFetch<{ promotion: any }>(`/admin/promotions/${id}`)
         return mapPromotionToDetail(res.promotion)
       } catch {
         return null
@@ -289,7 +289,7 @@ export function useAdminCoupons() {
     try {
       const params = new URLSearchParams({ limit: "100" })
       if (search) params.set("q", search)
-      const res = await medusa.client.fetch(`/admin/gift-cards?${params}`) as any
+      const res = await adminFetch<{ gift_cards: any[]; count?: number }>(`/admin/gift-cards?${params}`)
       const gcs: any[] = res.gift_cards || []
       return {
         giftCards: gcs.map(mapGiftCardToRow),
@@ -303,7 +303,7 @@ export function useAdminCoupons() {
   const fetchGiftCardDetail = useCallback(
     async (id: string): Promise<GiftCardDetail | null> => {
       try {
-        const res = await medusa.client.fetch(`/admin/gift-cards/${id}`) as any
+        const res = await adminFetch<{ gift_card: any }>(`/admin/gift-cards/${id}`)
         return mapGiftCardToDetail(res.gift_card)
       } catch {
         return null
@@ -375,10 +375,10 @@ export function useAdminCoupons() {
     { id: string; name: string }[]
   > => {
     try {
-      const res = await medusa.client.fetch(
+      const res = await adminFetch<{ product_categories: Array<{ id: string; name: string }> }>(
         "/admin/product-categories?limit=100&fields=id,name"
-      ) as any
-      return (res.product_categories || []).map((c: any) => ({
+      )
+      return (res.product_categories || []).map((c) => ({
         id: c.id,
         name: c.name || "",
       }))
@@ -392,8 +392,8 @@ export function useAdminCoupons() {
       try {
         if (!query.trim()) return []
         const params = new URLSearchParams({ q: query, limit: "20", fields: "id,title" })
-        const res = await medusa.client.fetch(`/admin/products?${params}`) as any
-        return (res.products || []).map((p: any) => ({
+        const res = await adminFetch<{ products: Array<{ id: string; title: string }> }>(`/admin/products?${params}`)
+        return (res.products || []).map((p) => ({
           id: p.id,
           title: p.title || "",
         }))

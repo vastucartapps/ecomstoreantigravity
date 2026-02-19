@@ -16,6 +16,7 @@ import type {
 import { bg, primary, earth, fonts } from "@/lib/theme"
 import { getRegionId } from "@/lib/region"
 import { FALLBACK_HERO } from "@/lib/image-constants"
+import { normalizeImageUrl } from "@/lib/image-url"
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -37,7 +38,7 @@ function mapProduct(p: any): StorefrontProduct {
     id: p.id,
     name: p.title,
     slug: p.handle,
-    imageUrl: p.thumbnail || p.images?.[0]?.url || "",
+    imageUrl: normalizeImageUrl(p.thumbnail || p.images?.[0]?.url || ""),
     price,
     mrp,
     currency: (cp?.currency_code || "inr").toUpperCase() === "USD" ? "USD" : "INR",

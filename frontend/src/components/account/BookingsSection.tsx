@@ -56,9 +56,12 @@ export function BookingsSection() {
       const selectedType = CONSULTATION_TYPES.find((t) => t.id === form.consultationType)
       const newBooking = await createBooking({
         title: selectedType?.title || form.consultationType,
+        consultant_name: selectedType?.title || "",
         date: form.date,
         time: form.time,
         notes: form.notes,
+        price: selectedType?.price || 0,
+        currency: "INR",
       })
       setBookings((prev) => [newBooking, ...prev])
       setShowForm(false)
@@ -265,7 +268,7 @@ export function BookingsSection() {
                   {booking.price > 0 && (
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-semibold" style={{ color: primary[500] }}>
-                        ₹{(booking.price / 100).toLocaleString("en-IN")}
+                        ₹{booking.price.toLocaleString("en-IN")}
                       </span>
                     </div>
                   )}

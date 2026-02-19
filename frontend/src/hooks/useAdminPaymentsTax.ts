@@ -1,4 +1,4 @@
-import { medusa } from "@/lib/medusa"
+import { medusa, adminFetch } from "@/lib/medusa"
 import type {
   PaymentsTaxConfig,
   GatewayConfig,
@@ -59,9 +59,9 @@ const DEFAULT_CONFIG: PaymentsTaxConfig = {
 }
 
 async function readStore(): Promise<{ id: string; config: PaymentsTaxConfig }> {
-  const res = (await medusa.client.fetch("/admin/stores")) as any
+  const res = await adminFetch<{ stores: Array<{ id: string; metadata?: Record<string, unknown> }> }>("/admin/stores")
   const store = res.stores?.[0]
-  const saved = (store?.metadata as any)?.payments_tax_config as PaymentsTaxConfig | undefined
+  const saved = (store?.metadata?.payments_tax_config ?? undefined) as PaymentsTaxConfig | undefined
   const config: PaymentsTaxConfig = saved
     ? {
         ...DEFAULT_CONFIG,
@@ -88,21 +88,24 @@ export function useAdminPaymentsTax() {
   }> {
     const { config } = await readStore()
 
-    const prodRes = (await medusa.client.fetch(
+    const prodRes = await adminFetch<{ products: Array<{ id: string; title: string; handle: string; metadata?: Record<string, unknown>; variants?: Array<{ sku?: string }> }> }>(
       "/admin/products?limit=100&fields=id,title,handle,metadata,*variants"
-    )) as any
+    )
     const products = prodRes.products || []
 
-    const productOverrides: ProductTaxOverride[] = products.map((p: any) => ({
-      productId: p.id,
-      productName: p.title,
-      sku: p.variants?.[0]?.sku || p.handle || p.id,
-      gstRate:
-        (p.metadata as any)?.gst_rate !== undefined
-          ? Number((p.metadata as any).gst_rate)
-          : config.gstConfig.defaultRate,
-      hsnCode: (p.metadata as any)?.hsn_code || config.gstConfig.defaultHSN,
-    }))
+    const productOverrides: ProductTaxOverride[] = products.map((p) => {
+      const meta = p.metadata || {}
+      return {
+        productId: p.id,
+        productName: p.title,
+        sku: p.variants?.[0]?.sku || p.handle || p.id,
+        gstRate:
+          meta.gst_rate !== undefined
+            ? Number(meta.gst_rate)
+            : config.gstConfig.defaultRate,
+        hsnCode: (meta.hsn_code as string) || config.gstConfig.defaultHSN,
+      }
+    })
 
     return { config, productOverrides }
   }
@@ -126,10 +129,10 @@ export function useAdminPaymentsTax() {
         ? { gateway, keyId: gateways.razorpay.keyId, keySecret: gateways.razorpay.keySecret }
         : { gateway, secretKey: gateways.stripe.secretKey }
 
-    const res = (await medusa.client.fetch("/admin/gateways/test", {
+    const res = await adminFetch<{ connected?: boolean; error?: string }>("/admin/gateways/test", {
       method: "POST",
       body,
-    })) as any
+    })
 
     return { connected: !!res.connected, error: res.error }
   }

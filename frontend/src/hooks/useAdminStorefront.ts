@@ -1,4 +1,4 @@
-import { medusa } from "@/lib/medusa"
+import { medusa, adminFetch } from "@/lib/medusa"
 import type {
   StorefrontConfig,
   Announcement,
@@ -130,9 +130,9 @@ const DEFAULT_FOOTER: FooterConfig = {
 }
 
 async function readStore(): Promise<{ id: string; config: StorefrontConfig }> {
-  const res = (await medusa.client.fetch("/admin/stores")) as any
+  const res = await adminFetch<{ stores: Array<{ id: string; metadata?: Record<string, unknown> }> }>("/admin/stores")
   const store = res.stores?.[0]
-  const saved = (store?.metadata as any)?.storefront_config as StorefrontConfig | undefined
+  const saved = (store?.metadata?.storefront_config ?? undefined) as StorefrontConfig | undefined
 
   const config: StorefrontConfig = saved
     ? {

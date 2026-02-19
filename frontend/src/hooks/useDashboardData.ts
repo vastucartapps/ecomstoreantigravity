@@ -180,6 +180,8 @@ export function useDashboardData() {
     date: string
     time: string
     notes?: string
+    price?: number
+    currency?: string
   }): Promise<Booking> => {
     const res = await fetch(`${BACKEND_URL}/store/customers/me/bookings`, {
       method: "POST",

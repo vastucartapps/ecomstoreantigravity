@@ -1,4 +1,4 @@
-import { medusa } from "@/lib/medusa"
+import { medusa, adminFetch } from "@/lib/medusa"
 import type {
   ShippingConfig,
   ShippingZone,
@@ -25,10 +25,10 @@ const DEFAULT_CONFIG: ShippingConfig = {
 }
 
 async function readStore(): Promise<{ id: string; config: ShippingConfig }> {
-  const res = (await medusa.client.fetch("/admin/stores")) as any
+  const res = await adminFetch<{ stores: Array<{ id: string; metadata?: Record<string, unknown> }> }>("/admin/stores")
   const store = res.stores?.[0]
   const config: ShippingConfig =
-    (store?.metadata as any)?.shipping_config || DEFAULT_CONFIG
+    (store?.metadata?.shipping_config as ShippingConfig) || DEFAULT_CONFIG
   return { id: store?.id || "", config }
 }
 

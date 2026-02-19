@@ -182,7 +182,7 @@ async function writeConfig(config: NotificationsConfig) {
 export function useAdminNotifications() {
   async function fetchConfig(): Promise<NotificationsConfig> {
     const store = await readStore()
-    const saved = (store?.metadata as any)?.notifications_config as
+    const saved = (store?.metadata as Record<string, unknown> | undefined)?.notifications_config as
       | NotificationsConfig
       | undefined
 

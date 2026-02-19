@@ -179,13 +179,24 @@ function mapQVImages(p: any): ProductImage[] {
 }
 
 function mapQVVariants(p: any): ProductVariant[] {
+  // Medusa v2: build option_id → title lookup from product options
+  const optionIdToTitle: Record<string, string> = {}
+  for (const opt of p.options || []) optionIdToTitle[opt.id] = opt.title
+
   return (p.variants || []).map((v: any) => {
     const cp = v.calculated_price
     const price = (cp?.calculated_amount ?? 0) / 100
     const mrp = (cp?.original_amount ?? cp?.calculated_amount ?? 0) / 100
+    // Medusa v2: variant.options is ARRAY of { id, value, option_id }
     const attrs: Record<string, string> = {}
-    if (v.options) {
-      for (const [key, val] of Object.entries(v.options)) attrs[key] = String(val)
+    if (Array.isArray(v.options)) {
+      for (const optVal of v.options) {
+        attrs[optionIdToTitle[optVal.option_id] || "Variant"] = optVal.value
+      }
+    }
+    if (Object.keys(attrs).length === 0 && v.title) {
+      const fallbackTitle = p.options?.[0]?.title || "Variant"
+      attrs[fallbackTitle] = v.title
     }
     return {
       id: v.id, attributes: attrs, sku: v.sku || "", price, mrp,
@@ -204,8 +215,14 @@ function buildQVAttributes(p: any): VariantAttribute[] {
   return p.options.map((opt: any) => {
     const vals = new Set<string>()
     for (const v of p.variants || []) {
-      const val = v.options?.[opt.title]
-      if (val) vals.add(String(val))
+      // Medusa v2: variant.options is ARRAY of { id, value, option_id }
+      if (Array.isArray(v.options)) {
+        const match = v.options.find((o: any) => o.option_id === opt.id)
+        if (match?.value) vals.add(String(match.value))
+      }
+    }
+    if (vals.size === 0) {
+      for (const v of p.variants || []) { if (v.title) vals.add(v.title) }
     }
     return { name: opt.title, label: opt.title, type: "dropdown" as const, values: Array.from(vals) }
   })

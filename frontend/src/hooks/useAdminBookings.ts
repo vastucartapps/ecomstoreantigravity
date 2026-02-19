@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { medusa } from "@/lib/medusa"
+import { medusa, adminFetch } from "@/lib/medusa"
 import type {
   BookingRow,
   BookingStatus,
@@ -89,7 +89,7 @@ export function useAdminBookings() {
   const fetchBookings = useCallback(async (status?: string): Promise<BookingRow[]> => {
     try {
       const params = status ? `?status=${status}` : ""
-      const res = (await medusa.client.fetch(`/admin/bookings${params}`)) as any
+      const res = await adminFetch<{ bookings: any[] }>(`/admin/bookings${params}`)
       const bookings: any[] = res.bookings || []
 
       // Batch-fetch unique customers in parallel
@@ -102,9 +102,9 @@ export function useAdminBookings() {
       await Promise.all(
         customerIds.map(async (id) => {
           try {
-            const cRes = (await medusa.client.fetch(
+            const cRes = await adminFetch<{ customer: any }>(
               `/admin/customers/${id}?fields=id,first_name,last_name,email,phone`
-            )) as any
+            )
             if (cRes.customer) customerMap[id] = cRes.customer
           } catch {
             // customer fetch failed — will show customer_id as name
@@ -175,8 +175,8 @@ export function useAdminBookings() {
 
   const fetchSlotConfig = useCallback(async (): Promise<TimeSlotConfig> => {
     try {
-      const res = (await medusa.client.fetch("/admin/bookings/slot-config")) as any
-      return (res.config as TimeSlotConfig) || DEFAULT_SLOT_CONFIG
+      const res = await adminFetch<{ config: TimeSlotConfig }>("/admin/bookings/slot-config")
+      return res.config || DEFAULT_SLOT_CONFIG
     } catch {
       return DEFAULT_SLOT_CONFIG
     }
@@ -199,9 +199,9 @@ export function useAdminBookings() {
 
   const fetchBlockedDates = useCallback(async (): Promise<BlockedDate[]> => {
     try {
-      const res = (await medusa.client.fetch(
+      const res = await adminFetch<{ blocked_dates: BlockedDate[] }>(
         "/admin/bookings/blocked-dates"
-      )) as any
+      )
       return res.blocked_dates || []
     } catch {
       return []
@@ -211,13 +211,13 @@ export function useAdminBookings() {
   const blockDate = useCallback(
     async (date: string, reason: string): Promise<BlockedDate | null> => {
       try {
-        const res = (await medusa.client.fetch(
+        const res = await adminFetch<{ blocked_date: BlockedDate }>(
           "/admin/bookings/blocked-dates",
           {
             method: "POST",
             body: { date, reason },
           }
-        )) as any
+        )
         return res.blocked_date || null
       } catch {
         return null
