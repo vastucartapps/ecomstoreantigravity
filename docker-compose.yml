@@ -133,6 +133,7 @@ services:
     labels:
       - "traefik.docker.network=coolify"
     environment:
+      - HOSTNAME=0.0.0.0
       - NEXT_PUBLIC_MEDUSA_BACKEND_URL=${MEDUSA_BACKEND_URL:-http://backend:9000}
       - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${MEDUSA_PUBLISHABLE_KEY:-}
       - NEXT_PUBLIC_ALGOLIA_APP_ID=${ALGOLIA_APP_ID:-}
