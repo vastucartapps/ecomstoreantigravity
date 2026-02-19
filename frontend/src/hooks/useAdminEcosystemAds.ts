@@ -28,9 +28,8 @@ const medusa = new Medusa({
 })
 
 function getAdminToken(): string {
-  if (typeof document === "undefined") return ""
-  const match = document.cookie.match(/(?:^|;\s*)medusa_admin_jwt=([^;]+)/)
-  return match ? decodeURIComponent(match[1]) : ""
+  if (typeof window === "undefined") return ""
+  return localStorage.getItem("medusa_auth_token") || ""
 }
 
 async function adminFetch(path: string, options?: { method?: string; body?: any }) {

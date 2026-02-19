@@ -34,11 +34,9 @@ function computeStockLevel(stock: number): StockLevel {
 }
 
 function getAdminToken(): string {
-  // Medusa v2 stores admin JWT in a cookie named "medusa_admin_jwt" or similar
-  // The medusa SDK client handles this automatically; for native fetch we read cookies
-  if (typeof document === "undefined") return ""
-  const match = document.cookie.match(/(?:^|;\s*)medusa_admin_jwt=([^;]+)/)
-  return match ? decodeURIComponent(match[1]) : ""
+  // Medusa JS SDK stores the JWT in localStorage as "medusa_auth_token"
+  if (typeof window === "undefined") return ""
+  return localStorage.getItem("medusa_auth_token") || ""
 }
 
 // ---------------------------------------------------------------------------

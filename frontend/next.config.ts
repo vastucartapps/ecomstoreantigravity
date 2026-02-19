@@ -1,7 +1,5 @@
 import type { NextConfig } from "next";
 
-const backendUrl = process.env.MEDUSA_INTERNAL_URL || "http://backend:9000";
-
 const nextConfig: NextConfig = {
   output: "standalone",
   reactCompiler: true,
@@ -16,15 +14,9 @@ const nextConfig: NextConfig = {
       { protocol: "http", hostname: "localhost", port: "9002" },
     ],
   },
-  async rewrites() {
-    return [
-      { source: "/store/:path*", destination: `${backendUrl}/store/:path*` },
-      { source: "/admin/:path*", destination: `${backendUrl}/admin/:path*` },
-      { source: "/auth/:path*", destination: `${backendUrl}/auth/:path*` },
-      { source: "/health", destination: `${backendUrl}/health` },
-      { source: "/.well-known/:path*", destination: `${backendUrl}/.well-known/:path*` },
-    ];
-  },
+  // API routing handled by src/middleware.ts — NOT rewrites.
+  // Middleware can distinguish page navigation (GET, no auth) from API calls
+  // (POST/PUT/DELETE or GET with Authorization header) and proxy accordingly.
   async headers() {
     return [
       {

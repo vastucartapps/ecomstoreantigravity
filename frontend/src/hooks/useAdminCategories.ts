@@ -11,9 +11,8 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 // ---------------------------------------------------------------------------
 
 function getAdminToken(): string {
-  if (typeof document === "undefined") return ""
-  const match = document.cookie.match(/(?:^|;\s*)medusa_admin_jwt=([^;]+)/)
-  return match ? decodeURIComponent(match[1]) : ""
+  if (typeof window === "undefined") return ""
+  return localStorage.getItem("medusa_auth_token") || ""
 }
 
 const EMPTY_GOOGLE_MERCHANT: CategoryGoogleMerchant = {
