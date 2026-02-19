@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { CategoryListing } from "@/components/storefront/CategoryListing"
 import { useWishlist } from "@/providers/wishlist-provider"
 import { useCart } from "@/providers/cart-provider"
+import { useAuth } from "@/providers/auth-provider"
 import type {
   StorefrontProduct,
   CategoryHero,
@@ -66,6 +67,7 @@ function SearchContent() {
   const searchParams = useSearchParams()
   const query = searchParams.get("q") || ""
 
+  const { user } = useAuth()
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
   const { addItem } = useCart()
 
@@ -160,13 +162,16 @@ function SearchContent() {
   }
 
   const handleToggleWishlist = async (productId: string) => {
+    if (!user) { router.push("/login"); return }
     try {
       if (isInWishlist(productId)) {
         await removeFromWishlist(productId, "")
       } else {
         await addToWishlist(productId, "")
       }
-    } catch {}
+    } catch (err: any) {
+      if (err?.message === "LOGIN_REQUIRED") { router.push("/login"); return }
+    }
   }
 
   // No results state

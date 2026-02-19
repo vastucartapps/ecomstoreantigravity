@@ -6,6 +6,7 @@ import { CategoryListing } from "@/components/storefront/CategoryListing"
 import { QuickViewModal } from "@/components/storefront/product-experience"
 import { useWishlist } from "@/providers/wishlist-provider"
 import { useCart } from "@/providers/cart-provider"
+import { useAuth } from "@/providers/auth-provider"
 import type {
   StorefrontProduct,
   CategoryHero,
@@ -175,6 +176,7 @@ function CategoryContent() {
   const searchParams = useSearchParams()
   const slug = params?.slug as string
 
+  const { user } = useAuth()
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
   const { addItem } = useCart()
 
@@ -309,13 +311,15 @@ function CategoryContent() {
   }
 
   const handleToggleWishlist = async (productId: string) => {
+    if (!user) { router.push("/login"); return }
     try {
       if (isInWishlist(productId)) {
         await removeFromWishlist(productId, "")
       } else {
         await addToWishlist(productId, "")
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.message === "LOGIN_REQUIRED") { router.push("/login"); return }
       console.error("Wishlist toggle failed:", err)
     }
   }

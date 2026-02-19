@@ -6,6 +6,7 @@ import { Homepage } from "@/components/storefront/Homepage"
 import { QuickViewModal } from "@/components/storefront/product-experience"
 import { useWishlist } from "@/providers/wishlist-provider"
 import { useCart } from "@/providers/cart-provider"
+import { useAuth } from "@/providers/auth-provider"
 import { medusa } from "@/lib/medusa"
 import type {
   HeroSlide,
@@ -233,6 +234,7 @@ function mapQVProduct(p: any): Product {
 
 export default function HomePage() {
   const router = useRouter()
+  const { user } = useAuth()
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
   const { addItem } = useCart()
 
@@ -421,13 +423,15 @@ export default function HomePage() {
   }
 
   const handleToggleWishlist = async (productId: string) => {
+    if (!user) { router.push("/login"); return }
     try {
       if (isInWishlist(productId)) {
         await removeFromWishlist(productId, "")
       } else {
         await addToWishlist(productId, "")
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.message === "LOGIN_REQUIRED") { router.push("/login"); return }
       console.error("Wishlist toggle failed:", err)
     }
   }
