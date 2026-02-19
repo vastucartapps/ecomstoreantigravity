@@ -119,7 +119,8 @@ class EcosystemAdsService extends MedusaService({
     )
     for (const banner of scheduled) {
       if (banner.start_date && new Date(banner.start_date) <= now) {
-        await this.updateEcosystemBanners(banner.id, {
+        await this.updateEcosystemBanners({
+          id: banner.id,
           status: "live",
           is_active: true,
         })
@@ -134,7 +135,8 @@ class EcosystemAdsService extends MedusaService({
     )
     for (const banner of live) {
       if (banner.end_date && new Date(banner.end_date) < now) {
-        await this.updateEcosystemBanners(banner.id, {
+        await this.updateEcosystemBanners({
+          id: banner.id,
           status: "expired",
           is_active: false,
         })
@@ -201,15 +203,17 @@ class EcosystemAdsService extends MedusaService({
       }
     }
 
-    await this.updateEcosystemSlots(slotId, {
+    await this.updateEcosystemSlots({
+      id: slotId,
       current_banner_id: bannerId,
     })
     return { success: true }
   }
 
   async removeSlotAssignment(slotId: string): Promise<void> {
-    await this.updateEcosystemSlots(slotId, {
-      current_banner_id: null,
+    await this.updateEcosystemSlots({
+      id: slotId,
+      current_banner_id: null as any,
     })
   }
 
