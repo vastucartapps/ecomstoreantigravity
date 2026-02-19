@@ -47,9 +47,10 @@ services:
       timeout: 5s
       retries: 5
 
-  # Creates the default bucket on startup
+  # One-shot: creates the default bucket on startup
   minio-init:
     image: minio/mc:latest
+    restart: "no"
     depends_on:
       minio:
         condition: service_healthy
@@ -71,8 +72,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio-init:
-        condition: service_completed_successfully
     environment:
       # Core
       - DATABASE_URL=postgres://medusa:medusa@postgres:5432/medusa
@@ -116,6 +115,12 @@ services:
       - ALGOLIA_PRODUCT_INDEX_NAME=${ALGOLIA_PRODUCT_INDEX_NAME:-products}
     ports:
       - "9000:9000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
 
   frontend:
     build:
@@ -123,7 +128,8 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
       - NEXT_PUBLIC_MEDUSA_BACKEND_URL=${MEDUSA_BACKEND_URL:-http://backend:9000}
       - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${MEDUSA_PUBLISHABLE_KEY:-}
@@ -135,6 +141,12 @@ services:
       - NEXT_PUBLIC_GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID:-}
     ports:
       - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
 volumes:
   postgres_data:
