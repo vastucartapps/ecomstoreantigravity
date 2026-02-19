@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-primary-50: #e8f5f3;
+  --color-primary-100: #c5e8e2;
+  --color-primary-200: #71c1ae;
+  --color-primary-300: #4a9a8d;
+  --color-primary-400: #2a7a72;
+  --color-primary-500: #013f47;
+  --color-primary-600: #054348;
+  --color-primary-700: #084b49;
+  --color-primary-800: #064645;
+  --color-primary-900: #112b2c;
+
+  --color-secondary-50: #fff5ed;
+  --color-secondary-100: #ffc187;
+  --color-secondary-300: #fd8630;
+  --color-secondary-500: #c85103;
+
+  --color-earth-300: #a39585;
+  --color-earth-400: #75615a;
+  --color-earth-500: #71685b;
+  --color-earth-600: #5a4f47;
+  --color-earth-700: #433b35;
+
+  --color-cream: #fffbf5;
+  --color-bg-subtle: #f5dfbb;
+
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+
+  --font-heading: 'Lora', serif;
+  --font-body: 'Open Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+body {
+  background: #fffbf5;
+  color: #433b35;
+  font-family: var(--font-body);
+}
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Gradient accent border for cards */
+.gradient-border-top {
+  border-top: 3px solid transparent;
+  border-image: linear-gradient(90deg, #013f47, #2a7a72, #c85103) 1;
+}

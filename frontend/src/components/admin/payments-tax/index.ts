@@ -1,0 +1,1 @@
+export { AdminPaymentsTax } from "./AdminPaymentsTax"

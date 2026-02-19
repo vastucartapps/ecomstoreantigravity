@@ -1,0 +1,420 @@
+"use client"
+
+import { useCallback } from "react"
+import { medusa } from "@/lib/medusa"
+import type {
+  CouponRow,
+  CouponDetail,
+  CouponStatus,
+  GiftCardRow,
+  GiftCardDetail,
+  GiftCardTransaction,
+  DiscountType,
+  GiftCardStatus,
+} from "@/types/admin-coupon"
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function generateGiftCardCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+  let code = "GC-"
+  for (let i = 0; i < 12; i++) {
+    if (i > 0 && i % 4 === 0) code += "-"
+    code += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return code
+}
+
+// ---------------------------------------------------------------------------
+// Mapping: Medusa promotion → CouponRow
+// ---------------------------------------------------------------------------
+
+function mapPromotionToRow(p: any): CouponRow {
+  const app = p.application_method || {}
+  const meta = p.metadata || {}
+  const currency = (app.currency_code?.toUpperCase() || "INR") as "INR" | "USD"
+
+  // Status
+  let status: CouponStatus = "active"
+  if (p.status === "inactive") status = "disabled"
+  else if (p.status === "expired") status = "expired"
+  else if (meta.end_date && new Date(meta.end_date) < new Date()) status = "expired"
+
+  // Min order from native rules
+  const minOrderRule = (p.rules || []).find(
+    (r: any) => r.attribute === "total" && r.operator === "gte"
+  )
+  const minOrder: number | null = minOrderRule
+    ? parseInt(minOrderRule.values?.[0] || "0") / 100
+    : meta.min_order_value
+    ? meta.min_order_value / 100
+    : null
+
+  // Discount type and value
+  const discountType: DiscountType = app.type === "fixed" ? "flat" : "percentage"
+  const discountValue =
+    discountType === "flat"
+      ? Math.round(app.value || 0) / 100
+      : app.value || 0
+
+  return {
+    id: p.id,
+    code: p.code || "",
+    discountType,
+    discountValue,
+    minOrder,
+    maxDiscount: meta.max_discount ?? null,
+    currency,
+    startDate:
+      meta.start_date || (p.created_at ? p.created_at.split("T")[0] : ""),
+    endDate: meta.end_date || "",
+    usageLimit: meta.usage_limit ?? null,
+    usageLimitPerCustomer: meta.usage_limit_per_customer ?? 1,
+    usedCount: p.usage_count || 0,
+    status,
+    targetType: meta.target_type || "all",
+    targetNames: meta.target_names || [],
+  }
+}
+
+function mapPromotionToDetail(p: any): CouponDetail {
+  const row = mapPromotionToRow(p)
+  const meta = p.metadata || {}
+  return {
+    ...row,
+    description: meta.description || "",
+    currencyValues: meta.currency_values || {
+      INR: row.discountValue,
+      USD: row.discountValue,
+    },
+    targetProductIds: meta.target_product_ids || [],
+    targetCategoryIds: meta.target_category_ids || [],
+    createdAt: p.created_at || "",
+    updatedAt: p.updated_at || "",
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mapping: Medusa gift card → GiftCardRow / GiftCardDetail
+// ---------------------------------------------------------------------------
+
+function mapGiftCardToRow(gc: any): GiftCardRow {
+  const meta = gc.metadata || {}
+  const currency = (gc.currency_code?.toUpperCase() || "INR") as "INR" | "USD"
+
+  let status: GiftCardStatus = "active"
+  if (gc.is_disabled) status = "inactive"
+  else if (gc.ends_at && new Date(gc.ends_at) < new Date()) status = "expired"
+  else if ((gc.balance || 0) === 0 && (gc.value || 0) > 0) status = "depleted"
+
+  return {
+    id: gc.id,
+    code: gc.code || "",
+    initialBalance: Math.round(meta.initial_value || gc.value || 0) / 100,
+    currentBalance: Math.round(gc.balance || 0) / 100,
+    currency,
+    status,
+    expiresAt: gc.ends_at ? gc.ends_at.split("T")[0] : null,
+    createdAt: gc.created_at || "",
+  }
+}
+
+function mapGiftCardToDetail(gc: any): GiftCardDetail {
+  const row = mapGiftCardToRow(gc)
+  const meta = gc.metadata || {}
+  return {
+    ...row,
+    transactions: (meta.transactions || []) as GiftCardTransaction[],
+    customerName: null,
+    customerEmail: null,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Build Medusa promotion payload from CouponDetail
+// ---------------------------------------------------------------------------
+
+function buildPromotionPayload(data: Partial<CouponDetail>) {
+  const currency = data.currency?.toLowerCase() || "inr"
+  const isFlatDiscount = data.discountType === "flat"
+  const discountValue = isFlatDiscount
+    ? Math.round((data.discountValue || 0) * 100)
+    : data.discountValue || 0
+
+  const targetType = data.targetType || "all"
+
+  const appMethod: Record<string, unknown> = {
+    type: isFlatDiscount ? "fixed" : "percentage",
+    value: discountValue,
+    currency_code: currency,
+    target_type: targetType === "all" ? "order" : "items",
+    allocation: "across",
+  }
+
+  if (targetType === "categories" && data.targetCategoryIds?.length) {
+    appMethod.apply_rules = [
+      {
+        attribute: "product_category_id",
+        operator: "in",
+        values: data.targetCategoryIds,
+      },
+    ]
+  } else if (targetType === "products" && data.targetProductIds?.length) {
+    appMethod.apply_rules = [
+      {
+        attribute: "product_id",
+        operator: "in",
+        values: data.targetProductIds,
+      },
+    ]
+  }
+
+  const rules: Array<Record<string, unknown>> = []
+  if (data.minOrder) {
+    rules.push({
+      attribute: "total",
+      operator: "gte",
+      values: [String(Math.round(data.minOrder * 100))],
+    })
+  }
+
+  return {
+    code: (data.code || "").toUpperCase(),
+    type: "standard",
+    is_automatic: false,
+    application_method: appMethod,
+    rules,
+    metadata: {
+      description: data.description || "",
+      max_discount: data.maxDiscount ?? null,
+      start_date: data.startDate || "",
+      end_date: data.endDate || "",
+      usage_limit: data.usageLimit ?? null,
+      usage_limit_per_customer: data.usageLimitPerCustomer ?? 1,
+      target_type: targetType,
+      target_product_ids: data.targetProductIds || [],
+      target_category_ids: data.targetCategoryIds || [],
+      target_names: data.targetNames || [],
+      currency_values: data.currencyValues ?? null,
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
+
+export function useAdminCoupons() {
+  const fetchCoupons = useCallback(async (search?: string) => {
+    try {
+      const params = new URLSearchParams({ limit: "100" })
+      if (search) params.set("q", search)
+      const res = await medusa.client.fetch(`/admin/promotions?${params}`) as any
+      const promotions: any[] = res.promotions || []
+      return {
+        coupons: promotions.map(mapPromotionToRow),
+        count: res.count || promotions.length,
+      }
+    } catch {
+      return { coupons: [], count: 0 }
+    }
+  }, [])
+
+  const fetchCouponDetail = useCallback(
+    async (id: string): Promise<CouponDetail | null> => {
+      try {
+        const res = await medusa.client.fetch(`/admin/promotions/${id}`) as any
+        return mapPromotionToDetail(res.promotion)
+      } catch {
+        return null
+      }
+    },
+    []
+  )
+
+  // id === null means create new
+  const saveCoupon = useCallback(
+    async (id: string | null, data: Partial<CouponDetail>): Promise<boolean> => {
+      try {
+        const payload = buildPromotionPayload(data)
+        if (id) {
+          await medusa.client.fetch(`/admin/promotions/${id}`, {
+            method: "POST",
+            body: payload,
+          })
+        } else {
+          await medusa.client.fetch("/admin/promotions", {
+            method: "POST",
+            body: payload,
+          })
+        }
+        return true
+      } catch {
+        return false
+      }
+    },
+    []
+  )
+
+  const deleteCoupon = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      await medusa.client.fetch(`/admin/promotions/${id}`, {
+        method: "DELETE",
+      })
+      return true
+    } catch {
+      return false
+    }
+  }, [])
+
+  const toggleCoupon = useCallback(
+    async (id: string, currentStatus: CouponStatus): Promise<boolean> => {
+      try {
+        const newStatus = currentStatus === "active" ? "inactive" : "active"
+        await medusa.client.fetch(`/admin/promotions/${id}`, {
+          method: "POST",
+          body: { status: newStatus },
+        })
+        return true
+      } catch {
+        return false
+      }
+    },
+    []
+  )
+
+  const fetchGiftCards = useCallback(async (search?: string) => {
+    try {
+      const params = new URLSearchParams({ limit: "100" })
+      if (search) params.set("q", search)
+      const res = await medusa.client.fetch(`/admin/gift-cards?${params}`) as any
+      const gcs: any[] = res.gift_cards || []
+      return {
+        giftCards: gcs.map(mapGiftCardToRow),
+        count: res.count || gcs.length,
+      }
+    } catch {
+      return { giftCards: [], count: 0 }
+    }
+  }, [])
+
+  const fetchGiftCardDetail = useCallback(
+    async (id: string): Promise<GiftCardDetail | null> => {
+      try {
+        const res = await medusa.client.fetch(`/admin/gift-cards/${id}`) as any
+        return mapGiftCardToDetail(res.gift_card)
+      } catch {
+        return null
+      }
+    },
+    []
+  )
+
+  const createGiftCard = useCallback(
+    async (
+      balance: number,
+      currency: "INR" | "USD",
+      expiresAt?: string,
+      code?: string
+    ): Promise<boolean> => {
+      try {
+        const valueInMinor = Math.round(balance * 100)
+        const giftCode = code || generateGiftCardCode()
+
+        const initTransaction: GiftCardTransaction = {
+          id: crypto.randomUUID(),
+          type: "credit",
+          amount: balance,
+          currency,
+          description: "Gift card created",
+          orderId: null,
+          date: new Date().toISOString(),
+        }
+
+        await medusa.client.fetch("/admin/gift-cards", {
+          method: "POST",
+          body: {
+            code: giftCode,
+            value: valueInMinor,
+            currency_code: currency.toLowerCase(),
+            is_disabled: false,
+            ends_at: expiresAt ? new Date(expiresAt).toISOString() : undefined,
+            metadata: {
+              initial_value: valueInMinor,
+              transactions: [initTransaction],
+            },
+          },
+        })
+        return true
+      } catch {
+        return false
+      }
+    },
+    []
+  )
+
+  const toggleGiftCard = useCallback(
+    async (id: string, currentStatus: GiftCardStatus): Promise<boolean> => {
+      try {
+        const isCurrentlyActive = currentStatus === "active"
+        await medusa.client.fetch(`/admin/gift-cards/${id}`, {
+          method: "POST",
+          body: { is_disabled: isCurrentlyActive },
+        })
+        return true
+      } catch {
+        return false
+      }
+    },
+    []
+  )
+
+  const fetchCategories = useCallback(async (): Promise<
+    { id: string; name: string }[]
+  > => {
+    try {
+      const res = await medusa.client.fetch(
+        "/admin/product-categories?limit=100&fields=id,name"
+      ) as any
+      return (res.product_categories || []).map((c: any) => ({
+        id: c.id,
+        name: c.name || "",
+      }))
+    } catch {
+      return []
+    }
+  }, [])
+
+  const searchProducts = useCallback(
+    async (query: string): Promise<{ id: string; title: string }[]> => {
+      try {
+        if (!query.trim()) return []
+        const params = new URLSearchParams({ q: query, limit: "20", fields: "id,title" })
+        const res = await medusa.client.fetch(`/admin/products?${params}`) as any
+        return (res.products || []).map((p: any) => ({
+          id: p.id,
+          title: p.title || "",
+        }))
+      } catch {
+        return []
+      }
+    },
+    []
+  )
+
+  return {
+    fetchCoupons,
+    fetchCouponDetail,
+    saveCoupon,
+    deleteCoupon,
+    toggleCoupon,
+    fetchGiftCards,
+    fetchGiftCardDetail,
+    createGiftCard,
+    toggleGiftCard,
+    fetchCategories,
+    searchProducts,
+  }
+}

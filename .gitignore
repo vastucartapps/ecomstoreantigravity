@@ -1,0 +1,21 @@
+node_modules
+.env
+.env.*
+.DS_Store
+*.log
+
+# Build artifacts
+backend/.medusa
+frontend/.next
+frontend/out
+
+# IDE
+.vscode
+.idea
+
+# OS
+Thumbs.db
+.playwright-mcp
+product-plan
+plan.md
+ready.txt

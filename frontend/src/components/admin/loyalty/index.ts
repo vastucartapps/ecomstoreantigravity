@@ -1,0 +1,1 @@
+export { AdminLoyalty } from "./AdminLoyalty"
