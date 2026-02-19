@@ -106,7 +106,7 @@ function DropdownSelect({
 
       {open && (
         <div
-          className="absolute z-50 mt-1.5 w-full rounded-xl overflow-hidden py-1"
+          className="absolute z-50 mt-1.5 w-full rounded-xl py-1"
           style={{
             background: bg.card,
             border: "1px solid #f0ebe4",

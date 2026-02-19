@@ -139,7 +139,7 @@ function buildCategoryPayload(data: Partial<Category>): any {
 // ---------------------------------------------------------------------------
 
 export function useAdminCategories() {
-  const adminFetch = useCallback(async (path: string, options?: RequestInit) => {
+  const adminFetch = useCallback(async (path: string, options?: { method?: string; body?: any; headers?: Record<string, string> }) => {
     return (medusa.client.fetch as any)(path, options)
   }, [])
 
@@ -214,7 +214,7 @@ export function useAdminCategories() {
         const payload = buildCategoryPayload(data)
         const res = await adminFetch("/admin/product-categories", {
           method: "POST",
-          body: JSON.stringify(payload),
+          body: payload,
         })
         if (!res.product_category) return null
         return mapMedusaCategory(res.product_category)
@@ -232,7 +232,7 @@ export function useAdminCategories() {
         const payload = buildCategoryPayload(data)
         const res = await adminFetch(`/admin/product-categories/${id}`, {
           method: "POST",
-          body: JSON.stringify(payload),
+          body: payload,
         })
         if (!res.product_category) return null
         return mapMedusaCategory(res.product_category)
@@ -262,9 +262,9 @@ export function useAdminCategories() {
               )
               await adminFetch(`/admin/products/${p.id}`, {
                 method: "POST",
-                body: JSON.stringify({
+                body: {
                   categories: updatedCatIds.map((cid) => ({ id: cid })),
-                }),
+                },
               })
             })
           )
@@ -286,7 +286,7 @@ export function useAdminCategories() {
       try {
         const res = await adminFetch(`/admin/product-categories/${id}`, {
           method: "POST",
-          body: JSON.stringify({ is_active: !currentlyActive }),
+          body: { is_active: !currentlyActive },
         })
         if (!res.product_category) return null
         return mapMedusaCategory(res.product_category)

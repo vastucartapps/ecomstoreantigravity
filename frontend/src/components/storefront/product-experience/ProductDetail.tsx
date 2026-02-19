@@ -172,7 +172,7 @@ export function ProductDetail({
 
             {/* Variants */}
             {variantAttributes.length > 0 && (
-              <div className="mt-5">
+              <div className="mt-5 relative z-10">
                 <VariantSelector
                   attributes={variantAttributes}
                   selectedValues={selectedValues}

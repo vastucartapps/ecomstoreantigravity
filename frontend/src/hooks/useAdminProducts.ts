@@ -154,7 +154,10 @@ function mapMedusaProductDetail(p: any): ProductDetail {
 // Data Mapper: UI → Medusa API payload
 // ---------------------------------------------------------------------------
 
-function buildMedusaProductPayload(data: Partial<ProductDetail>): any {
+/**
+ * Build common product-level fields shared by create and update.
+ */
+function buildBasePayload(data: Partial<ProductDetail>): any {
   const medusaStatus =
     data.status === "active" ? "published" : "draft"
 
@@ -164,32 +167,6 @@ function buildMedusaProductPayload(data: Partial<ProductDetail>): any {
   const handle =
     data.seo?.urlSlug ||
     (data.name ? slugify(data.name) : undefined)
-
-  const variants = (data.variants || []).map((v) => {
-    const prices: Array<{ amount: number; currency_code: string }> = []
-    if (v.price > 0) {
-      prices.push({ amount: Math.round(v.price * 100), currency_code: "inr" })
-    }
-    if (v.priceUSD && v.priceUSD > 0) {
-      prices.push({ amount: Math.round(v.priceUSD * 100), currency_code: "usd" })
-    }
-
-    const variantMeta: Record<string, number> = {}
-    if (v.mrp > 0) variantMeta.mrp_inr = Math.round(v.mrp * 100)
-    if (v.mrpUSD && v.mrpUSD > 0) variantMeta.mrp_usd = Math.round(v.mrpUSD * 100)
-
-    const payload: any = {
-      title: v.label || "Default",
-      sku: v.sku || undefined,
-      manage_inventory: true,
-      inventory_quantity: v.stock || 0,
-      prices,
-    }
-    if (Object.keys(variantMeta).length > 0) payload.metadata = variantMeta
-    if (v.id && !v.id.startsWith("var-")) payload.id = v.id
-
-    return payload
-  })
 
   const metadata: Record<string, any> = {
     ...uiStatusMeta,
@@ -227,7 +204,101 @@ function buildMedusaProductPayload(data: Partial<ProductDetail>): any {
     payload.categories = [{ id: data.categoryId }]
   }
 
-  if (variants.length > 0) payload.variants = variants
+  return payload
+}
+
+/**
+ * Build variant prices array from UI variant data.
+ */
+function buildVariantPrices(v: ProductVariant): Array<{ amount: number; currency_code: string }> {
+  const prices: Array<{ amount: number; currency_code: string }> = []
+  if (v.price > 0) {
+    prices.push({ amount: Math.round(v.price * 100), currency_code: "inr" })
+  }
+  if (v.priceUSD && v.priceUSD > 0) {
+    prices.push({ amount: Math.round(v.priceUSD * 100), currency_code: "usd" })
+  }
+  return prices
+}
+
+/**
+ * Build variant metadata (MRP values stored as minor units).
+ */
+function buildVariantMetadata(v: ProductVariant): Record<string, number> | undefined {
+  const meta: Record<string, number> = {}
+  if (v.mrp > 0) meta.mrp_inr = Math.round(v.mrp * 100)
+  if (v.mrpUSD && v.mrpUSD > 0) meta.mrp_usd = Math.round(v.mrpUSD * 100)
+  return Object.keys(meta).length > 0 ? meta : undefined
+}
+
+/**
+ * Build payload for POST /admin/products (create).
+ *
+ * Medusa v2 requires:
+ * - Product-level `options` array defining option names + all possible values
+ * - Each variant must include an `options` map referencing those values
+ * - manage_inventory: false (inventory items are managed separately via the
+ *   inventory module; setting true without inventory items causes "Out of Stock")
+ */
+function buildCreatePayload(data: Partial<ProductDetail>): any {
+  const payload = buildBasePayload(data)
+  const uiVariants = data.variants || []
+
+  if (uiVariants.length > 0) {
+    // Collect all variant labels for the product-level options definition
+    const variantLabels = uiVariants.map((v) => v.label || "Default")
+
+    // Medusa v2 requires product-level options with all possible values
+    payload.options = [{ title: "Variant", values: variantLabels }]
+
+    // Build variant payloads with options map
+    payload.variants = uiVariants.map((v) => {
+      const label = v.label || "Default"
+      const variantPayload: any = {
+        title: label,
+        options: { Variant: label },
+        prices: buildVariantPrices(v),
+        manage_inventory: false,
+      }
+      if (v.sku) variantPayload.sku = v.sku
+      const meta = buildVariantMetadata(v)
+      if (meta) variantPayload.metadata = meta
+      return variantPayload
+    })
+  }
+
+  return payload
+}
+
+/**
+ * Build payload for POST /admin/products/:id (update).
+ *
+ * For existing variants (have real Medusa IDs): include ID to update in place.
+ * For new variants (IDs starting with "var-" from the wizard): treated as new.
+ * Product-level options are NOT resent on update to avoid breaking existing structure.
+ */
+function buildUpdatePayload(data: Partial<ProductDetail>): any {
+  const payload = buildBasePayload(data)
+  const uiVariants = data.variants || []
+
+  if (uiVariants.length > 0) {
+    payload.variants = uiVariants.map((v) => {
+      const variantPayload: any = {
+        title: v.label || "Default",
+        prices: buildVariantPrices(v),
+        manage_inventory: false,
+      }
+      if (v.sku) variantPayload.sku = v.sku
+      const meta = buildVariantMetadata(v)
+      if (meta) variantPayload.metadata = meta
+
+      // Existing variant — include ID so Medusa updates it instead of creating new
+      if (v.id && !v.id.startsWith("var-")) {
+        variantPayload.id = v.id
+      }
+      return variantPayload
+    })
+  }
 
   return payload
 }
@@ -238,7 +309,7 @@ function buildMedusaProductPayload(data: Partial<ProductDetail>): any {
 
 export function useAdminProducts() {
   const adminFetch = useCallback(
-    async (path: string, options?: RequestInit) => {
+    async (path: string, options?: { method?: string; body?: any; headers?: Record<string, string> }) => {
       const res = await (medusa.client.fetch as any)(path, options)
       return res
     },
@@ -318,10 +389,10 @@ export function useAdminProducts() {
   const createProduct = useCallback(
     async (data: Partial<ProductDetail>): Promise<Product | null> => {
       try {
-        const payload = buildMedusaProductPayload(data)
+        const payload = buildCreatePayload(data)
         const res = await adminFetch("/admin/products", {
           method: "POST",
-          body: JSON.stringify(payload),
+          body: payload,
         })
         if (!res.product) return null
         return mapMedusaProduct(res.product)
@@ -336,10 +407,10 @@ export function useAdminProducts() {
   const updateProduct = useCallback(
     async (id: string, data: Partial<ProductDetail>): Promise<Product | null> => {
       try {
-        const payload = buildMedusaProductPayload(data)
+        const payload = buildUpdatePayload(data)
         const res = await adminFetch(`/admin/products/${id}`, {
           method: "POST",
-          body: JSON.stringify(payload),
+          body: payload,
         })
         if (!res.product) return null
         return mapMedusaProduct(res.product)

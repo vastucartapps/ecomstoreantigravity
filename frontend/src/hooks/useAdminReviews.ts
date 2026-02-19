@@ -105,7 +105,7 @@ export function useAdminReviews() {
     async (qaId: string, answer: string): Promise<boolean> => {
       try {
         await medusa.client.fetch(`/admin/qa/${qaId}/answer`, {
-          method: "PATCH",
+          method: "POST",
           body: { answer },
         })
         return true
