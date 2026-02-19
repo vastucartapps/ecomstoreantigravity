@@ -55,6 +55,12 @@ function mapMedusaProduct(p: any): Product {
   // Collect INR prices across variants
   const inrPrices: number[] = []
   for (const v of p.variants || []) {
+    // Try calculated_price first (available when region_id is provided)
+    if (v.calculated_price?.calculated_amount != null) {
+      inrPrices.push(v.calculated_price.calculated_amount)
+      continue
+    }
+    // Fallback to raw prices array from admin API
     for (const price of v.prices || []) {
       if (price.currency_code === "inr") inrPrices.push(price.amount)
     }
@@ -62,13 +68,25 @@ function mapMedusaProduct(p: any): Product {
   const minInrAmount = inrPrices.length > 0 ? Math.min(...inrPrices) : 0
   const price = minInrAmount / 100
 
-  const mrp =
-    p.metadata?.mrp_inr != null ? p.metadata.mrp_inr / 100 : price
+  // MRP: check variant-level metadata first, then product-level
+  let mrp = price
+  const variants = p.variants || []
+  if (variants.length > 0 && variants[0].metadata?.mrp_inr != null) {
+    mrp = variants[0].metadata.mrp_inr / 100
+  } else if (p.metadata?.mrp_inr != null) {
+    mrp = p.metadata.mrp_inr / 100
+  }
 
-  const stock = (p.variants || []).reduce(
-    (sum: number, v: any) => sum + (v.inventory_quantity || 0),
-    0
+  // Stock: if any variant has manage_inventory=false, treat as in-stock
+  const hasUnmanagedInventory = variants.some(
+    (v: any) => v.manage_inventory === false
   )
+  const stock = hasUnmanagedInventory
+    ? 999
+    : variants.reduce(
+        (sum: number, v: any) => sum + (v.inventory_quantity || 0),
+        0
+      )
 
   return {
     id: p.id,
@@ -95,16 +113,28 @@ function mapMedusaProductDetail(p: any): ProductDetail {
   const base = mapMedusaProduct(p)
 
   const variants: ProductVariant[] = (p.variants || []).map((v: any) => {
-    const inrPrice = v.prices?.find((pr: any) => pr.currency_code === "inr")
+    // Price: try calculated_price first, then raw prices array
+    let inrAmount = 0
+    let usdAmount = 0
+    if (v.calculated_price?.calculated_amount != null) {
+      inrAmount = v.calculated_price.calculated_amount
+    } else {
+      const inrPrice = v.prices?.find((pr: any) => pr.currency_code === "inr")
+      if (inrPrice) inrAmount = inrPrice.amount
+    }
     const usdPrice = v.prices?.find((pr: any) => pr.currency_code === "usd")
-    const stock = v.inventory_quantity || 0
+    if (usdPrice) usdAmount = usdPrice.amount
+
+    // Stock: treat manage_inventory=false as always in stock
+    const stock = v.manage_inventory === false ? 999 : (v.inventory_quantity || 0)
+
     return {
       id: v.id,
       sku: v.sku || "",
       label: v.title || "",
-      price: inrPrice ? inrPrice.amount / 100 : 0,
+      price: inrAmount / 100,
       mrp: v.metadata?.mrp_inr != null ? v.metadata.mrp_inr / 100 : 0,
-      priceUSD: usdPrice ? usdPrice.amount / 100 : 0,
+      priceUSD: usdAmount / 100,
       mrpUSD: v.metadata?.mrp_usd != null ? v.metadata.mrp_usd / 100 : 0,
       currency: "INR",
       stock,
@@ -327,7 +357,7 @@ export function useAdminProducts() {
       const params = new URLSearchParams()
       params.set("limit", String(limit))
       params.set("offset", String(offset))
-      params.set("fields", "id,title,subtitle,handle,status,thumbnail,created_at,updated_at,metadata,*variants,*images,*categories,*tags")
+      params.set("fields", "id,title,subtitle,handle,status,thumbnail,created_at,updated_at,metadata,*variants,*variants.prices,*images,*categories,*tags")
 
       if (filters.search) params.set("q", filters.search)
 
@@ -364,7 +394,7 @@ export function useAdminProducts() {
     async (id: string): Promise<ProductDetail | null> => {
       try {
         const res = await adminFetch(
-          `/admin/products/${id}?fields=id,title,subtitle,description,handle,status,thumbnail,created_at,updated_at,metadata,*variants,*images,*categories,*tags`
+          `/admin/products/${id}?fields=id,title,subtitle,description,handle,status,thumbnail,created_at,updated_at,metadata,*variants,*variants.prices,*images,*categories,*tags`
         )
         if (!res.product) return null
         return mapMedusaProductDetail(res.product)
