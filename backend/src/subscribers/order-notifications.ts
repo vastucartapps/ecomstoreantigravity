@@ -1,5 +1,6 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import { NOTIFICATIONS_MODULE } from "../modules/notifications"
+import type { INotificationsService } from "../lib/service-types"
 
 const EVENT_MAP: Record<string, { title: string; getMessage: (displayId: any) => string; type: "order" }> = {
   "order.placed": {
@@ -36,7 +37,7 @@ export default async function orderNotificationsHandler({
 
     if (!order?.customer_id) return
 
-    const notificationsService = container.resolve(NOTIFICATIONS_MODULE) as any
+    const notificationsService = container.resolve(NOTIFICATIONS_MODULE) as INotificationsService
     const displayId = order.display_id || orderId.slice(-6).toUpperCase()
 
     await notificationsService.createNotification({

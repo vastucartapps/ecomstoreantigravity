@@ -3,6 +3,7 @@ import type {
   MedusaResponse,
 } from "@medusajs/framework/http"
 import { NOTIFICATIONS_MODULE } from "../../../../../../modules/notifications"
+import type { INotificationsService } from "../../../../../../lib/service-types"
 
 export async function POST(
   req: AuthenticatedMedusaRequest,
@@ -15,7 +16,7 @@ export async function POST(
   }
 
   const { notification_id } = req.body as { notification_id?: string }
-  const notificationsService = req.scope.resolve(NOTIFICATIONS_MODULE) as any
+  const notificationsService = req.scope.resolve(NOTIFICATIONS_MODULE) as INotificationsService
 
   if (notification_id) {
     await notificationsService.markAsRead(notification_id, customerId)

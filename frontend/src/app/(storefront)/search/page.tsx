@@ -13,6 +13,8 @@ import type {
   Breadcrumb,
 } from "@/types/storefront"
 import { bg, primary, earth, fonts } from "@/lib/theme"
+import { getRegionId } from "@/lib/region"
+import { FALLBACK_HERO } from "@/lib/image-constants"
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -91,15 +93,7 @@ function SearchContent() {
     }
 
     try {
-      // Fetch region for pricing context
-      let regionId = ""
-      try {
-        const regRes = await fetch(`${BACKEND_URL}/store/regions`, { headers })
-        const regData = await regRes.json()
-        const inrRegion = regData.regions?.find((r: any) => r.currency_code === "inr")
-        regionId = inrRegion?.id || regData.regions?.[0]?.id || ""
-      } catch {}
-
+      const regionId = await getRegionId()
       const regionParam = regionId ? `&region_id=${regionId}` : ""
       const offset = (currentPage - 1) * limit
       const sortParam = getSortParams(currentSort)
@@ -127,8 +121,7 @@ function SearchContent() {
     description: query
       ? `Showing results for "${query}"`
       : "Enter a search term to find products",
-    imageUrl:
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1400&h=500&fit=crop",
+    imageUrl: FALLBACK_HERO,
     slug: "search",
     productCount: totalCount,
   }

@@ -322,7 +322,9 @@ export function useAdminOrders() {
 
       // Build query string
       const params = new URLSearchParams()
-      params.set("limit", String(perPage + 200)) // over-fetch for client-side filter
+      // Over-fetch when using client-side display_status filtering
+      const needsClientFilter = filters.status !== "all" && CUSTOM_DISPLAY_STATUSES.includes(filters.status as OrderStatus)
+      params.set("limit", String(needsClientFilter ? perPage * 5 : perPage))
       params.set("offset", String(offset))
       params.set(
         "fields",
@@ -377,11 +379,9 @@ export function useAdminOrders() {
         rows = applySortClientSide(rows, filters.sortField, filters.sortDirection)
       }
 
-      // Now paginate the filtered result
-      const totalCount = filters.status !== "all" ? rows.length : (res.count || rows.length)
-      const paginatedRows = filters.status !== "all"
-        ? rows.slice(0, perPage)
-        : rows.slice(0, perPage)
+      // Paginate the filtered result
+      const totalCount = needsClientFilter ? rows.length : (res.count || rows.length)
+      const paginatedRows = rows.slice(0, perPage)
 
       return { rows: paginatedRows, totalCount }
     },

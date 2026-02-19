@@ -3,6 +3,7 @@ import type {
   MedusaResponse,
 } from "@medusajs/framework/http"
 import { LOYALTY_MODULE } from "../../../../../../modules/loyalty"
+import type { ILoyaltyService } from "../../../../../../lib/service-types"
 
 export async function POST(
   req: AuthenticatedMedusaRequest,
@@ -20,7 +21,7 @@ export async function POST(
     return
   }
 
-  const loyaltyService = req.scope.resolve(LOYALTY_MODULE) as any
+  const loyaltyService = req.scope.resolve(LOYALTY_MODULE) as ILoyaltyService
   const result = await loyaltyService.redeemPoints(customerId, points)
 
   if (!result.success) {

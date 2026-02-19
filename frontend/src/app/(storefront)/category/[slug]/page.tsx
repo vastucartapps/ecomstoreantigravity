@@ -20,6 +20,8 @@ import type {
   VariantAttribute,
 } from "@/types/product-experience"
 import { bg, primary, earth, fonts } from "@/lib/theme"
+import { getRegionId } from "@/lib/region"
+import { FALLBACK_HERO } from "@/lib/image-constants"
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -209,15 +211,7 @@ function CategoryContent() {
     }
 
     try {
-      // Fetch region for pricing context
-      let regionId = ""
-      try {
-        const regRes = await fetch(`${BACKEND_URL}/store/regions`, { headers })
-        const regData = await regRes.json()
-        const inrRegion = regData.regions?.find((r: any) => r.currency_code === "inr")
-        regionId = inrRegion?.id || regData.regions?.[0]?.id || ""
-      } catch {}
-
+      const regionId = await getRegionId()
       const regionParam = regionId ? `&region_id=${regionId}` : ""
 
       // Fetch category info
@@ -235,7 +229,7 @@ function CategoryContent() {
             category.description || `Browse our ${category.name} collection`,
           imageUrl:
             category.metadata?.image_url ||
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1400&h=500&fit=crop",
+            FALLBACK_HERO,
           slug: category.handle,
           productCount: 0,
         })
@@ -263,7 +257,7 @@ function CategoryContent() {
           name: decodeURIComponent(slug).replace(/-/g, " "),
           description: "",
           imageUrl:
-            "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1400&h=500&fit=crop",
+            FALLBACK_HERO,
           slug,
           productCount: 0,
         })
@@ -329,12 +323,7 @@ function CategoryContent() {
   const handleQuickView = async (productId: string) => {
     try {
       const qvHeaders: Record<string, string> = { "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "" }
-      let regionId = ""
-      try {
-        const regRes = await fetch(`${BACKEND_URL}/store/regions`, { headers: qvHeaders })
-        const regData = await regRes.json()
-        regionId = regData.regions?.find((r: any) => r.currency_code === "inr")?.id || regData.regions?.[0]?.id || ""
-      } catch {}
+      const regionId = await getRegionId()
       const regionParam = regionId ? `&region_id=${regionId}` : ""
       const fields = "id,title,handle,thumbnail,description,metadata,created_at,options.title,variants.id,variants.sku,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity,variants.options,images.id,images.url"
       const res = await fetch(`${BACKEND_URL}/store/products/${productId}?fields=${fields}${regionParam}`, { headers: qvHeaders })

@@ -75,28 +75,7 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch {
-        // fall through to legacy
-      }
-
-      // Legacy fallback: read from /store endpoint
-      try {
-        const res = await fetch(`${BACKEND_URL}/store`, {
-          headers: { "x-publishable-api-key": PUB_KEY },
-        })
-        if (res.ok) {
-          const data = await res.json()
-          const meta = data.store?.metadata
-          if (meta?.announcement_text) {
-            setText(meta.announcement_text)
-            setLink(meta.announcement_link || null)
-            setLinkText(null)
-            setBgColor("#013f47")
-            setTextColor("#ffffff")
-            setServerActive(true)
-          }
-        }
-      } catch {
-        // No announcement available — that's fine
+        // Storefront config unavailable — no announcement to show
       }
     }
 

@@ -1,4 +1,4 @@
-import { medusa } from "@/lib/medusa"
+import { adminFetch } from "@/lib/medusa"
 import type {
   Integration,
   IntegrationsConfig,
@@ -133,16 +133,17 @@ function validateIntegration(
 // ─── Store helpers ────────────────────────────────────────────────────────────
 
 async function readStore() {
-  const res = await (medusa.client.fetch as Function)("/admin/stores", {
+  const res = await adminFetch("/admin/stores", {
     method: "GET",
   })
-  return (res as any).stores?.[0]
+  const data = res as { stores?: Array<Record<string, unknown>> }
+  return data.stores?.[0]
 }
 
 async function writeConfig(config: IntegrationsConfig) {
   const store = await readStore()
   if (!store) throw new Error("Store not found")
-  await (medusa.client.fetch as Function)(`/admin/stores/${store.id}`, {
+  await adminFetch(`/admin/stores/${store.id}`, {
     method: "POST",
     body: { metadata: { integrations_config: config } },
   })

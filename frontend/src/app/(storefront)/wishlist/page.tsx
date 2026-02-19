@@ -9,10 +9,10 @@ import { useCart } from "@/providers/cart-provider"
 import { useAuth } from "@/providers/auth-provider"
 import { primary, secondary, earth, bg, fonts } from "@/lib/theme"
 import { normalizeImageUrl } from "@/lib/image-url"
+import { getRegionId } from "@/lib/region"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
-const REGION_ID = "reg_01KHTS3XAP0A8SM60C5NWECPRN"
 
 interface WishlistProduct {
   id: string
@@ -43,15 +43,16 @@ export default function WishlistPage() {
         return
       }
       try {
-        const productIds = items.map((i: any) => i.product_id || i.id || i).filter(Boolean)
+        const productIds = items.map((i) => i.product_id).filter(Boolean)
         if (productIds.length === 0) {
           setProducts([])
           setLoading(false)
           return
         }
+        const regionId = await getRegionId()
         const idsParam = productIds.map((id: string) => `id[]=${id}`).join("&")
         const res = await fetch(
-          `${BACKEND_URL}/store/products?${idsParam}&fields=id,title,handle,thumbnail,variants.id,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity&region_id=${REGION_ID}`,
+          `${BACKEND_URL}/store/products?${idsParam}&fields=id,title,handle,thumbnail,variants.id,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity&region_id=${regionId}`,
           { headers: { "x-publishable-api-key": PUB_KEY } }
         )
         const data = await res.json()

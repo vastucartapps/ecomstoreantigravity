@@ -3,6 +3,7 @@ import type {
   MedusaResponse,
 } from "@medusajs/framework/http"
 import { NOTIFICATIONS_MODULE } from "../../../../../modules/notifications"
+import type { INotificationsService } from "../../../../../lib/service-types"
 
 export async function GET(
   req: AuthenticatedMedusaRequest,
@@ -20,7 +21,7 @@ export async function GET(
     offset?: string
   }
 
-  const notificationsService = req.scope.resolve(NOTIFICATIONS_MODULE) as any
+  const notificationsService = req.scope.resolve(NOTIFICATIONS_MODULE) as INotificationsService
   const result = await notificationsService.listByCustomer(customerId, {
     type: type as any,
     limit: limit ? parseInt(limit) : 20,

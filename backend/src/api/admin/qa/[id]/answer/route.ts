@@ -3,9 +3,11 @@ import { PRODUCT_QA_MODULE } from "../../../../../modules/product-qa"
 
 async function getAdminName(req: MedusaRequest): Promise<string> {
   try {
-    const user = (req as any).auth_context?.actor_id
-      ? (req as any).user
-      : null
+    const actorId = (req as any).auth_context?.actor_id
+    if (!actorId) return "VastuCart Team"
+
+    const userService = req.scope.resolve("userModuleService") as any
+    const user = await userService.retrieveUser(actorId)
     if (user?.first_name || user?.last_name) {
       return [user.first_name, user.last_name].filter(Boolean).join(" ")
     }

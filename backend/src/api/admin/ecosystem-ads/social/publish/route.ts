@@ -2,6 +2,7 @@ import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
 import { ECOSYSTEM_ADS_MODULE } from "../../../../../modules/ecosystem-ads"
 import { publishToSocialPlatform } from "../../../../../modules/ecosystem-ads/social-publisher"
+import { readMetaConfig } from "../../../../lib/store-metadata"
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
@@ -23,9 +24,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     }
 
     // Get social config
-    const stores = await storeService.listStores()
+    const stores = await storeService.listStores({}, { take: 1 })
     const store = stores?.[0]
-    const socialConfig = (store?.metadata as any)?.social_config || {}
+    const socialConfig = readMetaConfig<Record<string, any>>(store?.metadata ?? null, "social_config", {})
     const platformConfig = socialConfig[platform]
 
     if (!platformConfig?.access_token) {

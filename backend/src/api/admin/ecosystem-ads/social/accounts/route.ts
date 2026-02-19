@@ -1,5 +1,6 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
+import { readMetaConfig } from "../../../../lib/store-metadata"
 
 const PLATFORM_DEFAULTS: Record<string, { label: string; preferredRatio: string }> = {
   pinterest: { label: "Pinterest", preferredRatio: "2:3" },
@@ -12,9 +13,9 @@ const PLATFORM_DEFAULTS: Record<string, { label: string; preferredRatio: string 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   try {
     const storeService = req.scope.resolve(Modules.STORE)
-    const stores = await storeService.listStores()
+    const stores = await storeService.listStores({}, { take: 1 })
     const store = stores?.[0]
-    const socialConfig = (store?.metadata as any)?.social_config || {}
+    const socialConfig = readMetaConfig<Record<string, any>>(store?.metadata ?? null, "social_config", {})
 
     const accounts = Object.entries(PLATFORM_DEFAULTS).map(
       ([platform, defaults]) => {

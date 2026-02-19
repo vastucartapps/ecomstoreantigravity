@@ -1,4 +1,4 @@
-import { medusa } from "@/lib/medusa"
+import { adminFetch } from "@/lib/medusa"
 import type {
   LoyaltyConfig,
   LoyaltyTier,
@@ -81,7 +81,7 @@ export function useAdminLoyalty() {
   // ── Config CRUD ──────────────────────────────────────────────────────────
 
   async function fetchConfig(): Promise<LoyaltyConfig> {
-    const data = await (medusa.client.fetch as Function)(
+    const data = await adminFetch(
       "/admin/loyalty/config",
       { method: "GET" }
     )
@@ -110,7 +110,7 @@ export function useAdminLoyalty() {
   }
 
   async function saveConfig(config: LoyaltyConfig): Promise<void> {
-    await (medusa.client.fetch as Function)("/admin/loyalty/config", {
+    await adminFetch("/admin/loyalty/config", {
       method: "POST",
       body: config,
     })
@@ -150,7 +150,7 @@ export function useAdminLoyalty() {
   // ── Stats ────────────────────────────────────────────────────────────────
 
   async function fetchStats(): Promise<LoyaltyStats> {
-    const data = await (medusa.client.fetch as Function)(
+    const data = await adminFetch(
       "/admin/loyalty/stats",
       { method: "GET" }
     )
@@ -165,7 +165,7 @@ export function useAdminLoyalty() {
   // ── Adjustments ──────────────────────────────────────────────────────────
 
   async function fetchRecentAdjustments(): Promise<PointsAdjustment[]> {
-    const data = await (medusa.client.fetch as Function)(
+    const data = await adminFetch(
       "/admin/loyalty/adjustments",
       { method: "GET" }
     )
@@ -193,7 +193,7 @@ export function useAdminLoyalty() {
   async function lookupCustomer(
     email: string
   ): Promise<{ id: string; name: string; email: string } | null> {
-    const data = await (medusa.client.fetch as Function)(
+    const data = await adminFetch(
       `/admin/customers?q=${encodeURIComponent(email)}&limit=5`,
       { method: "GET" }
     )
@@ -222,7 +222,7 @@ export function useAdminLoyalty() {
       throw new Error("Customer not found. Please verify the email address.")
     }
 
-    await (medusa.client.fetch as Function)("/admin/loyalty/adjustments", {
+    await adminFetch("/admin/loyalty/adjustments", {
       method: "POST",
       body: {
         customer_id: customer.id,

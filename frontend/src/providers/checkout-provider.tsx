@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
 import { medusa } from "@/lib/medusa"
 import { useCart } from "./cart-provider"
-import type { CheckoutStepId, AddressPayload, ShippingOption } from "@/types/checkout"
+import type { CheckoutStepId, AddressPayload, SavedAddress, ShippingOption } from "@/types/checkout"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
@@ -20,7 +20,7 @@ interface CheckoutContextValue {
   setContactPhone: (phone: string) => void
   submitContact: (email: string, phone: string, countryCode: string) => Promise<void>
   // Address
-  savedAddresses: any[]
+  savedAddresses: SavedAddress[]
   loadSavedAddresses: () => Promise<void>
   setAddresses: (shipping: AddressPayload, billing?: AddressPayload) => Promise<void>
   selectedAddressId: string | null
@@ -53,7 +53,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
   const [step, setStepState] = useState<CheckoutStepId>("contact")
   const [contactEmail, setContactEmail] = useState("")
   const [contactPhone, setContactPhone] = useState("")
-  const [savedAddresses, setSavedAddresses] = useState<any[]>([])
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([])
   const [selectedShippingId, setSelectedShippingId] = useState<string | null>(null)
@@ -98,7 +98,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
       const { customer } = await medusa.store.customer.retrieve()
       if (customer) {
         const { addresses } = await medusa.store.customer.listAddress()
-        setSavedAddresses(addresses || [])
+        setSavedAddresses((addresses || []) as SavedAddress[])
       }
     } catch {
       setSavedAddresses([])
@@ -125,7 +125,9 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     }
   }, [cart, cartId, refreshCart])
 
+  // Fix #4: No fake fallback shipping options. If Medusa returns none, surface the error.
   const loadShippingOptions = useCallback(async () => {
+    setError(null)
     try {
       const id = cart?.id || cartId
       if (!id) return
@@ -133,49 +135,41 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         `${BACKEND_URL}/store/shipping-options?cart_id=${id}`,
         { headers: { "x-publishable-api-key": PUB_KEY } }
       )
+      if (!res.ok) {
+        throw new Error(`Failed to load shipping options (${res.status})`)
+      }
       const data = await res.json()
       const options: ShippingOption[] = (data.shipping_options || []).map((o: any) => ({
         id: o.id,
         name: o.name,
         amount: o.amount || 0,
-        currency_code: o.price_type === "flat" ? "inr" : "inr",
+        currency_code: "inr",
         provider_id: o.provider_id || "",
       }))
 
-      // Fallback options if none returned from Medusa (dev environment)
       if (options.length === 0) {
-        options.push(
-          { id: "fallback_standard", name: "Standard Shipping", amount: 0, currency_code: "inr", provider_id: "manual" },
-          { id: "fallback_express", name: "Express Shipping", amount: 14900, currency_code: "inr", provider_id: "manual" }
-        )
+        setError("No shipping options available. Please contact support.")
       }
       setShippingOptions(options)
-    } catch {
-      // Provide fallback options
-      setShippingOptions([
-        { id: "fallback_standard", name: "Standard Shipping (5-7 days)", amount: 0, currency_code: "inr", provider_id: "manual" },
-        { id: "fallback_express", name: "Express Shipping (2-3 days)", amount: 14900, currency_code: "inr", provider_id: "manual" },
-      ])
+    } catch (err: any) {
+      setError(err?.message || "Failed to load shipping options. Please try again.")
+      setShippingOptions([])
     }
   }, [cart, cartId])
 
+  // Fix #2: Surface shipping method errors instead of silently advancing
   const selectShippingMethod = useCallback(async (optionId: string) => {
     setIsProcessing(true)
     setError(null)
     try {
       const id = cart?.id || cartId
       if (!id) throw new Error("No cart found")
-      // Skip for fallback options (not real Medusa option IDs)
-      if (!optionId.startsWith("fallback_")) {
-        await medusa.store.cart.addShippingMethod(id, { option_id: optionId })
-        await refreshCart()
-      }
+      await medusa.store.cart.addShippingMethod(id, { option_id: optionId })
+      await refreshCart()
       setSelectedShippingId(optionId)
       setStepState("payment")
     } catch (err: any) {
-      // If shipping method API fails (e.g., no fulfillment provider), still let user proceed
-      setSelectedShippingId(optionId)
-      setStepState("payment")
+      setError(err?.message || "Failed to select shipping method. Please try again.")
     } finally {
       setIsProcessing(false)
     }
@@ -187,32 +181,47 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     else setPaymentMethod("system")
   }
 
+  // Fix #6: Fetch available payment providers instead of hardcoding pp_system_default
   const initPayment = useCallback(async () => {
     setIsProcessing(true)
     setError(null)
     try {
       if (!cart) throw new Error("No cart found")
-      // Initialize payment session with system default provider
+
+      // Fetch available payment providers for this cart
+      const res = await fetch(
+        `${BACKEND_URL}/store/payment-providers?region_id=${cart.region_id}`,
+        { headers: { "x-publishable-api-key": PUB_KEY } }
+      )
+      const data = await res.json()
+      const providers = data.payment_providers || []
+      const providerId = providers[0]?.id || "pp_system_default"
+
       await medusa.store.payment.initiatePaymentSession(cart, {
-        provider_id: "pp_system_default",
+        provider_id: providerId,
       })
     } catch (err: any) {
-      // Non-fatal — payment collection may already exist or system default unavailable in dev
-      console.warn("Payment init warning:", err?.message)
+      setError(err?.message || "Failed to initialize payment. Please try again.")
     } finally {
       setIsProcessing(false)
     }
   }, [cart])
 
+  // Fix #3: Proper order ID extraction from Medusa v2 cart.complete() response
   const completeCheckout = useCallback(async (): Promise<{ orderId: string }> => {
     setIsProcessing(true)
     setError(null)
     try {
       const id = cart?.id || cartId
       if (!id) throw new Error("No cart found")
-      const result = await medusa.store.cart.complete(id)
-      const order = (result as any).order || (result as any)
-      const orderId = order?.id || order?.order?.id || "unknown"
+      const result = await medusa.store.cart.complete(id) as any
+
+      // Medusa v2 returns { type: "order", order: { id, ... } }
+      const orderId = result?.order?.id
+      if (!orderId) {
+        throw new Error("Order was created but no order ID was returned. Please check your order history.")
+      }
+
       clearCart()
       return { orderId }
     } catch (err: any) {

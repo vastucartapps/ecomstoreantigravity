@@ -36,21 +36,7 @@ export interface AppliedCoupon {
   description: string
 }
 
-/** Saved address */
-export interface SavedAddress {
-  id: string
-  name: string
-  phone: string
-  street: string
-  city: string
-  state: string
-  pincode: string
-  country: string
-  isDefault: boolean
-  label: "Home" | "Office" | "Other"
-}
-
-/** Address payload for Medusa API */
+/** Address payload for Medusa API (create/update) */
 export interface AddressPayload {
   first_name: string
   last_name: string
@@ -62,6 +48,19 @@ export interface AddressPayload {
   country_code: string
   phone?: string
   company?: string
+}
+
+/** Saved address from Medusa API (has id + metadata fields) */
+export interface SavedAddress extends AddressPayload {
+  id: string
+  /** Medusa customer address metadata */
+  name?: string
+  label?: string
+  is_default?: boolean
+  street?: string
+  state?: string
+  pincode?: string
+  metadata?: Record<string, unknown>
 }
 
 /** Shipping option from Medusa */

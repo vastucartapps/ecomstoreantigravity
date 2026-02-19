@@ -6,6 +6,7 @@ import { AuthScreen } from "@/components/auth"
 import { useAuth } from "@/providers/auth-provider"
 import { medusa } from "@/lib/medusa"
 import type { MarketingSlide, PasswordRequirement } from "@/types/auth"
+import { AUTH_CAROUSEL_IMAGES } from "@/lib/image-constants"
 
 const PASSWORD_REQUIREMENTS: PasswordRequirement[] = [
   { label: "At least 8 characters", key: "minLength" },
@@ -18,7 +19,7 @@ const PASSWORD_REQUIREMENTS: PasswordRequirement[] = [
 const DEFAULT_SLIDES: MarketingSlide[] = [
   {
     id: "default-1",
-    image_url: "https://images.unsplash.com/photo-1600618528240-fb9fc964b853?w=1200&q=80",
+    image_url: AUTH_CAROUSEL_IMAGES[0].image_url,
     quote: "Transform your space with the ancient wisdom of Vastu Shastra and the healing power of crystals",
     attribution: "VastuCart",
     is_active: true,
@@ -26,7 +27,7 @@ const DEFAULT_SLIDES: MarketingSlide[] = [
   },
   {
     id: "default-2",
-    image_url: "https://images.unsplash.com/photo-1519750783826-e2420f4d687f?w=1200&q=80",
+    image_url: AUTH_CAROUSEL_IMAGES[1].image_url,
     quote: "Every crystal carries the energy of millions of years. Let their vibrations elevate your life",
     attribution: "Ancient Wisdom",
     is_active: true,
@@ -34,7 +35,7 @@ const DEFAULT_SLIDES: MarketingSlide[] = [
   },
   {
     id: "default-3",
-    image_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&q=80",
+    image_url: AUTH_CAROUSEL_IMAGES[2].image_url,
     quote: "Authentic, ethically sourced spiritual products delivered with care to your doorstep",
     attribution: "VastuCart Promise",
     is_active: true,

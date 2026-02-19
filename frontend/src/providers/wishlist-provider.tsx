@@ -11,9 +11,16 @@ import {
 import { medusa } from "@/lib/medusa"
 import { useAuth } from "./auth-provider"
 
+/** Shape of a wishlist item returned by the wishlist plugin */
+export interface WishlistItem {
+  product_id: string
+  product_variant_id?: string
+  quantity?: number
+}
+
 interface WishlistContextValue {
   wishlistCount: number
-  items: any[]
+  items: WishlistItem[]
   isLoading: boolean
   addToWishlist: (productId: string, variantId: string) => Promise<void>
   removeFromWishlist: (productId: string, variantId: string) => Promise<void>
@@ -25,7 +32,7 @@ const WishlistContext = createContext<WishlistContextValue | null>(null)
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const [items, setItems] = useState<any[]>([])
+  const [items, setItems] = useState<WishlistItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
   const refreshWishlist = useCallback(async () => {
@@ -35,7 +42,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     }
     setIsLoading(true)
     try {
-      const res = await medusa.client.fetch<{ wishlist: any }>(
+      const res = await medusa.client.fetch<{ wishlist: { items: WishlistItem[] } }>(
         "/store/customers/me/wishlist",
         { method: "GET" }
       )
@@ -68,7 +75,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   }
 
   const isInWishlist = (productId: string) =>
-    items.some((item: any) => item.product_id === productId)
+    items.some((item) => item.product_id === productId)
 
   return (
     <WishlistContext.Provider

@@ -1,6 +1,8 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import { Modules } from "@medusajs/framework/utils"
 import { LOYALTY_MODULE } from "../modules/loyalty"
+import { readMetaConfig } from "../lib/store-metadata"
+import type { ILoyaltyService } from "../lib/service-types"
 
 // Default config used when no admin config is saved
 const DEFAULT_POINTS_PER_RUPEE = 1
@@ -13,13 +15,16 @@ async function getLoyaltyConfig(container: any): Promise<{
 }> {
   try {
     const storeService = container.resolve(Modules.STORE)
-    const stores = await storeService.listStores()
+    const stores = await storeService.listStores({}, { take: 1 })
     const store = stores?.[0]
-    const config = (store?.metadata as any)?.loyalty_config
+    const config = readMetaConfig<{ programEnabled?: boolean; config?: { pointsPerRupee?: number; pointsExpiryDays?: number } } | null>(store?.metadata ?? null, "loyalty_config", null)
     if (config) {
+      // config shape: LoyaltyConfig { programEnabled, config: PointsConfig { pointsPerRupee, ... }, tiers }
+      // The outer "config" is loyalty_config from store.metadata; inner "config" is the PointsConfig sub-object.
+      const pointsCfg = config.config || {}
       return {
-        pointsPerRupee: config.config?.pointsPerRupee ?? DEFAULT_POINTS_PER_RUPEE,
-        pointsExpiryDays: config.config?.pointsExpiryDays ?? DEFAULT_EXPIRY_DAYS,
+        pointsPerRupee: pointsCfg.pointsPerRupee ?? DEFAULT_POINTS_PER_RUPEE,
+        pointsExpiryDays: pointsCfg.pointsExpiryDays ?? DEFAULT_EXPIRY_DAYS,
         programEnabled: config.programEnabled !== false,
       }
     }
@@ -54,7 +59,7 @@ export default async function orderLoyaltyHandler({
 
     if (!order?.customer_id) return
 
-    const loyaltyService = container.resolve(LOYALTY_MODULE) as any
+    const loyaltyService = container.resolve(LOYALTY_MODULE) as ILoyaltyService
 
     if (event.name === "order.placed") {
       // Dynamic rate: total is in paise, divide by 100 for rupees, multiply by pointsPerRupee

@@ -1,4 +1,4 @@
-import { medusa } from "@/lib/medusa"
+import { adminFetch } from "@/lib/medusa"
 import type {
   NotificationsConfig,
   EmailTemplate,
@@ -162,7 +162,7 @@ const DEFAULT_CONFIG: NotificationsConfig = {
 // ─── Store helpers ─────────────────────────────────────────────────────────────
 
 async function readStore() {
-  const data = await (medusa.client.fetch as Function)("/admin/stores", {
+  const data = await adminFetch("/admin/stores", {
     method: "GET",
   })
   return data?.stores?.[0] ?? null
@@ -171,7 +171,7 @@ async function readStore() {
 async function writeConfig(config: NotificationsConfig) {
   const store = await readStore()
   if (!store) throw new Error("Store not found")
-  await (medusa.client.fetch as Function)(`/admin/stores/${store.id}`, {
+  await adminFetch(`/admin/stores/${store.id}`, {
     method: "POST",
     body: { metadata: { notifications_config: config } },
   })

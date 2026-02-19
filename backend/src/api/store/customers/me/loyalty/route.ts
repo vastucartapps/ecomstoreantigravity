@@ -3,6 +3,7 @@ import type {
   MedusaResponse,
 } from "@medusajs/framework/http"
 import { LOYALTY_MODULE } from "../../../../../modules/loyalty"
+import type { ILoyaltyService } from "../../../../../lib/service-types"
 
 export async function GET(
   req: AuthenticatedMedusaRequest,
@@ -14,7 +15,7 @@ export async function GET(
     return
   }
 
-  const loyaltyService = req.scope.resolve(LOYALTY_MODULE) as any
+  const loyaltyService = req.scope.resolve(LOYALTY_MODULE) as ILoyaltyService
   const balance = await loyaltyService.getBalance(customerId)
   const transactions = await loyaltyService.getTransactions(customerId)
 

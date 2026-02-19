@@ -22,7 +22,9 @@ import type {
   VariantAttribute,
 } from "@/types/product-experience"
 import { bg, primary, earth, fonts } from "@/lib/theme"
+import { getRegionId } from "@/lib/region"
 import { normalizeImageUrl } from "@/lib/image-url"
+import { FALLBACK_CATEGORY_TILE } from "@/lib/image-constants"
 import type { HomepageSection } from "@/types/admin-storefront"
 
 const BACKEND_URL =
@@ -97,7 +99,7 @@ function mapMedusaCategory(
   return {
     id: c.id,
     name: c.name,
-    imageUrl: normalizeImageUrl(c.metadata?.image_url) || `https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&h=300&fit=crop`,
+    imageUrl: normalizeImageUrl(c.metadata?.image_url) || FALLBACK_CATEGORY_TILE,
     slug: c.handle,
     productCount: counts?.[c.id] ?? 0,
   }
@@ -258,14 +260,8 @@ export default function HomePage() {
           process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
       }
 
-      // First fetch region to get pricing context
-      let regionId = ""
-      try {
-        const regRes = await fetch(`${BACKEND_URL}/store/regions`, { headers })
-        const regData = await regRes.json()
-        const inrRegion = regData.regions?.find((r: any) => r.currency_code === "inr")
-        regionId = inrRegion?.id || regData.regions?.[0]?.id || ""
-      } catch {}
+      // Fetch region for pricing context (shared cached utility)
+      const regionId = await getRegionId()
 
       const productFields = "id,title,handle,subtitle,thumbnail,created_at,metadata,variants.id,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity,images.url"
       const regionParam = regionId ? `&region_id=${regionId}` : ""
@@ -441,14 +437,8 @@ export default function HomePage() {
       const qvHeaders: Record<string, string> = {
         "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
       }
-      // Fetch region for pricing
-      let regionId = ""
-      try {
-        const regRes = await fetch(`${BACKEND_URL}/store/regions`, { headers: qvHeaders })
-        const regData = await regRes.json()
-        const inrRegion = regData.regions?.find((r: any) => r.currency_code === "inr")
-        regionId = inrRegion?.id || regData.regions?.[0]?.id || ""
-      } catch {}
+      // Fetch region for pricing (shared cached utility)
+      const regionId = await getRegionId()
       const regionParam = regionId ? `&region_id=${regionId}` : ""
       const fields = "id,title,handle,thumbnail,description,metadata,created_at,options.title,variants.id,variants.sku,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity,variants.options,images.id,images.url"
       const res = await fetch(`${BACKEND_URL}/store/products/${productId}?fields=${fields}${regionParam}`, { headers: qvHeaders })

@@ -76,7 +76,7 @@ export default function OrderConfirmationPage() {
         hsn: item.variant?.product?.metadata?.hsn_code || DEFAULT_HSN,
         quantity: item.quantity,
         rate: (item.unit_price || 0) / 100,
-        gstRate: 18,
+        gstRate: item.variant?.product?.metadata?.gst_rate ?? 18,
         buyerState: addr.province,
       }))
       const invoiceData: InvoiceData = {

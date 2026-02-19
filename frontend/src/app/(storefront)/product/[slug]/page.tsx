@@ -21,6 +21,7 @@ import type {
 } from "@/types/product-experience"
 import { bg, primary, earth, fonts } from "@/lib/theme"
 import { normalizeImageUrl } from "@/lib/image-url"
+import { getRegionId } from "@/lib/region"
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -302,17 +303,8 @@ export default function ProductPage() {
     setIsLoading(true)
 
     try {
-      // 1. Fetch region for pricing
-      let regionId = ""
-      try {
-        const regRes = await fetch(`${BACKEND_URL}/store/regions`, { headers })
-        const regData = await regRes.json()
-        const inrRegion = regData.regions?.find(
-          (r: any) => r.currency_code === "inr"
-        )
-        regionId = inrRegion?.id || regData.regions?.[0]?.id || ""
-      } catch {}
-
+      // 1. Fetch region for pricing (shared cached utility)
+      const regionId = await getRegionId()
       const regionParam = regionId ? `&region_id=${regionId}` : ""
       const productFields =
         "id,title,handle,subtitle,description,thumbnail,created_at,metadata,status,options.id,options.title,options.values.id,options.values.value,variants.id,variants.title,variants.sku,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity,variants.options.id,variants.options.value,variants.options.option_id,images.id,images.url,categories.id,categories.name,categories.handle"

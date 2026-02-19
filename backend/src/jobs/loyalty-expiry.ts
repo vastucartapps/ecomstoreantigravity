@@ -1,9 +1,10 @@
 import { MedusaContainer } from "@medusajs/framework/types"
 import { LOYALTY_MODULE } from "../modules/loyalty"
+import type { ILoyaltyService } from "../lib/service-types"
 
 export default async function loyaltyExpiryJob(container: MedusaContainer) {
-  const logger = container.resolve("logger") as any
-  const loyaltyService = container.resolve(LOYALTY_MODULE) as any
+  const logger = container.resolve("logger") as { info: (msg: string) => void; error: (msg: string) => void }
+  const loyaltyService = container.resolve(LOYALTY_MODULE) as ILoyaltyService
 
   try {
     const expiredCount = await loyaltyService.expirePoints()

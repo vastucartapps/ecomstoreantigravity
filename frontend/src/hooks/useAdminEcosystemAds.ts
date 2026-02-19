@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import Medusa from "@medusajs/js-sdk"
+import { adminFetch } from "@/lib/medusa"
 import type {
   Banner,
   BannerFormData,
@@ -19,36 +19,22 @@ import type {
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
-const PUB_KEY =
-  process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
-
-const medusa = new Medusa({
-  baseUrl: BACKEND_URL,
-  auth: { type: "session" },
-})
 
 function getAdminToken(): string {
   if (typeof window === "undefined") return ""
   return localStorage.getItem("medusa_auth_token") || ""
 }
 
-async function adminFetch(path: string, options?: { method?: string; body?: any }) {
-  return (medusa.client.fetch as Function)(path, {
-    method: options?.method || "GET",
-    body: options?.body,
-  })
-}
-
 export function useAdminEcosystemAds() {
   // ─── Banners ─────────────────────────────────────────────────────────
 
   const fetchBanners = useCallback(async (): Promise<Banner[]> => {
-    const data = await adminFetch("/admin/ecosystem-ads/banners")
-    return (data?.banners || []) as Banner[]
+    const data = await adminFetch<{ banners: Banner[] }>("/admin/ecosystem-ads/banners")
+    return data?.banners || []
   }, [])
 
   const createBanner = useCallback(async (formData: BannerFormData): Promise<Banner> => {
-    const data = await adminFetch("/admin/ecosystem-ads/banners", {
+    const data = await adminFetch<{ banner: Banner }>("/admin/ecosystem-ads/banners", {
       method: "POST",
       body: {
         name: formData.name,
@@ -65,16 +51,16 @@ export function useAdminEcosystemAds() {
         creatives: formData.creatives,
       },
     })
-    return data?.banner
+    return data.banner
   }, [])
 
   const updateBanner = useCallback(
     async (id: string, updates: Partial<BannerFormData>): Promise<Banner> => {
-      const data = await adminFetch(`/admin/ecosystem-ads/banners/${id}`, {
+      const data = await adminFetch<{ banner: Banner }>(`/admin/ecosystem-ads/banners/${id}`, {
         method: "POST",
         body: updates,
       })
-      return data?.banner
+      return data.banner
     },
     []
   )
@@ -94,8 +80,8 @@ export function useAdminEcosystemAds() {
   // ─── Sites ───────────────────────────────────────────────────────────
 
   const fetchSites = useCallback(async (): Promise<EcosystemSite[]> => {
-    const data = await adminFetch("/admin/ecosystem-ads/sites")
-    return (data?.sites || []) as EcosystemSite[]
+    const data = await adminFetch<{ sites: EcosystemSite[] }>("/admin/ecosystem-ads/sites")
+    return data?.sites || []
   }, [])
 
   const createSite = useCallback(
