@@ -22,7 +22,9 @@ COPY --from=base /app/package.json ./
 COPY --from=base /app/medusa-config.ts ./
 COPY --from=base /app/tsconfig.json ./
 COPY --from=base /app/src ./src
+COPY --from=base /app/start.sh ./start.sh
+RUN chmod +x ./start.sh
 
 EXPOSE 9000
 
-CMD ["npm", "run", "start"]
+CMD ["./start.sh"]
