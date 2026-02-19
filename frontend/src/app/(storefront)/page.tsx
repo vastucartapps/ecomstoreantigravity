@@ -22,6 +22,7 @@ import type {
   VariantAttribute,
 } from "@/types/product-experience"
 import { bg, primary, earth, fonts } from "@/lib/theme"
+import { normalizeImageUrl } from "@/lib/image-url"
 import type { HomepageSection } from "@/types/admin-storefront"
 
 const BACKEND_URL =
@@ -71,7 +72,7 @@ function mapMedusaProduct(p: any): StorefrontProduct {
     id: p.id,
     name: p.title,
     slug: p.handle,
-    imageUrl: p.thumbnail || p.images?.[0]?.url || "",
+    imageUrl: normalizeImageUrl(p.thumbnail || p.images?.[0]?.url || ""),
     price,
     mrp,
     currency: currencyCode.toUpperCase() === "USD" ? "USD" : "INR",
@@ -89,13 +90,16 @@ function isNewProduct(createdAt: string): boolean {
   return daysOld <= 30
 }
 
-function mapMedusaCategory(c: any): CategoryCard {
+function mapMedusaCategory(
+  c: any,
+  counts?: Record<string, number>
+): CategoryCard {
   return {
     id: c.id,
     name: c.name,
-    imageUrl: c.metadata?.image_url || `https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&h=300&fit=crop`,
+    imageUrl: normalizeImageUrl(c.metadata?.image_url) || `https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&h=300&fit=crop`,
     slug: c.handle,
-    productCount: c.products?.length ?? 0,
+    productCount: counts?.[c.id] ?? 0,
   }
 }
 
@@ -160,12 +164,12 @@ function HomepageSkeleton() {
 function mapQVImages(p: any): ProductImage[] {
   const images: ProductImage[] = []
   if (p.thumbnail) {
-    images.push({ id: "thumb-0", url: p.thumbnail, alt: p.title || "", type: "primary", order: 0 })
+    images.push({ id: "thumb-0", url: normalizeImageUrl(p.thumbnail), alt: p.title || "", type: "primary", order: 0 })
   }
   if (p.images) {
     p.images.forEach((img: any, idx: number) => {
       if (img.url === p.thumbnail && idx === 0) return
-      images.push({ id: img.id || `img-${idx}`, url: img.url, alt: p.title || "", type: "gallery", order: images.length })
+      images.push({ id: img.id || `img-${idx}`, url: normalizeImageUrl(img.url), alt: p.title || "", type: "gallery", order: images.length })
     })
   }
   return images
@@ -213,7 +217,7 @@ function mapQVProduct(p: any): Product {
   const meta = p.metadata || {}
   return {
     id: p.id, name: p.title, slug: p.handle, description: p.description || "",
-    shortDescription: meta.short_description || (p.description || "").slice(0, 200),
+    shortDescription: p.subtitle || meta.short_description || (p.description || "").slice(0, 200),
     currency: curr === "USD" ? "USD" : "INR", price, mrp,
     discountPercent: mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0,
     rating: 0, reviewCount: 0,
@@ -275,6 +279,7 @@ export default function HomePage() {
         bestRes,
         testimonialsRes,
         storefrontRes,
+        productCountRes,
       ] = await Promise.allSettled([
         // Hero slides from custom module
         fetch(`${BACKEND_URL}/store/hero-slides`, { headers }).then((r) => r.json()),
@@ -302,15 +307,32 @@ export default function HomePage() {
         fetch(`${BACKEND_URL}/store/testimonials`, { headers }).then((r) => r.json()),
         // Storefront config for section ordering/visibility
         fetch(`${BACKEND_URL}/store/storefront-config`, { headers }).then((r) => r.json()),
+        // Product-category counts (lightweight: only ids)
+        fetch(
+          `${BACKEND_URL}/store/products?limit=1000&fields=id,categories.id${regionParam}`,
+          { headers }
+        ).then((r) => r.json()),
       ])
 
       if (heroRes.status === "fulfilled") {
         setHeroSlides(heroRes.value.hero_slides || [])
       }
 
+      // Build product-per-category counts
+      const catCounts: Record<string, number> = {}
+      if (productCountRes.status === "fulfilled") {
+        for (const p of productCountRes.value.products || []) {
+          for (const cat of p.categories || []) {
+            catCounts[cat.id] = (catCounts[cat.id] || 0) + 1
+          }
+        }
+      }
+
       if (catRes.status === "fulfilled") {
         setCategories(
-          (catRes.value.product_categories || []).map(mapMedusaCategory)
+          (catRes.value.product_categories || []).map((c: any) =>
+            mapMedusaCategory(c, catCounts)
+          )
         )
       }
 

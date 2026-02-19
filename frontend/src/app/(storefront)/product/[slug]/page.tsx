@@ -20,6 +20,7 @@ import type {
   RelatedProduct,
 } from "@/types/product-experience"
 import { bg, primary, earth, fonts } from "@/lib/theme"
+import { normalizeImageUrl } from "@/lib/image-url"
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -37,7 +38,7 @@ function mapImages(p: any): ProductImage[] {
   if (p.thumbnail) {
     images.push({
       id: "thumb-0",
-      url: p.thumbnail,
+      url: normalizeImageUrl(p.thumbnail),
       alt: p.title || "",
       type: "primary",
       order: 0,
@@ -50,7 +51,7 @@ function mapImages(p: any): ProductImage[] {
       if (img.url === p.thumbnail && idx === 0) return
       images.push({
         id: img.id || `img-${idx}`,
-        url: img.url,
+        url: normalizeImageUrl(img.url),
         alt: p.title || "",
         type: "gallery",
         order: images.length,
@@ -135,6 +136,7 @@ function mapProduct(p: any, reviewCount: number, rating: number): Product {
     slug: p.handle,
     description: p.description || "",
     shortDescription:
+      p.subtitle ||
       meta.short_description ||
       (p.description || "").slice(0, 200) + (p.description?.length > 200 ? "..." : ""),
     currency: currencyCode === "USD" ? "USD" : "INR",
@@ -184,7 +186,7 @@ function mapRelatedProducts(
       id: p.id,
       name: p.title,
       slug: p.handle,
-      imageUrl: p.thumbnail || p.images?.[0]?.url || "",
+      imageUrl: normalizeImageUrl(p.thumbnail || p.images?.[0]?.url || ""),
       price,
       mrp,
       currency: cc === "USD" ? "USD" : "INR",
