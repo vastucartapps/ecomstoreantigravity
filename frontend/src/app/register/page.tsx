@@ -15,10 +15,37 @@ const PASSWORD_REQUIREMENTS: PasswordRequirement[] = [
   { label: "One special character (!@#$%)", key: "special" },
 ]
 
+const DEFAULT_SLIDES: MarketingSlide[] = [
+  {
+    id: "default-1",
+    image_url: "https://images.unsplash.com/photo-1600618528240-fb9fc964b853?w=1200&q=80",
+    quote: "Transform your space with the ancient wisdom of Vastu Shastra and the healing power of crystals",
+    attribution: "VastuCart",
+    is_active: true,
+    display_order: 1,
+  },
+  {
+    id: "default-2",
+    image_url: "https://images.unsplash.com/photo-1519750783826-e2420f4d687f?w=1200&q=80",
+    quote: "Every crystal carries the energy of millions of years. Let their vibrations elevate your life",
+    attribution: "Ancient Wisdom",
+    is_active: true,
+    display_order: 2,
+  },
+  {
+    id: "default-3",
+    image_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&q=80",
+    quote: "Authentic, ethically sourced spiritual products delivered with care to your doorstep",
+    attribution: "VastuCart Promise",
+    is_active: true,
+    display_order: 3,
+  },
+]
+
 export default function RegisterPage() {
   const router = useRouter()
   const { user, isAdmin, register } = useAuth()
-  const [slides, setSlides] = useState<MarketingSlide[]>([])
+  const [slides, setSlides] = useState<MarketingSlide[]>(DEFAULT_SLIDES)
 
   // Redirect if already logged in
   useEffect(() => {
@@ -28,16 +55,18 @@ export default function RegisterPage() {
     }
   }, [user, isAdmin, router])
 
-  // Fetch marketing slides
+  // Fetch marketing slides (use defaults as fallback)
   useEffect(() => {
     const fetchSlides = async () => {
       try {
         const res = await medusa.client.fetch<{
           marketing_slides: MarketingSlide[]
         }>("/store/marketing-slides", { method: "GET" })
-        setSlides(res.marketing_slides || [])
+        if (res.marketing_slides?.length) {
+          setSlides(res.marketing_slides)
+        }
       } catch {
-        // Fallback handled by MarketingPanel
+        // API not available — keep default slides
       }
     }
     fetchSlides()
