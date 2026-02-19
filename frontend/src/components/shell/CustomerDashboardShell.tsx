@@ -59,7 +59,7 @@ function isActiveItem(href: string, pathname: string): boolean {
   return pathname.startsWith(href)
 }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
 export default function CustomerDashboardShell({ children }: CustomerDashboardShellProps) {

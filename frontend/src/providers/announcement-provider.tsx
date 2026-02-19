@@ -9,7 +9,7 @@ import {
 } from "react"
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 
 interface AnnouncementContextValue {
   text: string | null

@@ -2,7 +2,7 @@ import { useCallback } from "react"
 import { medusa } from "@/lib/medusa"
 import type { Order, Address, LoyaltyBalance, Booking, CustomerNotification, Coupon } from "@/types/dashboard"
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
 function authHeaders() {

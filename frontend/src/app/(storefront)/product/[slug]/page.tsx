@@ -22,7 +22,7 @@ import type {
 import { bg, primary, earth, fonts } from "@/lib/theme"
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 
 const headers: Record<string, string> = {
   "x-publishable-api-key":

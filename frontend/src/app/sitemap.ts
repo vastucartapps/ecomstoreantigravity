@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next"
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+  process.env.MEDUSA_INTERNAL_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL || "https://vastucart.com"

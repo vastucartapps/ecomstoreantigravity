@@ -11,7 +11,7 @@ import { useAnnouncement } from "@/providers/announcement-provider"
 import { CartDrawer } from "@/components/storefront/cart/CartDrawer"
 import { primary, secondary, earth, bg, gradients, fonts } from "./theme"
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
 interface StorefrontShellProps {

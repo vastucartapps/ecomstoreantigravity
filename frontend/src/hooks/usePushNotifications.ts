@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 
 const BACKEND_URL =
   typeof window !== "undefined"
-    ? (process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000")
+    ? (process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "")
     : ""
 
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {

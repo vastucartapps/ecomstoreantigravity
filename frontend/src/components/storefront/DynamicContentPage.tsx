@@ -5,7 +5,7 @@ import { MarkdownPage } from "@/lib/simple-markdown"
 import { primary, earth, fonts, bg, shadows } from "@/lib/theme"
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 
 interface DynamicContentPageProps {
   slug: string

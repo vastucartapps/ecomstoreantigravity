@@ -7,7 +7,7 @@ import { useCart } from "@/providers/cart-provider"
 import { useCheckout } from "@/providers/checkout-provider"
 import { primary, earth, bg, fonts, semantic } from "@/lib/theme"
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
 interface DeliveryEstimate {

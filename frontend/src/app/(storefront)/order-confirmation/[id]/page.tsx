@@ -37,7 +37,7 @@ export default function OrderConfirmationPage() {
       // Order fetch failed (token may not be set for guest). Try without auth.
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"}/store/orders/${orderId}`,
+          `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""}/store/orders/${orderId}`,
           {
             headers: {
               "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",

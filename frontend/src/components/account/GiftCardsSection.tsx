@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Gift, Search, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
 import { primary, earth, bg, fonts } from "@/lib/theme"
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
 export function GiftCardsSection() {

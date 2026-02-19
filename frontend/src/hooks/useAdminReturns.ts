@@ -217,7 +217,7 @@ async function adminFetch(path: string, options: RequestInit = {}): Promise<any>
     ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
     ...(options.headers as Record<string, string> || {}),
   }
-  const res = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"}${path}`, {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""}${path}`, {
     ...options,
     headers,
     credentials: "include",

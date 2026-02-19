@@ -2,7 +2,7 @@ import { StorefrontShellWrapper } from "./shell-wrapper"
 import { TrackingScripts } from "@/components/storefront/TrackingScripts"
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+  process.env.MEDUSA_INTERNAL_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 
 export default async function StorefrontLayout({
   children,

@@ -4,7 +4,7 @@ import { useCallback } from "react"
 import { medusa } from "@/lib/medusa"
 import type { Category, CategoryOption, CategoryGoogleMerchant } from "@/types/admin-category"
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 
 // ---------------------------------------------------------------------------
 // Helpers

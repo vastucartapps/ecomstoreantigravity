@@ -5,7 +5,7 @@ import { medusa } from "@/lib/medusa"
 import { useCart } from "./cart-provider"
 import type { CheckoutStepId, AddressPayload, ShippingOption } from "@/types/checkout"
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
 interface CheckoutContextValue {

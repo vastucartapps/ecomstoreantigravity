@@ -12,7 +12,7 @@ import type { InAppAnnouncement, AnnouncementType } from "@/types/admin-notifica
 
 const BACKEND_URL =
   typeof window !== "undefined"
-    ? process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
+    ? process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
     : ""
 
 const DISMISSED_KEY = "vc_inapp_dismissed"
