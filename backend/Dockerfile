@@ -11,12 +11,17 @@ RUN --mount=type=cache,target=/root/.npm \
 # Copy source
 COPY . .
 
-# Build
+# Build Medusa
 RUN npm run build
+
+# Strip devDependencies for a leaner production image (~400MB smaller)
+RUN npm prune --production --legacy-peer-deps 2>/dev/null || true
 
 # Production
 FROM node:20-alpine AS production
 WORKDIR /app
+
+ENV NODE_ENV=production
 
 COPY --from=base /app/.medusa ./.medusa
 COPY --from=base /app/node_modules ./node_modules

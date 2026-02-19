@@ -22,7 +22,7 @@ done
 echo "PostgreSQL is ready."
 
 echo "Running database migrations..."
-npx medusa db:migrate
+./node_modules/.bin/medusa db:migrate
 
 echo "Starting Medusa server..."
-npx medusa start
+exec ./node_modules/.bin/medusa start

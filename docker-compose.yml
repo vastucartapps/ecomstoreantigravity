@@ -1,37 +1,65 @@
 services:
   postgres:
     image: postgres:16-alpine
-    restart: unless-stopped
+    restart: always
     environment:
       POSTGRES_USER: medusa
       POSTGRES_PASSWORD: medusa
       POSTGRES_DB: medusa
+      # Tuning for production (4GB server)
+      POSTGRES_INITDB_ARGS: "--data-checksums"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # shm_size prevents shared memory issues on heavy queries
+    shm_size: 256m
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "work_mem=16MB"
+      - "-c"
+      - "effective_cache_size=1GB"
+      - "-c"
+      - "maintenance_work_mem=128MB"
+      - "-c"
+      - "max_connections=100"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "checkpoint_completion_target=0.9"
+      - "-c"
+      - "wal_buffers=16MB"
+      - "-c"
+      - "log_min_duration_statement=1000"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U medusa"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    restart: unless-stopped
+    restart: always
+    # AOF persistence for crash recovery + memory cap
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
 
   minio:
     image: minio/minio:latest
-    restart: unless-stopped
+    restart: always
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -43,7 +71,7 @@ services:
       - "9001:9001"   # MinIO Console UI
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
 
@@ -66,7 +94,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    restart: unless-stopped
+    restart: always
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,6 +107,8 @@ services:
       - JWT_SECRET=${JWT_SECRET:-supersecret-change-in-production}
       - COOKIE_SECRET=${COOKIE_SECRET:-supersecret-change-in-production}
       - NODE_ENV=production
+      # Node.js memory tuning
+      - NODE_OPTIONS=--max-old-space-size=1024
       # CORS
       - STORE_CORS=${STORE_CORS:-http://localhost:3000}
       - ADMIN_CORS=${ADMIN_CORS:-http://localhost:3000,http://localhost:9000}
@@ -117,10 +147,10 @@ services:
       - "9000:9000"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9000/health || exit 1"]
-      interval: 10s
+      interval: 15s
       timeout: 5s
       retries: 15
-      start_period: 15s
+      start_period: 30s
 
   frontend:
     build:
@@ -134,7 +164,7 @@ services:
         - NEXT_PUBLIC_POSTHOG_KEY=${POSTHOG_API_KEY:-}
         - NEXT_PUBLIC_POSTHOG_HOST=${POSTHOG_HOST:-https://eu.i.posthog.com}
         - NEXT_PUBLIC_GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID:-}
-    restart: unless-stopped
+    restart: always
     depends_on:
       backend:
         condition: service_healthy
@@ -142,6 +172,7 @@ services:
       - "traefik.docker.network=coolify"
     environment:
       - HOSTNAME=0.0.0.0
+      - NODE_ENV=production
       - MEDUSA_INTERNAL_URL=http://backend:9000
       - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${MEDUSA_PUBLISHABLE_KEY:-}
       - NEXT_PUBLIC_ALGOLIA_APP_ID=${ALGOLIA_APP_ID:-}
@@ -154,12 +185,14 @@ services:
       - "3000:3000"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 || exit 1"]
-      interval: 10s
+      interval: 15s
       timeout: 5s
       retries: 5
-      start_period: 15s
+      start_period: 20s
 
 volumes:
   postgres_data:
+    # Named volume — survives container rebuilds, redeploys, and restarts
+    # Data is ONLY lost if you explicitly run: docker volume rm <volume_name>
   redis_data:
   minio_data:
