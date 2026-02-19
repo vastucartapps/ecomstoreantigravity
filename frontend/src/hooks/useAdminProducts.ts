@@ -196,8 +196,10 @@ function buildBasePayload(data: Partial<ProductDetail>): any {
     payload.images = data.images.map((img) => ({ url: img.url }))
   }
 
+  // Tags are resolved to IDs inside createProduct/updateProduct (async required)
+  // Store raw tag values temporarily for the caller to resolve
   if (data.tags && data.tags.length > 0) {
-    payload.tags = data.tags.filter(Boolean).map((t) => ({ value: t }))
+    payload._rawTags = data.tags.filter(Boolean)
   }
 
   if (data.categoryId) {
@@ -386,10 +388,56 @@ export function useAdminProducts() {
     }
   }, [adminFetch])
 
+  /**
+   * Resolve raw tag values to Medusa tag IDs.
+   * Creates any tags that don't exist yet via /admin/product-tags.
+   */
+  const resolveTags = useCallback(
+    async (rawTags: string[]): Promise<Array<{ id: string }>> => {
+      if (rawTags.length === 0) return []
+      try {
+        // Fetch existing tags
+        const res = await adminFetch("/admin/product-tags?limit=200&fields=id,value")
+        const existing: Array<{ id: string; value: string }> = res.product_tags || []
+        const byValue = new Map(existing.map((t) => [t.value.toLowerCase(), t.id]))
+
+        const tagIds: Array<{ id: string }> = []
+        for (const val of rawTags) {
+          const lower = val.trim().toLowerCase()
+          if (!lower) continue
+          const existingId = byValue.get(lower)
+          if (existingId) {
+            tagIds.push({ id: existingId })
+          } else {
+            // Create the tag
+            const createRes = await adminFetch("/admin/product-tags", {
+              method: "POST",
+              body: { value: val.trim() },
+            })
+            if (createRes.product_tag?.id) {
+              tagIds.push({ id: createRes.product_tag.id })
+              byValue.set(lower, createRes.product_tag.id)
+            }
+          }
+        }
+        return tagIds
+      } catch (err) {
+        console.error("resolveTags error:", err)
+        return []
+      }
+    },
+    [adminFetch]
+  )
+
   const createProduct = useCallback(
     async (data: Partial<ProductDetail>): Promise<Product | null> => {
       try {
         const payload = buildCreatePayload(data)
+        // Resolve tags from raw values to Medusa IDs
+        if (payload._rawTags) {
+          payload.tags = await resolveTags(payload._rawTags)
+          delete payload._rawTags
+        }
         const res = await adminFetch("/admin/products", {
           method: "POST",
           body: payload,
@@ -401,13 +449,18 @@ export function useAdminProducts() {
         return null
       }
     },
-    [adminFetch]
+    [adminFetch, resolveTags]
   )
 
   const updateProduct = useCallback(
     async (id: string, data: Partial<ProductDetail>): Promise<Product | null> => {
       try {
         const payload = buildUpdatePayload(data)
+        // Resolve tags from raw values to Medusa IDs
+        if (payload._rawTags) {
+          payload.tags = await resolveTags(payload._rawTags)
+          delete payload._rawTags
+        }
         const res = await adminFetch(`/admin/products/${id}`, {
           method: "POST",
           body: payload,
@@ -419,7 +472,7 @@ export function useAdminProducts() {
         return null
       }
     },
-    [adminFetch]
+    [adminFetch, resolveTags]
   )
 
   const deleteProduct = useCallback(
