@@ -162,6 +162,7 @@ export interface ProductDetailProps {
   ratingBreakdown: RatingBreakdown
   relatedProducts: RelatedProduct[]
   breadcrumbs: { label: string; href: string | null }[]
+  isWishlisted?: boolean
   onAddToCart?: (variantId: string, quantity: number) => void
   onToggleWishlist?: (productId: string) => void
   onShare?: (channel: "whatsapp" | "facebook" | "pinterest" | "copy") => void

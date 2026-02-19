@@ -14,6 +14,7 @@ import {
   PaymentStep,
 } from "@/components/storefront/checkout"
 import { primary, earth, bg, fonts } from "@/lib/theme"
+import { normalizeImageUrl } from "@/lib/image-url"
 import type { CheckoutStepId } from "@/types/checkout"
 
 const STEP_META: { id: CheckoutStepId; label: string }[] = [
@@ -157,7 +158,7 @@ function CheckoutContent() {
                   {items.map((item: any) => (
                     <div key={item.id} className="flex items-center gap-2.5">
                       {item.thumbnail ? (
-                        <img src={item.thumbnail} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                        <img src={normalizeImageUrl(item.thumbnail)} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                       ) : (
                         <div className="w-10 h-10 rounded-lg flex-shrink-0" style={{ background: "#f0ebe4" }} />
                       )}

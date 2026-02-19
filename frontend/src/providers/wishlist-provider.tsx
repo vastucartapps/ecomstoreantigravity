@@ -59,6 +59,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   }, [refreshWishlist])
 
   const addToWishlist = async (productId: string, variantId: string) => {
+    if (!user) throw new Error("LOGIN_REQUIRED")
     await medusa.client.fetch("/store/customers/me/wishlist/items", {
       method: "POST",
       body: { productId, productVariantId: variantId, quantity: 1 },
@@ -67,6 +68,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   }
 
   const removeFromWishlist = async (productId: string, variantId: string) => {
+    if (!user) throw new Error("LOGIN_REQUIRED")
     await medusa.client.fetch(
       `/store/customers/me/wishlist/items?productId=${productId}&productVariantId=${variantId}`,
       { method: "DELETE" }

@@ -6,6 +6,7 @@ import { CheckCircle2, Package, MapPin, Download, ShoppingBag, Loader2, ChevronR
 import Link from "next/link"
 import { medusa } from "@/lib/medusa"
 import { primary, earth, bg, fonts } from "@/lib/theme"
+import { normalizeImageUrl } from "@/lib/image-url"
 import type { InvoiceData, InvoiceItem } from "@/lib/invoice-generator"
 import { DEFAULT_HSN } from "@/lib/gst-utils"
 
@@ -163,7 +164,7 @@ export default function OrderConfirmationPage() {
               {orderItems.map((item: any) => (
                 <div key={item.id} className="flex items-center gap-3 px-5 py-3.5">
                   {item.thumbnail ? (
-                    <img src={item.thumbnail} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0" style={{ border: "1px solid #f0ebe4" }} />
+                    <img src={normalizeImageUrl(item.thumbnail)} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0" style={{ border: "1px solid #f0ebe4" }} />
                   ) : (
                     <div className="w-14 h-14 rounded-xl flex-shrink-0" style={{ background: "#f0ebe4" }} />
                   )}

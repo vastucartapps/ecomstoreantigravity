@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { useCart } from "@/providers/cart-provider"
 import { useCheckout } from "@/providers/checkout-provider"
 import { primary, earth, bg, fonts } from "@/lib/theme"
+import { normalizeImageUrl } from "@/lib/image-url"
 
 export function PaymentStep() {
   const router = useRouter()
@@ -73,7 +74,7 @@ export function PaymentStep() {
             <div key={item.id} className="flex items-center gap-3 px-4 py-3">
               {item.thumbnail && (
                 <img
-                  src={item.thumbnail}
+                  src={normalizeImageUrl(item.thumbnail)}
                   alt={item.product_title || ""}
                   className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                   style={{ border: "1px solid #f0ebe4" }}

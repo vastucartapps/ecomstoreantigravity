@@ -9,6 +9,7 @@ import { OrderSummary } from "@/components/storefront/cart/OrderSummary"
 import { CouponInput } from "@/components/storefront/cart/CouponInput"
 import { EmptyCart } from "@/components/storefront/cart/EmptyCart"
 import { primary, earth, bg, fonts } from "@/lib/theme"
+import { normalizeImageUrl } from "@/lib/image-url"
 
 export default function CartPage() {
   const router = useRouter()
@@ -106,7 +107,7 @@ export default function CartPage() {
                     productName={item.product_title || item.title || ""}
                     productSlug={item.variant?.product?.handle || item.product?.handle || ""}
                     variantLabel={item.variant_title || item.description || ""}
-                    imageUrl={item.thumbnail || ""}
+                    imageUrl={normalizeImageUrl(item.thumbnail)}
                     price={(item.unit_price || 0) / 100}
                     mrp={(item.compare_at_unit_price || item.unit_price || 0) / 100}
                     currency={currency}

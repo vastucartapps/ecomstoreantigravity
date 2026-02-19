@@ -7,6 +7,7 @@ import { useCart } from "@/providers/cart-provider"
 import { CartLineItem } from "./CartLineItem"
 import { EmptyCart } from "./EmptyCart"
 import { primary, secondary, earth, bg, fonts, gradients } from "@/lib/theme"
+import { normalizeImageUrl } from "@/lib/image-url"
 
 interface CartDrawerProps {
   isOpen: boolean
@@ -108,7 +109,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                   productName={item.product_title || item.title || ""}
                   productSlug={item.product?.handle || item.variant?.product?.handle || ""}
                   variantLabel={item.variant_title || item.description || ""}
-                  imageUrl={item.thumbnail || ""}
+                  imageUrl={normalizeImageUrl(item.thumbnail)}
                   price={(item.unit_price || 0) / 100}
                   mrp={(item.compare_at_unit_price || item.unit_price || 0) / 100}
                   currency={currencyDisplay}

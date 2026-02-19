@@ -5,6 +5,7 @@ import Link from "next/link"
 import { ArrowLeft, Package, MapPin, Download, Loader2, CheckCircle2, Circle, Truck, Clock } from "lucide-react"
 import { useDashboardData } from "@/hooks/useDashboardData"
 import { primary, earth, bg, fonts } from "@/lib/theme"
+import { normalizeImageUrl } from "@/lib/image-url"
 import type { Order } from "@/types/dashboard"
 import type { InvoiceData, InvoiceItem } from "@/lib/invoice-generator"
 import { DEFAULT_HSN } from "@/lib/gst-utils"
@@ -232,7 +233,7 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
               style={{ borderBottom: idx < order.items.length - 1 ? "1px solid #f0ebe4" : "none" }}
             >
               {item.thumbnail ? (
-                <img src={item.thumbnail} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0" style={{ border: "1px solid #f0ebe4" }} />
+                <img src={normalizeImageUrl(item.thumbnail)} alt="" className="w-14 h-14 rounded-xl object-cover flex-shrink-0" style={{ border: "1px solid #f0ebe4" }} />
               ) : (
                 <div className="w-14 h-14 rounded-xl flex-shrink-0" style={{ background: "#f0ebe4" }} />
               )}

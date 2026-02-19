@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { ProductDetail } from "@/components/storefront/product-experience"
 import { useWishlist } from "@/providers/wishlist-provider"
 import { useCart } from "@/providers/cart-provider"
+import { useAuth } from "@/providers/auth-provider"
 import type {
   Product,
   ProductImage,
@@ -280,6 +281,7 @@ export default function ProductPage() {
 
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
   const { addItem } = useCart()
+  const { user } = useAuth()
 
   const [isLoading, setIsLoading] = useState(true)
   const [product, setProduct] = useState<Product | null>(null)
@@ -402,13 +404,21 @@ export default function ProductPage() {
   }
 
   const handleToggleWishlist = async (productId: string) => {
+    if (!user) {
+      router.push("/login")
+      return
+    }
     try {
       if (isInWishlist(productId)) {
         await removeFromWishlist(productId, "")
       } else {
         await addToWishlist(productId, "")
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err?.message === "LOGIN_REQUIRED") {
+        router.push("/login")
+        return
+      }
       console.error("Wishlist toggle failed:", err)
     }
   }
@@ -498,6 +508,7 @@ export default function ProductPage() {
       ratingBreakdown={ratingBreakdown}
       relatedProducts={relatedProducts}
       breadcrumbs={breadcrumbs}
+      isWishlisted={!!rawProductId && isInWishlist(rawProductId)}
       onAddToCart={handleAddToCart}
       onToggleWishlist={handleToggleWishlist}
       onShare={handleShare}

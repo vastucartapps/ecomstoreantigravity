@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   ChevronRight, Star, Heart, ShoppingCart, Minus, Plus,
   Truck, RotateCcw, ChevronLeft, Zap, ShieldCheck, Link2,
@@ -27,6 +27,7 @@ export function ProductDetail({
   ratingBreakdown,
   relatedProducts,
   breadcrumbs,
+  isWishlisted = false,
   onAddToCart,
   onToggleWishlist,
   onShare,
@@ -38,7 +39,7 @@ export function ProductDetail({
   onScrollToReviews,
 }: ProductDetailProps) {
   const [quantity, setQuantity] = useState(1)
-  const [wishlisted, setWishlisted] = useState(false)
+  const [wishlisted, setWishlisted] = useState(isWishlisted)
   const [activeTab, setActiveTab] = useState<"description" | "specs">("description")
   const [selectedVariant, setSelectedVariant] = useState(variants[0])
   const [selectedValues, setSelectedValues] = useState<Record<string, string>>(() => {
@@ -51,6 +52,8 @@ export function ProductDetail({
   })
   const reviewsRef = useRef<HTMLDivElement>(null)
   const relatedRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { setWishlisted(isWishlisted) }, [isWishlisted])
 
   const discountPercent = selectedVariant
     ? Math.round(((selectedVariant.mrp - selectedVariant.price) / selectedVariant.mrp) * 100)
