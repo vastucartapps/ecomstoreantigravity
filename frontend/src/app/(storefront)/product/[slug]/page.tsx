@@ -63,6 +63,8 @@ function mapImages(p: any): ProductImage[] {
 }
 
 function mapVariants(p: any): ProductVariant[] {
+  const optionTitle = p.options?.[0]?.title || "Variant"
+
   return (p.variants || []).map((v: any, idx: number) => {
     const cp = v.calculated_price
     const price = (cp?.calculated_amount ?? 0) / 100
@@ -70,12 +72,15 @@ function mapVariants(p: any): ProductVariant[] {
     const inStock =
       v.manage_inventory === false || (v.inventory_quantity ?? 1) > 0
 
-    // Build attributes from variant options
+    // Build attributes from variant options (key-value map)
     const attributes: Record<string, string> = {}
-    if (v.options) {
+    if (v.options && typeof v.options === "object" && Object.keys(v.options).length > 0) {
       for (const [key, val] of Object.entries(v.options)) {
         attributes[key] = String(val)
       }
+    } else if (v.title) {
+      // Fallback: use variant title as the option value
+      attributes[optionTitle] = v.title
     }
 
     return {
@@ -92,32 +97,51 @@ function mapVariants(p: any): ProductVariant[] {
 }
 
 function buildVariantAttributes(p: any): VariantAttribute[] {
-  if (!p.options || p.options.length === 0) return []
+  if ((p.variants?.length || 0) <= 1) return []
 
-  // If only one option titled "Default" or only one variant, skip showing selector
-  if (
-    (p.options.length === 1 && p.options[0].title?.toLowerCase() === "default") ||
-    (p.variants?.length || 0) <= 1
-  ) {
-    return []
+  // If options exist and variant options are populated, use structured approach
+  if (p.options?.length) {
+    // Check if variant options are populated as key-value maps
+    const hasStructuredOptions = p.variants?.some(
+      (v: any) => v.options && typeof v.options === "object" && Object.keys(v.options).length > 0
+    )
+
+    if (hasStructuredOptions) {
+      // Skip if only "Default" option
+      if (p.options.length === 1 && p.options[0].title?.toLowerCase() === "default") return []
+
+      return p.options.map((opt: any) => {
+        const uniqueValues = new Set<string>()
+        for (const v of p.variants || []) {
+          const val = v.options?.[opt.title]
+          if (val) uniqueValues.add(String(val))
+        }
+        return {
+          name: opt.title,
+          label: opt.title,
+          type: "dropdown" as const,
+          values: Array.from(uniqueValues),
+        }
+      })
+    }
   }
 
-  // Extract unique values for each option from variants
-  return p.options.map((opt: any) => {
-    const uniqueValues = new Set<string>()
-    for (const v of p.variants || []) {
-      const val = v.options?.[opt.title]
-      if (val) uniqueValues.add(String(val))
-    }
-    const values = Array.from(uniqueValues)
+  // Fallback: use variant titles as dropdown values
+  const optionTitle = p.options?.[0]?.title || "Variant"
+  if (optionTitle.toLowerCase() === "default") return []
 
-    return {
-      name: opt.title,
-      label: opt.title,
-      type: "dropdown" as const,
-      values,
-    }
-  })
+  const values = (p.variants || [])
+    .map((v: any) => v.title)
+    .filter(Boolean) as string[]
+
+  if (values.length === 0) return []
+
+  return [{
+    name: optionTitle,
+    label: optionTitle,
+    type: "dropdown" as const,
+    values,
+  }]
 }
 
 function mapProduct(p: any, reviewCount: number, rating: number): Product {
