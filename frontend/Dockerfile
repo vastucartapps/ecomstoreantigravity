@@ -1,9 +1,11 @@
+# syntax=docker/dockerfile:1
 FROM node:20-alpine AS base
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies (cached unless package.json/lock changes)
 COPY package.json package-lock.json* ./
-RUN npm install
+RUN --mount=type=cache,target=/root/.npm \
+    npm install
 
 # Copy source
 COPY . .
@@ -31,7 +33,9 @@ ENV NEXT_PUBLIC_GA4_MEASUREMENT_ID=$NEXT_PUBLIC_GA4_MEASUREMENT_ID
 ARG MEDUSA_INTERNAL_URL=http://backend:9000
 ENV MEDUSA_INTERNAL_URL=$MEDUSA_INTERNAL_URL
 
-RUN npm run build
+# Cache Next.js build output between builds
+RUN --mount=type=cache,target=/app/.next/cache \
+    npm run build
 
 # Production
 FROM node:20-alpine AS production

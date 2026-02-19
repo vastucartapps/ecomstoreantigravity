@@ -1,10 +1,12 @@
+# syntax=docker/dockerfile:1
 FROM node:20-alpine AS base
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies (cached unless package.json/lock changes)
 COPY package.json package-lock.json* ./
 COPY .npmrc* ./
-RUN npm install --legacy-peer-deps
+RUN --mount=type=cache,target=/root/.npm \
+    npm install --legacy-peer-deps
 
 # Copy source
 COPY . .
