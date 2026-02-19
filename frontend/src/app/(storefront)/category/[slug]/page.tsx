@@ -253,7 +253,7 @@ function CategoryContent() {
           description:
             category.description || `Browse our ${category.name} collection`,
           imageUrl:
-            category.metadata?.image_url ||
+            normalizeImageUrl(category.metadata?.image_url || "") ||
             FALLBACK_HERO,
           slug: category.handle,
           productCount: 0,

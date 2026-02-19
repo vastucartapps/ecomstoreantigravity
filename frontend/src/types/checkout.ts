@@ -20,7 +20,7 @@ export interface Coupon {
   id: string
   code: string
   description: string
-  discountType: "percentage" | "flat"
+  discountType: "percentage" | "fixed"
   discountValue: number
   maxDiscount: number | null
   minOrderValue: number

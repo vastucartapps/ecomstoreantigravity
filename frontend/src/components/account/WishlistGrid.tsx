@@ -5,6 +5,8 @@ import Link from "next/link"
 import { Heart, ShoppingCart, Package, Loader2 } from "lucide-react"
 import { useWishlist } from "@/providers/wishlist-provider"
 import { medusa } from "@/lib/medusa"
+import { normalizeImageUrl } from "@/lib/image-url"
+import { getRegionId } from "@/lib/region"
 import { primary, earth, bg, fonts } from "@/lib/theme"
 
 interface WishlistProduct {
@@ -35,10 +37,11 @@ export function WishlistGrid() {
 
   const enrichWishlistItems = async () => {
     try {
+      const regionId = await getRegionId()
       const enriched = await Promise.allSettled(
         items.map(async (item: any) => {
           try {
-            const result = await medusa.store.product.retrieve(item.product_id || item.productId)
+            const result = await medusa.store.product.retrieve(item.product_id || item.productId, { region_id: regionId })
             const product = (result as any).product || result
             const variant = product.variants?.[0]
             return {
@@ -46,7 +49,7 @@ export function WishlistGrid() {
               productId: product.id,
               variantId: item.variant_id || variant?.id,
               title: product.title,
-              thumbnail: product.thumbnail,
+              thumbnail: normalizeImageUrl(product.thumbnail || ""),
               price: variant?.calculated_price?.calculated_amount || 0,
               handle: product.handle,
               inStock: (variant?.inventory_quantity || 0) > 0 || variant?.allow_backorder,

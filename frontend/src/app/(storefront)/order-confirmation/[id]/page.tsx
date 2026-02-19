@@ -7,6 +7,7 @@ import Link from "next/link"
 import { medusa } from "@/lib/medusa"
 import { primary, earth, bg, fonts } from "@/lib/theme"
 import { normalizeImageUrl } from "@/lib/image-url"
+import { getRegionId } from "@/lib/region"
 import type { InvoiceData, InvoiceItem } from "@/lib/invoice-generator"
 import { DEFAULT_HSN } from "@/lib/gst-utils"
 
@@ -61,7 +62,13 @@ export default function OrderConfirmationPage() {
       const firstItem = orderData?.items?.[0]
       const categoryId = firstItem?.variant?.product?.categories?.[0]?.id
       if (!categoryId) return
-      const result = await medusa.store.product.list({ category_id: [categoryId], limit: 4 })
+      const regionId = await getRegionId()
+      const result = await medusa.store.product.list({
+        category_id: [categoryId],
+        limit: 4,
+        region_id: regionId,
+        fields: "id,title,handle,thumbnail,images.url,variants.id,variants.calculated_price",
+      })
       setRelatedProducts((result as any).products?.slice(0, 4) || [])
     } catch {}
   }
@@ -249,7 +256,7 @@ export default function OrderConfirmationPage() {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {relatedProducts.map((product: any) => {
-                const thumbnail = product.thumbnail || product.images?.[0]?.url
+                const thumbnail = normalizeImageUrl(product.thumbnail || product.images?.[0]?.url || "")
                 const price = product.variants?.[0]?.calculated_price?.calculated_amount || 0
                 return (
                   <Link

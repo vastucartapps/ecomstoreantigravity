@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react"
 import { medusa } from "@/lib/medusa"
+import { getRegionId } from "@/lib/region"
 
 const CART_ID_KEY = "vastucart_cart_id"
 
@@ -65,7 +66,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       typeof window !== "undefined" ? localStorage.getItem(CART_ID_KEY) : null
     if (existingId && cart) return existingId
 
-    const { cart: newCart } = await medusa.store.cart.create({})
+    const regionId = await getRegionId()
+    const { cart: newCart } = await medusa.store.cart.create({ region_id: regionId })
     if (typeof window !== "undefined")
       localStorage.setItem(CART_ID_KEY, newCart.id)
     setCart(newCart)
@@ -93,11 +95,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const removeItem = async (lineItemId: string) => {
     if (!cart) return
-    const { parent } = await medusa.store.cart.deleteLineItem(
+    // Medusa v2 deleteLineItem returns { parent: Cart } (not { cart: Cart })
+    const result = await medusa.store.cart.deleteLineItem(
       cart.id,
       lineItemId
     )
-    setCart(parent)
+    const updated = (result as any).parent ?? (result as any).cart ?? result
+    setCart(updated)
   }
 
   const clearCart = () => {

@@ -1,5 +1,6 @@
 import { useCallback } from "react"
 import { medusa } from "@/lib/medusa"
+import { normalizeImageUrl } from "@/lib/image-url"
 import type { Order, Address, LoyaltyBalance, Booking, CustomerNotification, Coupon } from "@/types/dashboard"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -26,7 +27,7 @@ function mapMedusaOrder(o: any): Order {
     id: item.id,
     productTitle: item.product_title || item.title || "Product",
     variantTitle: item.variant_title,
-    thumbnail: item.thumbnail,
+    thumbnail: normalizeImageUrl(item.thumbnail || ""),
     quantity: item.quantity,
     unitPrice: (item.unit_price || 0) / 100,
     total: ((item.unit_price || 0) / 100) * item.quantity,
@@ -234,7 +235,7 @@ export function useDashboardData() {
           description: p.description || "Discount offer",
           discountType: p.application_method?.type === "percentage" ? "percentage" : "fixed",
           discountValue: p.application_method?.value || 0,
-          minOrderValue: p.rules?.find((r: any) => r.attribute === "subtotal")?.value / 100,
+          minOrderValue: (p.rules?.find((r: any) => r.attribute === "subtotal")?.value ?? 0) / 100,
           expiresAt: p.ends_at,
           isActive: true,
         }))

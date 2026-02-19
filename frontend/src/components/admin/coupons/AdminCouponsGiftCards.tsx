@@ -625,8 +625,8 @@ function CouponForm({
               <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
                 <input
                   type="radio"
-                  checked={discountType === "flat"}
-                  onChange={() => setDiscountType("flat")}
+                  checked={discountType === "fixed"}
+                  onChange={() => setDiscountType("fixed")}
                   style={{ accentColor: c.primary500 }}
                 />
                 <span style={{ fontSize: "14px", color: c.earth700 }}>Flat Amount</span>

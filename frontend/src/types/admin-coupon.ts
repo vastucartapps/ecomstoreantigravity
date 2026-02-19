@@ -1,5 +1,5 @@
 export type CouponStatus = "active" | "expired" | "disabled"
-export type DiscountType = "percentage" | "flat"
+export type DiscountType = "percentage" | "fixed"
 export type GiftCardStatus = "active" | "inactive" | "expired" | "depleted"
 export type CouponsGiftCardsTab = "coupons" | "gift-cards"
 

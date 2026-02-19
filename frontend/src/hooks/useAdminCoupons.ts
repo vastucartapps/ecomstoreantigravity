@@ -53,9 +53,9 @@ function mapPromotionToRow(p: any): CouponRow {
     : null
 
   // Discount type and value
-  const discountType: DiscountType = app.type === "fixed" ? "flat" : "percentage"
+  const discountType: DiscountType = app.type === "fixed" ? "fixed" : "percentage"
   const discountValue =
-    discountType === "flat"
+    discountType === "fixed"
       ? Math.round(app.value || 0) / 100
       : app.value || 0
 
@@ -138,15 +138,15 @@ function mapGiftCardToDetail(gc: any): GiftCardDetail {
 
 function buildPromotionPayload(data: Partial<CouponDetail>) {
   const currency = data.currency?.toLowerCase() || "inr"
-  const isFlatDiscount = data.discountType === "flat"
-  const discountValue = isFlatDiscount
+  const isFixedDiscount = data.discountType === "fixed"
+  const discountValue = isFixedDiscount
     ? Math.round((data.discountValue || 0) * 100)
     : data.discountValue || 0
 
   const targetType = data.targetType || "all"
 
   const appMethod: Record<string, unknown> = {
-    type: isFlatDiscount ? "fixed" : "percentage",
+    type: isFixedDiscount ? "fixed" : "percentage",
     value: discountValue,
     currency_code: currency,
     target_type: targetType === "all" ? "order" : "items",

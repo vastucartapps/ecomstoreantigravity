@@ -330,7 +330,11 @@ export default function HomePage() {
       ])
 
       if (heroRes.status === "fulfilled") {
-        setHeroSlides(heroRes.value.hero_slides || [])
+        const slides = (heroRes.value.hero_slides || []).map((s: any) => ({
+          ...s,
+          image_url: normalizeImageUrl(s.image_url || ""),
+        }))
+        setHeroSlides(slides)
       }
 
       // Build product-per-category counts

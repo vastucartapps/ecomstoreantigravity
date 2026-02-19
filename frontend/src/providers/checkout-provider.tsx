@@ -139,6 +139,8 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         throw new Error(`Failed to load shipping options (${res.status})`)
       }
       const data = await res.json()
+      // Medusa v2 returns shipping amounts in minor units (paise). Keep as-is;
+      // display components divide by 100 at render time (ShippingStep.formatPrice).
       const options: ShippingOption[] = (data.shipping_options || []).map((o: any) => ({
         id: o.id,
         name: o.name,
