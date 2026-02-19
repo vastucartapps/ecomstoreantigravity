@@ -10,6 +10,6 @@ export function normalizeImageUrl(url: string | undefined | null): string {
   if (!url) return ""
   // Only rewrite URLs that contain the MinIO bucket path
   const match = url.match(/\/medusa-uploads\/(.+)$/)
-  if (match) return `/img-proxy/${match[1]}`
+  if (match) return `/api/img-proxy/${match[1]}`
   return url
 }
