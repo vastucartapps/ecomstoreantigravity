@@ -14,8 +14,8 @@ COPY . .
 # Build Medusa
 RUN npm run build
 
-# Strip devDependencies for a leaner production image (~400MB smaller)
-RUN npm prune --production --legacy-peer-deps 2>/dev/null || true
+# Note: Cannot use npm prune --production here because Medusa v2 loads
+# medusa-config.ts at runtime, requiring TypeScript in node_modules
 
 # Production
 FROM node:20-alpine AS production
