@@ -63,24 +63,31 @@ function mapImages(p: any): ProductImage[] {
 }
 
 function mapVariants(p: any): ProductVariant[] {
-  const optionTitle = p.options?.[0]?.title || "Variant"
+  // Build a lookup: option_id → option title (e.g. "opt_abc" → "Size")
+  const optionIdToTitle: Record<string, string> = {}
+  for (const opt of p.options || []) {
+    optionIdToTitle[opt.id] = opt.title
+  }
 
-  return (p.variants || []).map((v: any, idx: number) => {
+  return (p.variants || []).map((v: any) => {
     const cp = v.calculated_price
     const price = (cp?.calculated_amount ?? 0) / 100
     const mrp = (cp?.original_amount ?? cp?.calculated_amount ?? 0) / 100
     const inStock =
       v.manage_inventory === false || (v.inventory_quantity ?? 1) > 0
 
-    // Build attributes from variant options (key-value map)
+    // Medusa v2: variant.options is an ARRAY of { id, value, option_id }
     const attributes: Record<string, string> = {}
-    if (v.options && typeof v.options === "object" && Object.keys(v.options).length > 0) {
-      for (const [key, val] of Object.entries(v.options)) {
-        attributes[key] = String(val)
+    if (Array.isArray(v.options)) {
+      for (const optVal of v.options) {
+        const title = optionIdToTitle[optVal.option_id] || "Variant"
+        attributes[title] = optVal.value
       }
-    } else if (v.title) {
-      // Fallback: use variant title as the option value
-      attributes[optionTitle] = v.title
+    }
+    // Fallback: if options array was empty/missing, use variant title
+    if (Object.keys(attributes).length === 0 && v.title) {
+      const fallbackTitle = p.options?.[0]?.title || "Variant"
+      attributes[fallbackTitle] = v.title
     }
 
     return {
@@ -98,50 +105,38 @@ function mapVariants(p: any): ProductVariant[] {
 
 function buildVariantAttributes(p: any): VariantAttribute[] {
   if ((p.variants?.length || 0) <= 1) return []
+  if (!p.options?.length) return []
 
-  // If options exist and variant options are populated, use structured approach
-  if (p.options?.length) {
-    // Check if variant options are populated as key-value maps
-    const hasStructuredOptions = p.variants?.some(
-      (v: any) => v.options && typeof v.options === "object" && Object.keys(v.options).length > 0
-    )
+  // Skip if only "Default" option
+  if (p.options.length === 1 && p.options[0].title?.toLowerCase() === "default") return []
 
-    if (hasStructuredOptions) {
-      // Skip if only "Default" option
-      if (p.options.length === 1 && p.options[0].title?.toLowerCase() === "default") return []
+  // Medusa v2: variant.options is ARRAY of { id, value, option_id }
+  // Build attributes from product options, collecting unique values per option
+  return p.options.map((opt: any) => {
+    const uniqueValues = new Set<string>()
 
-      return p.options.map((opt: any) => {
-        const uniqueValues = new Set<string>()
-        for (const v of p.variants || []) {
-          const val = v.options?.[opt.title]
-          if (val) uniqueValues.add(String(val))
-        }
-        return {
-          name: opt.title,
-          label: opt.title,
-          type: "dropdown" as const,
-          values: Array.from(uniqueValues),
-        }
-      })
+    for (const v of p.variants || []) {
+      if (Array.isArray(v.options)) {
+        // Proper path: match option_id to find the value for this option
+        const match = v.options.find((ov: any) => ov.option_id === opt.id)
+        if (match?.value) uniqueValues.add(match.value)
+      }
     }
-  }
 
-  // Fallback: use variant titles as dropdown values
-  const optionTitle = p.options?.[0]?.title || "Variant"
-  if (optionTitle.toLowerCase() === "default") return []
+    // Fallback: if no structured options found, use variant titles
+    if (uniqueValues.size === 0) {
+      for (const v of p.variants || []) {
+        if (v.title) uniqueValues.add(v.title)
+      }
+    }
 
-  const values = (p.variants || [])
-    .map((v: any) => v.title)
-    .filter(Boolean) as string[]
-
-  if (values.length === 0) return []
-
-  return [{
-    name: optionTitle,
-    label: optionTitle,
-    type: "dropdown" as const,
-    values,
-  }]
+    return {
+      name: opt.title,
+      label: opt.title,
+      type: "dropdown" as const,
+      values: Array.from(uniqueValues),
+    }
+  }).filter((attr: VariantAttribute) => attr.values.length > 0)
 }
 
 function mapProduct(p: any, reviewCount: number, rating: number): Product {
@@ -320,7 +315,7 @@ export default function ProductPage() {
 
       const regionParam = regionId ? `&region_id=${regionId}` : ""
       const productFields =
-        "id,title,handle,subtitle,description,thumbnail,created_at,metadata,status,options.id,options.title,options.values,variants.id,variants.title,variants.sku,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity,variants.options,images.id,images.url,categories.id,categories.name,categories.handle"
+        "id,title,handle,subtitle,description,thumbnail,created_at,metadata,status,options.id,options.title,options.values.id,options.values.value,variants.id,variants.title,variants.sku,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity,variants.options.id,variants.options.value,variants.options.option_id,images.id,images.url,categories.id,categories.name,categories.handle"
 
       // 2. Fetch product by handle
       const prodRes = await fetch(
