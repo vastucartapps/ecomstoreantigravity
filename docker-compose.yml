@@ -130,6 +130,8 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    labels:
+      - "traefik.docker.network=coolify"
     environment:
       - NEXT_PUBLIC_MEDUSA_BACKEND_URL=${MEDUSA_BACKEND_URL:-http://backend:9000}
       - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${MEDUSA_PUBLISHABLE_KEY:-}
