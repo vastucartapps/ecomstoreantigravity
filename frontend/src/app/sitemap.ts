@@ -55,6 +55,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Check if sitemap is enabled in admin config
   try {
     const cfgRes = await fetch(`${BACKEND_URL}/store/integrations-config`, {
+      headers: { "x-publishable-api-key": PUB_KEY },
       next: { revalidate: 3600 },
     })
     if (cfgRes.ok) {

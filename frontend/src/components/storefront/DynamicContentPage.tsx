@@ -6,6 +6,8 @@ import { primary, earth, fonts, bg, shadows } from "@/lib/theme"
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
+const PUB_KEY =
+  process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
 interface DynamicContentPageProps {
   slug: string
@@ -26,7 +28,9 @@ export function DynamicContentPage({
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/store/storefront-config`)
+        const res = await fetch(`${BACKEND_URL}/store/storefront-config`, {
+          headers: { "x-publishable-api-key": PUB_KEY },
+        })
         if (res.ok) {
           const data = await res.json()
           const pages = data.config?.contentPages

@@ -6,6 +6,10 @@ const BACKEND_URL =
   typeof window !== "undefined"
     ? (process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "")
     : ""
+const PUB_KEY =
+  typeof window !== "undefined"
+    ? (process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "")
+    : ""
 
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4)
@@ -50,7 +54,9 @@ export function usePushNotifications(customerId?: string) {
 
     try {
       // Get VAPID public key from backend
-      const keyRes = await fetch(`${BACKEND_URL}/store/push/vapid-public-key`)
+      const keyRes = await fetch(`${BACKEND_URL}/store/push/vapid-public-key`, {
+        headers: { "x-publishable-api-key": PUB_KEY },
+      })
       if (!keyRes.ok) throw new Error("Push notifications not configured on server")
       const { vapidPublicKey } = await keyRes.json()
       if (!vapidPublicKey) throw new Error("VAPID public key not available")
@@ -74,7 +80,7 @@ export function usePushNotifications(customerId?: string) {
       // Save subscription to backend
       await fetch(`${BACKEND_URL}/store/push/subscribe`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-publishable-api-key": PUB_KEY },
         body: JSON.stringify({
           endpoint: subJson.endpoint,
           keys: subJson.keys,
@@ -100,7 +106,7 @@ export function usePushNotifications(customerId?: string) {
       if (sub) {
         await fetch(`${BACKEND_URL}/store/push/unsubscribe`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-publishable-api-key": PUB_KEY },
           body: JSON.stringify({ endpoint: sub.endpoint }),
         })
         await sub.unsubscribe()

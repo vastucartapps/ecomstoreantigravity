@@ -10,6 +10,8 @@ import {
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
+const PUB_KEY =
+  process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
 interface AnnouncementContextValue {
   text: string | null
@@ -44,7 +46,9 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
     const fetchAnnouncement = async () => {
       try {
         // Try new storefront-config first
-        const res = await fetch(`${BACKEND_URL}/store/storefront-config`)
+        const res = await fetch(`${BACKEND_URL}/store/storefront-config`, {
+          headers: { "x-publishable-api-key": PUB_KEY },
+        })
         if (res.ok) {
           const data = await res.json()
           const ann = data.config?.announcement
@@ -76,7 +80,9 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
 
       // Legacy fallback: read from /store endpoint
       try {
-        const res = await fetch(`${BACKEND_URL}/store`)
+        const res = await fetch(`${BACKEND_URL}/store`, {
+          headers: { "x-publishable-api-key": PUB_KEY },
+        })
         if (res.ok) {
           const data = await res.json()
           const meta = data.store?.metadata

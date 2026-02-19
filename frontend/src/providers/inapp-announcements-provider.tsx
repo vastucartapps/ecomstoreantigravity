@@ -14,6 +14,10 @@ const BACKEND_URL =
   typeof window !== "undefined"
     ? process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
     : ""
+const PUB_KEY =
+  typeof window !== "undefined"
+    ? process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+    : ""
 
 const DISMISSED_KEY = "vc_inapp_dismissed"
 
@@ -51,7 +55,9 @@ export function InAppAnnouncementsProvider({ children }: { children: ReactNode }
 
     const load = async () => {
       try {
-        const res = await fetch(`${BACKEND_URL}/store/announcements`)
+        const res = await fetch(`${BACKEND_URL}/store/announcements`, {
+          headers: { "x-publishable-api-key": PUB_KEY },
+        })
         if (!res.ok) return
         const data = await res.json()
         setAnnouncements(data.announcements || [])

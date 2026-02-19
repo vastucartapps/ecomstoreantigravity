@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next"
 
 const BACKEND_URL =
   process.env.MEDUSA_INTERNAL_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
+const PUB_KEY =
+  process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
 const DEFAULT_RULES: MetadataRoute.Robots = {
   rules: [
@@ -69,6 +71,7 @@ function parseRobotsTxt(raw: string): MetadataRoute.Robots {
 export default async function robots(): Promise<MetadataRoute.Robots> {
   try {
     const res = await fetch(`${BACKEND_URL}/store/integrations-config`, {
+      headers: { "x-publishable-api-key": PUB_KEY },
       next: { revalidate: 3600 }, // Re-fetch at most every hour
     })
     if (res.ok) {

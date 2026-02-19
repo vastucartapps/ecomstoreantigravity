@@ -22,6 +22,10 @@ export default async function StorefrontLayout({
       }
     ),
     fetch(`${BACKEND_URL}/store/integrations-config`, {
+      headers: {
+        "x-publishable-api-key":
+          process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
+      },
       next: { revalidate: 600 },
     }),
   ])

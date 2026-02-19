@@ -301,7 +301,7 @@ export default function HomePage() {
         // Testimonials from custom module
         fetch(`${BACKEND_URL}/store/testimonials`, { headers }).then((r) => r.json()),
         // Storefront config for section ordering/visibility
-        fetch(`${BACKEND_URL}/store/storefront-config`).then((r) => r.json()),
+        fetch(`${BACKEND_URL}/store/storefront-config`, { headers }).then((r) => r.json()),
       ])
 
       if (heroRes.status === "fulfilled") {
