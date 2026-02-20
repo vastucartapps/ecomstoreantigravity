@@ -393,7 +393,7 @@ const defaultQuickActions: QuickAction[] = [
     id: "new-order",
     label: "New Order",
     icon: "shopping-cart",
-    href: "/admin/orders/new",
+    href: "/admin/orders",
     color: "secondary",
   },
   {

@@ -77,7 +77,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     await medusa.auth.login("customer", "emailpass", { email, password })
-    await refreshUser()
+    const { customer } = await medusa.store.customer.retrieve()
+    if (customer) {
+      const mappedUser = mapCustomerToUser(customer)
+      setUser(mappedUser)
+      // Admin users need user-actor JWT so adminFetch / medusa.admin.* calls work
+      if (mappedUser.role === "admin") {
+        try {
+          await medusa.auth.login("user", "emailpass", { email, password })
+        } catch {
+          // user-actor login failed — admin API calls may still fail
+        }
+      }
+    }
   }
 
   const adminLogin = async (email: string, password: string) => {

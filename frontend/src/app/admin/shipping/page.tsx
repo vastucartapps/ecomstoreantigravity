@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { AdminShell } from "@/components/shell"
 import { AdminShipping } from "@/components/admin/shipping"
 import { useAdminShipping } from "@/hooks/useAdminShipping"
 import type {
@@ -80,8 +79,7 @@ export default function AdminShippingPage() {
   }
 
   return (
-    <AdminShell>
-      <div style={{ padding: "32px", fontFamily: fonts.body }}>
+    <div style={{ padding: "32px", fontFamily: fonts.body }}>
         {/* Header */}
         <div style={{ marginBottom: "32px" }}>
           <h1
@@ -173,7 +171,6 @@ export default function AdminShippingPage() {
             {toast}
           </div>
         )}
-      </div>
-    </AdminShell>
+    </div>
   )
 }
