@@ -76,18 +76,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshUser])
 
   const login = async (email: string, password: string) => {
-    await medusa.auth.login("customer", "emailpass", { email, password })
-    const { customer } = await medusa.store.customer.retrieve()
-    if (customer) {
-      const mappedUser = mapCustomerToUser(customer)
-      setUser(mappedUser)
-      // Admin users need user-actor JWT so adminFetch / medusa.admin.* calls work
-      if (mappedUser.role === "admin") {
-        try {
-          await medusa.auth.login("user", "emailpass", { email, password })
-        } catch {
-          // user-actor login failed — admin API calls may still fail
+    let authedAsCustomer = false
+
+    // Try customer actor first (covers regular customers + admin-flagged customers)
+    try {
+      await medusa.auth.login("customer", "emailpass", { email, password })
+      const { customer } = await medusa.store.customer.retrieve()
+      if (customer) {
+        authedAsCustomer = true
+        const mappedUser = mapCustomerToUser(customer)
+        setUser(mappedUser)
+        // Admin-flagged customers also need user-actor JWT for admin API calls
+        if (mappedUser.role === "admin") {
+          try {
+            await medusa.auth.login("user", "emailpass", { email, password })
+          } catch {
+            // user-actor login failed — admin API calls may still fail
+          }
         }
+      }
+    } catch {
+      // customer auth failed — will try user actor below
+    }
+
+    if (!authedAsCustomer) {
+      // Pure admin user (not registered as a customer) — try user actor directly
+      await medusa.auth.login("user", "emailpass", { email, password })
+      const res = await medusa.client.fetch<{ user: any }>("/admin/users/me")
+      if (res.user) {
+        setUser({
+          id: res.user.id,
+          name:
+            [res.user.first_name, res.user.last_name]
+              .filter(Boolean)
+              .join(" ") || res.user.email,
+          email: res.user.email,
+          role: "admin",
+          avatarUrl: res.user.metadata?.avatar_url || null,
+          phone: null,
+          emailVerified: true,
+          memberSince: new Date().toISOString(),
+          currency: "INR",
+        })
       }
     }
   }
