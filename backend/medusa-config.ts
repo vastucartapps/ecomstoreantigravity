@@ -269,6 +269,11 @@ const modules: any[] = [
   {
     resolve: "./src/modules/ecosystem-ads",
   },
+
+  // Gift Cards (custom store credit / gift card codes)
+  {
+    resolve: "./src/modules/gift-cards",
+  },
 ]
 
 // Analytics (only if PostHog key is set)
