@@ -65,10 +65,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { customer } = await medusa.store.customer.retrieve()
       if (customer) {
         setUser(mapCustomerToUser(customer))
+        return
       }
     } catch {
-      setUser(null)
+      // not a customer session — try admin user
     }
+    try {
+      const res = await medusa.client.fetch<{ user: any }>("/admin/users/me")
+      if (res.user) {
+        setUser({
+          id: res.user.id,
+          name:
+            [res.user.first_name, res.user.last_name]
+              .filter(Boolean)
+              .join(" ") || res.user.email,
+          email: res.user.email,
+          role: "admin",
+          avatarUrl: res.user.metadata?.avatar_url || null,
+          phone: null,
+          emailVerified: true,
+          memberSince: res.user.created_at || new Date().toISOString(),
+          currency: "INR",
+        })
+        return
+      }
+    } catch {
+      // not an admin session either
+    }
+    setUser(null)
   }, [])
 
   useEffect(() => {
