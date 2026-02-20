@@ -793,7 +793,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                 {[
                   { label: "About Us", href: "/about" },
                   { label: "Contact", href: "/contact" },
-                  { label: "Blog", href: "/blog" },
+                  { label: "Blog", href: "https://blog.vastucart.in" },
                   { label: "Track Order", href: "/track-order" },
                 ].map((link) => (
                   <li key={link.href}>
@@ -820,7 +820,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
               <ul className="space-y-2">
                 {[
                   { label: "Shipping Policy", href: "/shipping-policy" },
-                  { label: "Return Policy", href: "/return-policy" },
+                  { label: "Return Policy", href: "/refund-policy" },
                   { label: "Privacy Policy", href: "/privacy-policy" },
                   { label: "Terms & Conditions", href: "/terms" },
                 ].map((link) => (

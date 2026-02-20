@@ -386,7 +386,7 @@ const defaultQuickActions: QuickAction[] = [
     id: "add-product",
     label: "Add Product",
     icon: "plus-circle",
-    href: "/admin/products/new",
+    href: "/admin/products",
     color: "primary",
   },
   {
@@ -400,7 +400,7 @@ const defaultQuickActions: QuickAction[] = [
     id: "new-coupon",
     label: "New Coupon",
     icon: "ticket",
-    href: "/admin/coupons/new",
+    href: "/admin/coupons",
     color: "primary",
   },
 ]
