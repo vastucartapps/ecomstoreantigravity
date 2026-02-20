@@ -423,9 +423,10 @@ export default function HomePage() {
 
   const handleAddToCart = async (productId: string) => {
     try {
-      // Fetch product to get first variant
+      const regionId = await getRegionId()
+      const regionParam = regionId ? `&region_id=${regionId}` : ""
       const res = await fetch(
-        `${BACKEND_URL}/store/products/${productId}?fields=variants.id`,
+        `${BACKEND_URL}/store/products?id[]=${productId}&fields=id,variants.id${regionParam}`,
         {
           headers: {
             "x-publishable-api-key":
@@ -434,7 +435,7 @@ export default function HomePage() {
         }
       )
       const data = await res.json()
-      const variantId = data.product?.variants?.[0]?.id
+      const variantId = data.products?.[0]?.variants?.[0]?.id
       if (variantId) {
         await addItem(variantId, 1)
       }
@@ -466,9 +467,9 @@ export default function HomePage() {
       const regionId = await getRegionId()
       const regionParam = regionId ? `&region_id=${regionId}` : ""
       const fields = "id,title,handle,thumbnail,description,metadata,created_at,options.title,variants.id,variants.sku,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity,variants.options,images.id,images.url"
-      const res = await fetch(`${BACKEND_URL}/store/products/${productId}?fields=${fields}${regionParam}`, { headers: qvHeaders })
+      const res = await fetch(`${BACKEND_URL}/store/products?id[]=${productId}&fields=${fields}${regionParam}`, { headers: qvHeaders })
       const data = await res.json()
-      const p = data.product
+      const p = data.products?.[0]
       if (!p) return
 
       setQvProduct(mapQVProduct(p))

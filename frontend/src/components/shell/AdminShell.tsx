@@ -114,7 +114,11 @@ export default function AdminShell({ children }: AdminShellProps) {
     )
   }
 
-  // Access denied
+  // Access denied — redirect non-admin users immediately
+  if (!isLoading && (!user || !isAdmin)) {
+    router.replace("/login")
+  }
+
   if (!user || !isAdmin) {
     return (
       <div
