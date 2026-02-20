@@ -20,9 +20,9 @@ export async function adminFetch<T = any>(
   path: string,
   options?: { method?: string; body?: unknown }
 ): Promise<T> {
-  const fn = medusa.client.fetch as (
-    path: string,
-    options: { method: string; body?: unknown }
-  ) => Promise<T>
-  return fn(path, { method: options?.method || "GET", body: options?.body })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (medusa.client.fetch as any)(path, {
+    method: options?.method || "GET",
+    body: options?.body,
+  }) as Promise<T>
 }
