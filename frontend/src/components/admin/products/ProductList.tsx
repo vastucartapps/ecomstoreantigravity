@@ -509,7 +509,7 @@ export function ProductList({
                       <div className="mt-2 flex items-center gap-1">
                         <Star className="h-3.5 w-3.5 fill-current" style={{ color: c.warning }} />
                         <span className="text-sm font-medium" style={{ color: c.earth700 }}>
-                          {product.rating?.toFixed(1) || "0.0"}
+                          {Number(product.rating || 0).toFixed(1)}
                         </span>
                         <span className="text-xs" style={{ color: c.earth400 }}>
                           ({product.reviewCount || 0})
@@ -626,7 +626,7 @@ export function ProductList({
                         <td className="p-4">
                           <div className="flex items-center gap-1">
                             <Star className="h-3.5 w-3.5 fill-current" style={{ color: c.warning }} />
-                            <span className="text-sm font-medium" style={{ color: c.earth700 }}>{product.rating?.toFixed(1) || "0.0"}</span>
+                            <span className="text-sm font-medium" style={{ color: c.earth700 }}>{Number(product.rating || 0).toFixed(1)}</span>
                             <span className="text-xs" style={{ color: c.earth400 }}>({product.reviewCount || 0})</span>
                           </div>
                         </td>

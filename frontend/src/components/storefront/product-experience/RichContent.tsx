@@ -168,6 +168,121 @@ export function RichContent({ blocks }: RichContentProps) {
           )
         }
 
+        // Wizard A+ block types: image_text, text, image
+        const b = block as any
+        if (b.type === "image_text") {
+          return (
+            <div key={b.id} className="flex flex-col md:flex-row gap-8 items-center">
+              {b.imageUrl && (
+                <div className="w-full md:w-1/2 rounded-2xl overflow-hidden shadow-md">
+                  <img src={b.imageUrl} alt={b.title || ""} className="w-full h-64 md:h-80 object-cover" />
+                </div>
+              )}
+              <div className="w-full md:w-1/2">
+                {b.title && (
+                  <h3
+                    className="text-xl sm:text-2xl font-bold mb-4"
+                    style={{ color: earth[700], fontFamily: fonts.heading }}
+                  >
+                    {b.title}
+                  </h3>
+                )}
+                {b.content && (
+                  <p
+                    className="text-sm sm:text-base leading-relaxed"
+                    style={{ color: earth[600], fontFamily: fonts.body, lineHeight: 1.8 }}
+                  >
+                    {b.content}
+                  </p>
+                )}
+              </div>
+            </div>
+          )
+        }
+
+        if (b.type === "text") {
+          return (
+            <div key={b.id} className="max-w-3xl mx-auto text-center">
+              {b.title && (
+                <h3
+                  className="text-xl sm:text-2xl font-bold mb-4"
+                  style={{ color: earth[700], fontFamily: fonts.heading }}
+                >
+                  {b.title}
+                </h3>
+              )}
+              {b.content && (
+                <p
+                  className="text-sm sm:text-base leading-relaxed"
+                  style={{ color: earth[600], fontFamily: fonts.body, lineHeight: 1.8 }}
+                >
+                  {b.content}
+                </p>
+              )}
+            </div>
+          )
+        }
+
+        if (b.type === "image") {
+          return (
+            <div key={b.id} className="text-center">
+              {b.title && (
+                <h3
+                  className="text-xl sm:text-2xl font-bold mb-6"
+                  style={{ color: earth[700], fontFamily: fonts.heading }}
+                >
+                  {b.title}
+                </h3>
+              )}
+              {b.imageUrl && (
+                <div className="rounded-2xl overflow-hidden shadow-lg inline-block max-w-2xl w-full">
+                  <img src={b.imageUrl} alt={b.title || ""} className="w-full object-cover" />
+                </div>
+              )}
+            </div>
+          )
+        }
+
+        if (b.type === "banner") {
+          return (
+            <div key={b.id} className="relative rounded-2xl overflow-hidden shadow-xl">
+              {b.imageUrl && (
+                <img
+                  src={b.imageUrl}
+                  alt={b.title || ""}
+                  className="w-full h-48 sm:h-64 lg:h-80 object-cover"
+                />
+              )}
+              {b.title && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center"
+                  style={{ background: "rgba(1,63,71,0.55)" }}
+                >
+                  <h3
+                    className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white text-center px-6"
+                    style={{ fontFamily: fonts.heading, textShadow: "0 2px 8px rgba(0,0,0,0.4)" }}
+                  >
+                    {b.title}
+                  </h3>
+                </div>
+              )}
+              {!b.imageUrl && b.title && (
+                <div
+                  className="h-32 flex items-center justify-center rounded-2xl"
+                  style={{ background: "linear-gradient(135deg, #013f47, #c85103)" }}
+                >
+                  <h3
+                    className="text-2xl font-bold text-white text-center px-6"
+                    style={{ fontFamily: fonts.heading }}
+                  >
+                    {b.title}
+                  </h3>
+                </div>
+              )}
+            </div>
+          )
+        }
+
         return null
       })}
     </div>

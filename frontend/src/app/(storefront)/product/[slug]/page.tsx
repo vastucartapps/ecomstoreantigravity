@@ -300,6 +300,8 @@ export default function ProductPage() {
   })
   const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([])
   const [rawProductId, setRawProductId] = useState("")
+  const [merchantMeta, setMerchantMeta] = useState<Record<string, string>>({})
+
 
   const fetchProductData = useCallback(async () => {
     setIsLoading(true)
@@ -325,6 +327,7 @@ export default function ProductPage() {
       }
 
       setRawProductId(rawProduct.id)
+      setMerchantMeta(rawProduct.metadata?.merchant_centre || {})
 
       // 3. Fetch reviews, questions, and related products in parallel
       const categoryIds = (rawProduct.categories || []).map((c: any) => c.id)
@@ -376,7 +379,21 @@ export default function ProductPage() {
       setVariants(mapVariants(rawProduct))
       setVariantAttributes(buildVariantAttributes(rawProduct))
       setRichContent(parseMetadataJson<RichContentBlock[]>(meta, "rich_content", []))
-      setSpecificationGroups(parseMetadataJson<SpecificationGroup[]>(meta, "specifications", []))
+      // Admin saves flat specs as metadata.specs [{id,label,value,group}], transform to grouped format
+      const rawSpecs = parseMetadataJson<Array<{id?: string; label?: string; value: string; group?: string}>>(meta, "specs", [])
+      let specsData: SpecificationGroup[] = []
+      if (rawSpecs.length > 0) {
+        const groupMap = new Map<string, { key: string; value: string }[]>()
+        for (const spec of rawSpecs) {
+          const grp = spec.group || "General"
+          if (!groupMap.has(grp)) groupMap.set(grp, [])
+          groupMap.get(grp)!.push({ key: spec.label || "", value: spec.value })
+        }
+        specsData = Array.from(groupMap.entries()).map(([groupName, specs]) => ({ groupName, specs }))
+      } else {
+        specsData = parseMetadataJson<SpecificationGroup[]>(meta, "specifications", [])
+      }
+      setSpecificationGroups(specsData)
       setFaqs(parseMetadataJson<ProductFAQ[]>(meta, "faqs", []))
       setQuestions(questionData)
       setReviews(reviewData)
@@ -507,8 +524,10 @@ export default function ProductPage() {
         sku: product.sku,
         brand: {
           "@type": "Brand",
-          name: "VastuCart",
+          name: merchantMeta.brand || "VastuCart",
         },
+        ...(merchantMeta.gtin ? { gtin: merchantMeta.gtin } : {}),
+        ...(merchantMeta.mpn ? { mpn: merchantMeta.mpn } : {}),
         offers: variants.length > 0
           ? variants.map((v) => ({
               "@type": "Offer",
