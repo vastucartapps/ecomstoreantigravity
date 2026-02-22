@@ -5,6 +5,7 @@ import type {
   SEODefaults,
   OpenGraphDefaults,
   MarketingTag,
+  GmcStatusResponse,
 } from "@/types/admin-integrations"
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
@@ -37,10 +38,15 @@ const DEFAULT_INTEGRATIONS: Integration[] = [
     name: "Google Merchant Centre",
     icon: "shopping-bag",
     description:
-      "Sync product feed for Google Shopping listings and free product listings.",
+      "Sync product feed for Google Shopping listings and free product listings. Supports real-time Content API push + XML feed.",
     isConnected: false,
     status: "inactive",
-    configFields: { merchantId: "", feedUrl: "" },
+    configFields: {
+      merchantId: "",
+      serviceAccountKey: "",
+      targetCountry: "IN",
+      feedLabel: "IN",
+    },
     lastSynced: null,
   },
   {
@@ -111,10 +117,8 @@ function validateIntegration(
     case "meta-pixel":
       return /^\d{13,16}$/.test(fields.pixelId || "")
     case "gmc":
-      return (
-        /^\d{5,}$/.test(fields.merchantId || "") &&
-        /^https?:\/\/.+/.test(fields.feedUrl || "")
-      )
+      // merchantId required; serviceAccountKey optional (needed for Content API push)
+      return /^\d{5,}$/.test(fields.merchantId || "")
     case "whatsapp":
       return (
         (fields.phoneNumber || "").replace(/\D/g, "").length >= 10 &&
@@ -339,6 +343,22 @@ export function useAdminIntegrations() {
     return updated
   }
 
+  /**
+   * Fetch real-time GMC sync status + error report from the backend.
+   * Reads from store.metadata.gmc_sync_status and gmc_error_report.
+   */
+  async function fetchGmcStatus(): Promise<GmcStatusResponse> {
+    return adminFetch<GmcStatusResponse>("/admin/integrations/gmc/status")
+  }
+
+  /**
+   * Trigger an immediate full catalog sync to Google Merchant Centre.
+   * The backend runs this asynchronously — poll fetchGmcStatus to track progress.
+   */
+  async function triggerGmcSync(): Promise<void> {
+    await adminFetch("/admin/integrations/gmc/sync", { method: "POST" })
+  }
+
   return {
     fetchConfig,
     toggleConnection,
@@ -349,5 +369,7 @@ export function useAdminIntegrations() {
     toggleTag,
     addTag,
     removeTag,
+    fetchGmcStatus,
+    triggerGmcSync,
   }
 }

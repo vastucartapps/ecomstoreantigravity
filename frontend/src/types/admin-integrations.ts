@@ -59,6 +59,33 @@ export interface PublicIntegrationConfig {
   openGraph: OpenGraphDefaults | null
 }
 
+/** GMC sync status (stored in store.metadata.gmc_sync_status) */
+export interface GmcSyncStatus {
+  lastSync: string | null
+  lastSyncProducts: number
+  lastSyncErrors: number
+  status: "success" | "error" | "syncing" | null
+  errors?: string[]
+  syncStarted?: string
+}
+
+/** GMC error report (stored in store.metadata.gmc_error_report) */
+export interface GmcErrorReport {
+  checkedAt: string
+  totalProducts: number
+  disapprovedCount: number
+  disapproved: { productId: string; title: string; issues: string[] }[]
+}
+
+/** Full GMC status response from /admin/integrations/gmc/status */
+export interface GmcStatusResponse {
+  isConfigured: boolean
+  merchantId: string | null
+  feedUrl: string
+  syncStatus: GmcSyncStatus | null
+  errorReport: GmcErrorReport | null
+}
+
 /** Props for the AdminIntegrations component */
 export interface AdminIntegrationsProps {
   activeTab: IntegrationTab
@@ -66,6 +93,7 @@ export interface AdminIntegrationsProps {
   seoDefaults: SEODefaults
   openGraph: OpenGraphDefaults
   marketingTags: MarketingTag[]
+  gmcStatus?: GmcStatusResponse | null
   onChangeTab?: (tab: IntegrationTab) => void
   onToggleConnection?: (integrationId: string) => Promise<void>
   onTestConnection?: (integrationId: string) => Promise<void>
@@ -78,4 +106,5 @@ export interface AdminIntegrationsProps {
   onToggleTag?: (tagId: string) => Promise<void>
   onAddTag?: (tag: Omit<MarketingTag, "id">) => Promise<void>
   onRemoveTag?: (tagId: string) => Promise<void>
+  onGmcSync?: () => Promise<void>
 }

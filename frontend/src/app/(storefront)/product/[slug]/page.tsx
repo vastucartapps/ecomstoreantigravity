@@ -494,30 +494,125 @@ export default function ProductPage() {
     )
   }
 
+  // ─── MerchantListing JSON-LD (MTSD Module 3) ───────────────────
+  // Adds rich merchant schema for Google Shopping eligibility.
+  const merchantListingJsonLd = product
+    ? {
+        "@context": "https://schema.org/",
+        "@type": "Product",
+        name: product.name,
+        description: product.description,
+        url: typeof window !== "undefined" ? window.location.href : `${BACKEND_URL.replace("sapi.", "store.")}/product/${product.slug}`,
+        image: images.map((img) => img.url).filter(Boolean),
+        sku: product.sku,
+        brand: {
+          "@type": "Brand",
+          name: "VastuCart",
+        },
+        offers: variants.length > 0
+          ? variants.map((v) => ({
+              "@type": "Offer",
+              sku: v.sku || product.sku,
+              price: v.price.toFixed(2),
+              priceCurrency: product.currency || "INR",
+              availability: v.inStock
+                ? "https://schema.org/InStock"
+                : "https://schema.org/OutOfStock",
+              url: typeof window !== "undefined" ? window.location.href : "",
+              priceValidUntil: new Date(Date.now() + 30 * 86400000)
+                .toISOString()
+                .split("T")[0],
+              hasMerchantReturnPolicy: {
+                "@type": "MerchantReturnPolicy",
+                applicableCountry: "IN",
+                returnPolicyCategory:
+                  "https://schema.org/MerchantReturnFiniteReturnWindow",
+                merchantReturnDays: 7,
+                returnMethod: "https://schema.org/ReturnByMail",
+                returnFees: "https://schema.org/FreeReturn",
+              },
+              shippingDetails: {
+                "@type": "OfferShippingDetails",
+                shippingRate: {
+                  "@type": "MonetaryAmount",
+                  value: "0",
+                  currency: "INR",
+                },
+                deliveryTime: {
+                  "@type": "ShippingDeliveryTime",
+                  handlingTime: {
+                    "@type": "QuantitativeValue",
+                    minValue: 0,
+                    maxValue: 1,
+                    unitCode: "DAY",
+                  },
+                  transitTime: {
+                    "@type": "QuantitativeValue",
+                    minValue: 2,
+                    maxValue: 5,
+                    unitCode: "DAY",
+                  },
+                },
+                shippingDestination: {
+                  "@type": "DefinedRegion",
+                  addressCountry: "IN",
+                },
+              },
+            }))
+          : {
+              "@type": "Offer",
+              price: product.price.toFixed(2),
+              priceCurrency: product.currency || "INR",
+              availability: product.inStock
+                ? "https://schema.org/InStock"
+                : "https://schema.org/OutOfStock",
+            },
+        ...(ratingBreakdown.total > 0
+          ? {
+              aggregateRating: {
+                "@type": "AggregateRating",
+                ratingValue: ratingBreakdown.average.toFixed(1),
+                reviewCount: ratingBreakdown.total,
+                bestRating: "5",
+                worstRating: "1",
+              },
+            }
+          : {}),
+      }
+    : null
+
   return (
-    <ProductDetail
-      product={product}
-      images={images}
-      variants={variants}
-      variantAttributes={variantAttributes}
-      richContent={richContent}
-      specificationGroups={specificationGroups}
-      faqs={faqs}
-      questions={questions}
-      reviews={reviews}
-      ratingBreakdown={ratingBreakdown}
-      relatedProducts={relatedProducts}
-      breadcrumbs={breadcrumbs}
-      isWishlisted={!!rawProductId && isInWishlist(rawProductId)}
-      onAddToCart={handleAddToCart}
-      onToggleWishlist={handleToggleWishlist}
-      onShare={handleShare}
-      onVariantChange={() => {}}
-      onAskQuestion={handleAskQuestion}
-      onProductClick={(s) => router.push(`/product/${s}`)}
-      onQuickView={(id) => router.push(`/product/${id}`)}
-      onBreadcrumbClick={(href) => router.push(href)}
-      onScrollToReviews={() => {}}
-    />
+    <>
+      {merchantListingJsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(merchantListingJsonLd) }}
+        />
+      )}
+      <ProductDetail
+        product={product}
+        images={images}
+        variants={variants}
+        variantAttributes={variantAttributes}
+        richContent={richContent}
+        specificationGroups={specificationGroups}
+        faqs={faqs}
+        questions={questions}
+        reviews={reviews}
+        ratingBreakdown={ratingBreakdown}
+        relatedProducts={relatedProducts}
+        breadcrumbs={breadcrumbs}
+        isWishlisted={!!rawProductId && isInWishlist(rawProductId)}
+        onAddToCart={handleAddToCart}
+        onToggleWishlist={handleToggleWishlist}
+        onShare={handleShare}
+        onVariantChange={() => {}}
+        onAskQuestion={handleAskQuestion}
+        onProductClick={(s) => router.push(`/product/${s}`)}
+        onQuickView={(id) => router.push(`/product/${id}`)}
+        onBreadcrumbClick={(href) => router.push(href)}
+        onScrollToReviews={() => {}}
+      />
+    </>
   )
 }

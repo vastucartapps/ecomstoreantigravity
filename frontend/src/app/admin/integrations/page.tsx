@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { AdminIntegrations } from "@/components/admin/integrations"
 import { useAdminIntegrations } from "@/hooks/useAdminIntegrations"
 import { primary, earth, fonts } from "@/lib/theme"
@@ -10,6 +10,7 @@ import type {
   SEODefaults,
   OpenGraphDefaults,
   MarketingTag,
+  GmcStatusResponse,
 } from "@/types/admin-integrations"
 
 export default function IntegrationsSEOPage() {
@@ -20,6 +21,8 @@ export default function IntegrationsSEOPage() {
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<IntegrationTab>("integrations")
   const [toast, setToast] = useState<string | null>(null)
+  const [gmcStatus, setGmcStatus] = useState<GmcStatusResponse | null>(null)
+  const gmcPollRef = useRef<NodeJS.Timeout | null>(null)
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -39,9 +42,37 @@ export default function IntegrationsSEOPage() {
     }
   }, [])
 
+  const refreshGmcStatus = useCallback(async () => {
+    try {
+      const status = await hook.fetchGmcStatus()
+      setGmcStatus(status)
+      return status
+    } catch {
+      return null
+    }
+  }, [])
+
   useEffect(() => {
     loadConfig()
-  }, [loadConfig])
+    refreshGmcStatus()
+  }, [loadConfig, refreshGmcStatus])
+
+  // Poll GMC status every 10s while a sync is in progress
+  useEffect(() => {
+    if (gmcStatus?.syncStatus?.status === "syncing") {
+      gmcPollRef.current = setInterval(async () => {
+        const updated = await refreshGmcStatus()
+        if (updated?.syncStatus?.status !== "syncing") {
+          if (gmcPollRef.current) clearInterval(gmcPollRef.current)
+        }
+      }, 10_000)
+    } else {
+      if (gmcPollRef.current) clearInterval(gmcPollRef.current)
+    }
+    return () => {
+      if (gmcPollRef.current) clearInterval(gmcPollRef.current)
+    }
+  }, [gmcStatus?.syncStatus?.status, refreshGmcStatus])
 
   // ─── Handlers ────────────────────────────────────────────────────────────
 
@@ -152,6 +183,33 @@ export default function IntegrationsSEOPage() {
     }
   }
 
+  const handleGmcSync = async () => {
+    try {
+      await hook.triggerGmcSync()
+      showToast("GMC sync started — checking status…")
+      // Optimistically mark as syncing, then start polling
+      setGmcStatus((prev) =>
+        prev
+          ? {
+              ...prev,
+              syncStatus: {
+                ...(prev.syncStatus || {}),
+                status: "syncing",
+                syncStarted: new Date().toISOString(),
+                lastSync: prev.syncStatus?.lastSync || null,
+                lastSyncProducts: prev.syncStatus?.lastSyncProducts || 0,
+                lastSyncErrors: prev.syncStatus?.lastSyncErrors || 0,
+              },
+            }
+          : prev
+      )
+      // Refresh status after 3s to see initial progress
+      setTimeout(refreshGmcStatus, 3000)
+    } catch {
+      showToast("Failed to trigger GMC sync — check configuration")
+    }
+  }
+
   // ─── Render ───────────────────────────────────────────────────────────────
 
   if (isLoading) {
@@ -210,6 +268,7 @@ export default function IntegrationsSEOPage() {
         seoDefaults={config.seoDefaults}
         openGraph={config.openGraph}
         marketingTags={config.marketingTags}
+        gmcStatus={gmcStatus}
         onChangeTab={setActiveTab}
         onToggleConnection={handleToggleConnection}
         onTestConnection={handleTestConnection}
@@ -219,6 +278,7 @@ export default function IntegrationsSEOPage() {
         onToggleTag={handleToggleTag}
         onAddTag={handleAddTag}
         onRemoveTag={handleRemoveTag}
+        onGmcSync={handleGmcSync}
       />
 
       {/* Toast */}
