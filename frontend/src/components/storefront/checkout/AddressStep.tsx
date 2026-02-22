@@ -116,66 +116,76 @@ export function AddressStep() {
   const inputCls = "w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
   const inputStyle = { border: "1.5px solid #e8e0d8", color: earth[700], fontFamily: fonts.body, background: bg.card }
 
-  const AddressFormFields = ({ data, onChange }: { data: AddressFormData; onChange: (d: AddressFormData) => void }) => (
+  const AddressFormFields = ({ data, onChange, prefix = "checkout" }: { data: AddressFormData; onChange: (d: AddressFormData) => void; prefix?: string }) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div>
-        <label className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>First Name *</label>
-        <input className={inputCls} style={inputStyle} value={data.firstName} onChange={(e) => onChange({ ...data, firstName: e.target.value })}
+        <label htmlFor={`${prefix}-first-name`} className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>First Name *</label>
+        <input id={`${prefix}-first-name`} name="first_name" autoComplete="given-name" placeholder="First name"
+          className={inputCls} style={inputStyle} value={data.firstName} onChange={(e) => onChange({ ...data, firstName: e.target.value })}
           onFocus={(e) => (e.currentTarget.style.borderColor = primary[500])} onBlur={(e) => (e.currentTarget.style.borderColor = "#e8e0d8")} />
       </div>
       <div>
-        <label className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>Last Name *</label>
-        <input className={inputCls} style={inputStyle} value={data.lastName} onChange={(e) => onChange({ ...data, lastName: e.target.value })}
+        <label htmlFor={`${prefix}-last-name`} className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>Last Name *</label>
+        <input id={`${prefix}-last-name`} name="last_name" autoComplete="family-name" placeholder="Last name"
+          className={inputCls} style={inputStyle} value={data.lastName} onChange={(e) => onChange({ ...data, lastName: e.target.value })}
           onFocus={(e) => (e.currentTarget.style.borderColor = primary[500])} onBlur={(e) => (e.currentTarget.style.borderColor = "#e8e0d8")} />
       </div>
       <div>
-        <label className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>Phone</label>
-        <input className={inputCls} style={inputStyle} type="tel" value={data.phone} onChange={(e) => onChange({ ...data, phone: e.target.value })}
-          placeholder="+91 98765 43210"
+        <label htmlFor={`${prefix}-phone`} className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>Phone</label>
+        <input id={`${prefix}-phone`} name="phone" autoComplete="tel" type="tel" value={data.phone} onChange={(e) => onChange({ ...data, phone: e.target.value })}
+          className={inputCls} style={inputStyle} placeholder="+91 98765 43210"
           onFocus={(e) => (e.currentTarget.style.borderColor = primary[500])} onBlur={(e) => (e.currentTarget.style.borderColor = "#e8e0d8")} />
       </div>
       <div>
-        <label className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>Country *</label>
-        <select className={inputCls} style={inputStyle} value={data.country} onChange={(e) => onChange({ ...data, country: e.target.value })}>
+        <label htmlFor={`${prefix}-country`} className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>Country *</label>
+        <select id={`${prefix}-country`} name="country_code" autoComplete="country"
+          className={inputCls} style={inputStyle} value={data.country} onChange={(e) => onChange({ ...data, country: e.target.value })}>
           {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
         </select>
       </div>
       <div className="sm:col-span-2">
-        <label className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>Street Address *</label>
-        <input className={inputCls} style={inputStyle} value={data.address1} placeholder="House no., Street name, Area"
+        <label htmlFor={`${prefix}-address1`} className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>Street Address *</label>
+        <input id={`${prefix}-address1`} name="address_1" autoComplete="address-line1" placeholder="House no., Street name, Area"
+          className={inputCls} style={inputStyle} value={data.address1}
           onChange={(e) => onChange({ ...data, address1: e.target.value })}
           onFocus={(e) => (e.currentTarget.style.borderColor = primary[500])} onBlur={(e) => (e.currentTarget.style.borderColor = "#e8e0d8")} />
       </div>
       <div className="sm:col-span-2">
-        <label className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>Apt / Floor / Landmark <span style={{ color: earth[300] }}>(optional)</span></label>
-        <input className={inputCls} style={inputStyle} value={data.address2} onChange={(e) => onChange({ ...data, address2: e.target.value })}
+        <label htmlFor={`${prefix}-address2`} className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>Apt / Floor / Landmark <span style={{ color: earth[300] }}>(optional)</span></label>
+        <input id={`${prefix}-address2`} name="address_2" autoComplete="address-line2" placeholder="Apt, floor, landmark (optional)"
+          className={inputCls} style={inputStyle} value={data.address2} onChange={(e) => onChange({ ...data, address2: e.target.value })}
           onFocus={(e) => (e.currentTarget.style.borderColor = primary[500])} onBlur={(e) => (e.currentTarget.style.borderColor = "#e8e0d8")} />
       </div>
       <div>
-        <label className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>City *</label>
-        <input className={inputCls} style={inputStyle} value={data.city} onChange={(e) => onChange({ ...data, city: e.target.value })}
+        <label htmlFor={`${prefix}-city`} className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>City *</label>
+        <input id={`${prefix}-city`} name="city" autoComplete="address-level2" placeholder="City"
+          className={inputCls} style={inputStyle} value={data.city} onChange={(e) => onChange({ ...data, city: e.target.value })}
           onFocus={(e) => (e.currentTarget.style.borderColor = primary[500])} onBlur={(e) => (e.currentTarget.style.borderColor = "#e8e0d8")} />
       </div>
       {data.country === "in" ? (
         <div>
-          <label className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>State *</label>
-          <select className={inputCls} style={inputStyle} value={data.state} onChange={(e) => onChange({ ...data, state: e.target.value })}>
+          <label htmlFor={`${prefix}-state`} className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>State *</label>
+          <select id={`${prefix}-state`} name="province" autoComplete="address-level1"
+            className={inputCls} style={inputStyle} value={data.state} onChange={(e) => onChange({ ...data, state: e.target.value })}>
             <option value="">Select state</option>
             {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
       ) : (
         <div>
-          <label className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>State / Province *</label>
-          <input className={inputCls} style={inputStyle} value={data.state} onChange={(e) => onChange({ ...data, state: e.target.value })}
+          <label htmlFor={`${prefix}-state`} className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>State / Province *</label>
+          <input id={`${prefix}-state`} name="province" autoComplete="address-level1" placeholder="State / Province"
+            className={inputCls} style={inputStyle} value={data.state} onChange={(e) => onChange({ ...data, state: e.target.value })}
             onFocus={(e) => (e.currentTarget.style.borderColor = primary[500])} onBlur={(e) => (e.currentTarget.style.borderColor = "#e8e0d8")} />
         </div>
       )}
       <div>
-        <label className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>
+        <label htmlFor={`${prefix}-pincode`} className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>
           {data.country === "in" ? "Pincode *" : "ZIP / Postal Code *"}
         </label>
-        <input className={inputCls} style={inputStyle} value={data.pincode} maxLength={data.country === "in" ? 6 : 10}
+        <input id={`${prefix}-pincode`} name="postal_code" autoComplete="postal-code"
+          placeholder={data.country === "in" ? "6-digit pincode" : "Postal code"}
+          className={inputCls} style={inputStyle} value={data.pincode} maxLength={data.country === "in" ? 6 : 10}
           onChange={(e) => onChange({ ...data, pincode: e.target.value })}
           onFocus={(e) => (e.currentTarget.style.borderColor = primary[500])} onBlur={(e) => (e.currentTarget.style.borderColor = "#e8e0d8")} />
       </div>

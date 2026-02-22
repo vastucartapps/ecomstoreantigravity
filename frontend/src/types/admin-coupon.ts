@@ -1,6 +1,7 @@
 export type CouponStatus = "active" | "expired" | "disabled"
 export type DiscountType = "percentage" | "fixed"
 export type GiftCardStatus = "active" | "inactive" | "expired" | "depleted"
+export type CustomerEligibility = "all" | "new_customers"
 export type CouponsGiftCardsTab = "coupons" | "gift-cards"
 
 export interface CurrencyValue {
@@ -24,6 +25,7 @@ export interface CouponRow {
   status: CouponStatus
   targetType: "all" | "products" | "categories"
   targetNames: string[]
+  customerEligibility: CustomerEligibility
 }
 
 export interface CouponDetail extends CouponRow {

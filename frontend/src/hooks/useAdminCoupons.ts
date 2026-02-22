@@ -6,6 +6,7 @@ import type {
   CouponRow,
   CouponDetail,
   CouponStatus,
+  CustomerEligibility,
   GiftCardRow,
   GiftCardDetail,
   GiftCardTransaction,
@@ -76,6 +77,7 @@ function mapPromotionToRow(p: any): CouponRow {
     status,
     targetType: meta.target_type || "all",
     targetNames: meta.target_names || [],
+    customerEligibility: (meta.customer_eligibility || "all") as CustomerEligibility,
   }
 }
 
@@ -228,6 +230,7 @@ function buildPromotionPayload(data: Partial<CouponDetail>) {
         target_category_ids: data.targetCategoryIds || [],
         target_names: data.targetNames || [],
         currency_values: data.currencyValues ?? null,
+        customer_eligibility: data.customerEligibility || "all",
       },
     },
   }

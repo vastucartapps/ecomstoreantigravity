@@ -111,6 +111,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const applyPromoCode = async (code: string) => {
     if (!cart) return
+
+    // Validate coupon eligibility rules before applying.
+    // Uses medusa.client.fetch() so the Medusa SDK's session cookie is sent
+    // automatically — enabling server-side customer identity checks.
+    //
+    // FAIL-OPEN: if the validate call errors (network, 500, etc.) we let the
+    // coupon through — Medusa's own promotion engine validates it server-side
+    // anyway. Only a deliberate { valid: false } response blocks the attempt.
+    // This ensures a deploy bug never freezes the coupon input for everyone.
+    let eligibilityError: string | null = null
+    try {
+      const validateData = await (medusa.client.fetch as any)(
+        `/store/promotions/validate?code=${encodeURIComponent(code)}&cart_id=${encodeURIComponent(cart.id)}`,
+        { method: "GET" }
+      ) as { valid: boolean; reason?: string }
+
+      if (validateData && validateData.valid === false) {
+        eligibilityError = validateData.reason || "This coupon cannot be applied."
+      }
+    } catch {
+      // Network / server error — fail-open, Medusa's engine handles it
+    }
+    if (eligibilityError) throw new Error(eligibilityError)
+
     const existing = cart.promo_codes?.map((p: any) => p.code || p) || []
     const { cart: updated } = await medusa.store.cart.update(cart.id, {
       promo_codes: [...existing, code],

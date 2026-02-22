@@ -185,11 +185,15 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
 
   // Fix #6: Fetch available payment providers instead of hardcoding pp_system_default
   const initPayment = useCallback(async () => {
+    if (!cart) return
+
+    // Guard: skip if a valid (non-cancelled) payment session already exists
+    const existingSessions = (cart as any)?.payment_collection?.payment_sessions
+    if (existingSessions?.some((s: any) => s.status !== "canceled")) return
+
     setIsProcessing(true)
     setError(null)
     try {
-      if (!cart) throw new Error("No cart found")
-
       // Fetch available payment providers for this cart
       const res = await fetch(
         `${BACKEND_URL}/store/payment-providers?region_id=${cart.region_id}`,

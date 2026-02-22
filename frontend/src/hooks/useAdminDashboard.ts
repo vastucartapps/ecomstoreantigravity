@@ -83,7 +83,7 @@ function dayLabel(d: Date, period: TimePeriod) {
 async function fetchOrders(startISO: string, endISO: string) {
   try {
     const res = await medusa.client.fetch<{ orders: any[]; count: number }>(
-      `/admin/orders?limit=500&created_at[$gte]=${encodeURIComponent(startISO)}&created_at[$lte]=${encodeURIComponent(endISO)}&fields=id,display_id,status,payment_status,total,currency_code,created_at,customer,items.id,metadata`
+      `/admin/orders?limit=500&created_at[$gte]=${encodeURIComponent(startISO)}&created_at[$lte]=${encodeURIComponent(endISO)}&fields=id,display_id,status,payment_status,total,currency_code,email,created_at,*customer,items.id,metadata`
     )
     return res.orders || []
   } catch {
@@ -315,8 +315,8 @@ function buildRecentOrders(orders: any[]): RecentOrder[] {
       customerName:
         [order.customer?.first_name, order.customer?.last_name]
           .filter(Boolean)
-          .join(" ") || order.customer?.email || "Unknown",
-      customerEmail: order.customer?.email || "",
+          .join(" ") || order.customer?.email || order.email || "Unknown",
+      customerEmail: order.customer?.email || order.email || "",
       total: Math.round((order.total || 0) / 100),
       currency: (order.currency_code?.toUpperCase() || "INR") as "INR" | "USD",
       status: mapOrderStatus(order),

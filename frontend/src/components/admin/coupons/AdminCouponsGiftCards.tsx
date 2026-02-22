@@ -20,6 +20,7 @@ import type {
   CouponRow,
   CouponDetail,
   CouponStatus,
+  CustomerEligibility,
   DiscountType,
   GiftCardRow,
   GiftCardDetail,
@@ -395,6 +396,9 @@ function CouponForm({
   const [targetType, setTargetType] = useState<"all" | "products" | "categories">(
     coupon?.targetType || "all"
   )
+  const [customerEligibility, setCustomerEligibility] = useState<CustomerEligibility>(
+    coupon?.customerEligibility || "all"
+  )
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     coupon?.targetCategoryIds || []
   )
@@ -470,6 +474,7 @@ function CouponForm({
       targetProductIds:
         targetType === "products" ? selectedProducts.map((p) => p.id) : [],
       targetNames,
+      customerEligibility,
     }
     await onSave(data)
   }
@@ -963,6 +968,57 @@ function CouponForm({
             )}
           </div>
         )}
+      </div>
+
+      {/* Customer Eligibility */}
+      <div style={{ ...CARD_STYLE, marginBottom: "24px" }}>
+        <h2
+          style={{
+            fontSize: "18px",
+            fontWeight: 600,
+            fontFamily: fonts.heading,
+            color: c.earth700,
+            marginTop: 0,
+            marginBottom: "4px",
+          }}
+        >
+          Customer Eligibility
+        </h2>
+        <p style={{ fontSize: "13px", color: c.earth400, marginBottom: "16px", marginTop: 0 }}>
+          Who can use this coupon?
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", cursor: "pointer" }}>
+            <input
+              type="radio"
+              checked={customerEligibility === "all"}
+              onChange={() => setCustomerEligibility("all")}
+              style={{ accentColor: c.primary500, marginTop: "2px" }}
+            />
+            <span>
+              <span style={{ fontSize: "14px", color: c.earth700, fontWeight: 500 }}>All Customers</span>
+              <span style={{ display: "block", fontSize: "12px", color: c.earth400 }}>
+                Any customer can apply this coupon
+              </span>
+            </span>
+          </label>
+          <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", cursor: "pointer" }}>
+            <input
+              type="radio"
+              checked={customerEligibility === "new_customers"}
+              onChange={() => setCustomerEligibility("new_customers")}
+              style={{ accentColor: c.primary500, marginTop: "2px" }}
+            />
+            <span>
+              <span style={{ fontSize: "14px", color: c.earth700, fontWeight: 500 }}>
+                New Customers Only
+              </span>
+              <span style={{ display: "block", fontSize: "12px", color: c.earth400 }}>
+                Only customers placing their first order can use this coupon. Rejected automatically for returning customers.
+              </span>
+            </span>
+          </label>
+        </div>
       </div>
 
       {/* Footer */}

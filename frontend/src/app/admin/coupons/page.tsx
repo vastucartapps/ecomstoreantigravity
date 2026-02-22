@@ -31,6 +31,7 @@ const EMPTY_COUPON: CouponDetail = {
   status: "active",
   targetType: "all",
   targetNames: [],
+  customerEligibility: "all",
   description: "",
   currencyValues: { INR: 0, USD: 0 },
   targetProductIds: [],

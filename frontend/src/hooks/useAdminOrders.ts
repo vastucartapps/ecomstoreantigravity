@@ -100,8 +100,9 @@ function mapMedusaOrderRow(o: any): OrderRow {
     customerName:
       [o.customer?.first_name, o.customer?.last_name].filter(Boolean).join(" ") ||
       o.customer?.email ||
+      o.email ||
       "Unknown",
-    customerEmail: o.customer?.email || "",
+    customerEmail: o.customer?.email || o.email || "",
     itemCount: (o.items || []).length,
     total: Math.round((o.total || 0) / 100),
     currency: (o.currency_code?.toUpperCase() || "INR") as "INR" | "USD",
@@ -176,8 +177,9 @@ function mapMedusaOrderDetail(o: any, customerOrderCount: number): OrderDetail {
     name:
       [o.customer?.first_name, o.customer?.last_name].filter(Boolean).join(" ") ||
       o.customer?.email ||
+      o.email ||
       "Unknown",
-    email: o.customer?.email || "",
+    email: o.customer?.email || o.email || "",
     phone: o.customer?.phone || addr.phone || "",
     totalOrders: customerOrderCount,
   }
@@ -328,7 +330,7 @@ export function useAdminOrders() {
       params.set("offset", String(offset))
       params.set(
         "fields",
-        "id,display_id,status,payment_status,total,currency_code,created_at,metadata,*customer,*items,*payment_collections,*payment_collections.payments"
+        "id,display_id,status,payment_status,total,currency_code,created_at,email,metadata,*customer,*items,*payment_collections,*payment_collections.payments"
       )
 
       if (filters.search) {
@@ -391,7 +393,7 @@ export function useAdminOrders() {
   const fetchOrderDetail = useCallback(async (id: string): Promise<OrderDetail | null> => {
     try {
       const res = await medusa.client.fetch<{ order: any }>(
-        `/admin/orders/${id}?fields=id,display_id,status,payment_status,total,subtotal,discount_total,shipping_total,tax_total,currency_code,created_at,updated_at,metadata,*customer,*items,*shipping_address,*fulfillments,*payment_collections,*payment_collections.payments`
+        `/admin/orders/${id}?fields=id,display_id,status,payment_status,total,subtotal,discount_total,shipping_total,tax_total,currency_code,email,created_at,updated_at,metadata,*customer,*items,*shipping_address,*fulfillments,*payment_collections,*payment_collections.payments`
       )
       const order = res.order
       if (!order) return null
