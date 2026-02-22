@@ -171,9 +171,10 @@ async function readStore() {
 async function writeConfig(config: NotificationsConfig) {
   const store = await readStore()
   if (!store) throw new Error("Store not found")
+  const existingMeta: Record<string, unknown> = (store.metadata as Record<string, unknown>) ?? {}
   await adminFetch(`/admin/stores/${store.id}`, {
     method: "POST",
-    body: { metadata: { notifications_config: config } },
+    body: { metadata: { ...existingMeta, notifications_config: config } },
   })
 }
 

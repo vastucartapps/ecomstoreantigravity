@@ -58,10 +58,11 @@ const DEFAULT_CONFIG: PaymentsTaxConfig = {
   internationalTax: { taxExempt: false, lutNumber: "" },
 }
 
-async function readStore(): Promise<{ id: string; config: PaymentsTaxConfig }> {
+async function readStore(): Promise<{ id: string; config: PaymentsTaxConfig; rawMetadata: Record<string, unknown> }> {
   const res = await adminFetch<{ stores: Array<{ id: string; metadata?: Record<string, unknown> }> }>("/admin/stores")
   const store = res.stores?.[0]
-  const saved = (store?.metadata?.payments_tax_config ?? undefined) as PaymentsTaxConfig | undefined
+  const rawMetadata: Record<string, unknown> = store?.metadata ?? {}
+  const saved = rawMetadata.payments_tax_config as PaymentsTaxConfig | undefined
   const config: PaymentsTaxConfig = saved
     ? {
         ...DEFAULT_CONFIG,
@@ -71,13 +72,13 @@ async function readStore(): Promise<{ id: string; config: PaymentsTaxConfig }> {
           : DEFAULT_PAYMENT_METHODS,
       }
     : DEFAULT_CONFIG
-  return { id: store?.id || "", config }
+  return { id: store?.id || "", config, rawMetadata }
 }
 
-async function writeConfig(storeId: string, config: PaymentsTaxConfig): Promise<void> {
+async function writeConfig(storeId: string, config: PaymentsTaxConfig, rawMetadata: Record<string, unknown>): Promise<void> {
   await medusa.client.fetch(`/admin/stores/${storeId}`, {
     method: "POST",
-    body: { metadata: { payments_tax_config: config } },
+    body: { metadata: { ...rawMetadata, payments_tax_config: config } },
   })
 }
 
@@ -111,13 +112,13 @@ export function useAdminPaymentsTax() {
   }
 
   async function toggleMode(mode: PaymentMode): Promise<void> {
-    const { id, config } = await readStore()
-    await writeConfig(id, { ...config, mode })
+    const { id, config, rawMetadata } = await readStore()
+    await writeConfig(id, { ...config, mode }, rawMetadata)
   }
 
   async function saveGateways(gateways: GatewayConfig): Promise<void> {
-    const { id, config } = await readStore()
-    await writeConfig(id, { ...config, gateways })
+    const { id, config, rawMetadata } = await readStore()
+    await writeConfig(id, { ...config, gateways }, rawMetadata)
   }
 
   async function testConnection(
@@ -138,23 +139,23 @@ export function useAdminPaymentsTax() {
   }
 
   async function togglePaymentMethod(methodId: string): Promise<void> {
-    const { id, config } = await readStore()
+    const { id, config, rawMetadata } = await readStore()
     const paymentMethods = config.paymentMethods.map((m) =>
       m.id === methodId ? { ...m, enabled: !m.enabled } : m
     )
-    await writeConfig(id, { ...config, paymentMethods })
+    await writeConfig(id, { ...config, paymentMethods }, rawMetadata)
   }
 
   async function saveGST(gstConfig: GSTConfig): Promise<void> {
-    const { id, config } = await readStore()
-    await writeConfig(id, { ...config, gstConfig })
+    const { id, config, rawMetadata } = await readStore()
+    await writeConfig(id, { ...config, gstConfig }, rawMetadata)
   }
 
   async function saveInternationalTax(
     internationalTax: InternationalTaxConfig
   ): Promise<void> {
-    const { id, config } = await readStore()
-    await writeConfig(id, { ...config, internationalTax })
+    const { id, config, rawMetadata } = await readStore()
+    await writeConfig(id, { ...config, internationalTax }, rawMetadata)
   }
 
   async function saveProductOverride(override: ProductTaxOverride): Promise<void> {

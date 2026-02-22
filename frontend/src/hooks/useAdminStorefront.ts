@@ -129,10 +129,11 @@ const DEFAULT_FOOTER: FooterConfig = {
   showSocialLinks: true,
 }
 
-async function readStore(): Promise<{ id: string; config: StorefrontConfig }> {
+async function readStore(): Promise<{ id: string; config: StorefrontConfig; rawMetadata: Record<string, unknown> }> {
   const res = await adminFetch<{ stores: Array<{ id: string; metadata?: Record<string, unknown> }> }>("/admin/stores")
   const store = res.stores?.[0]
-  const saved = (store?.metadata?.storefront_config ?? undefined) as StorefrontConfig | undefined
+  const rawMetadata: Record<string, unknown> = store?.metadata ?? {}
+  const saved = rawMetadata.storefront_config as StorefrontConfig | undefined
 
   const config: StorefrontConfig = saved
     ? {
@@ -156,13 +157,13 @@ async function readStore(): Promise<{ id: string; config: StorefrontConfig }> {
         footerConfig: DEFAULT_FOOTER,
       }
 
-  return { id: store?.id || "", config }
+  return { id: store?.id || "", config, rawMetadata }
 }
 
-async function writeConfig(storeId: string, config: StorefrontConfig): Promise<void> {
+async function writeConfig(storeId: string, config: StorefrontConfig, rawMetadata: Record<string, unknown>): Promise<void> {
   await medusa.client.fetch(`/admin/stores/${storeId}`, {
     method: "POST",
-    body: { metadata: { storefront_config: config } },
+    body: { metadata: { ...rawMetadata, storefront_config: config } },
   })
 }
 
@@ -173,17 +174,17 @@ export function useAdminStorefront() {
   }
 
   async function updateAnnouncement(announcement: Announcement): Promise<void> {
-    const { id, config } = await readStore()
-    await writeConfig(id, { ...config, announcement })
+    const { id, config, rawMetadata } = await readStore()
+    await writeConfig(id, { ...config, announcement }, rawMetadata)
   }
 
   async function updateBranding(branding: Branding): Promise<void> {
-    const { id, config } = await readStore()
-    await writeConfig(id, { ...config, branding })
+    const { id, config, rawMetadata } = await readStore()
+    await writeConfig(id, { ...config, branding }, rawMetadata)
   }
 
   async function reorderSection(sectionId: string, direction: "up" | "down"): Promise<void> {
-    const { id, config } = await readStore()
+    const { id, config, rawMetadata } = await readStore()
     const sections = [...config.homepageSections].sort((a, b) => a.order - b.order)
     const idx = sections.findIndex((s) => s.id === sectionId)
     if (idx === -1) return
@@ -196,38 +197,38 @@ export function useAdminStorefront() {
     sections[idx] = { ...sections[idx], order: bOrder }
     sections[swapIdx] = { ...sections[swapIdx], order: aOrder }
 
-    await writeConfig(id, { ...config, homepageSections: sections })
+    await writeConfig(id, { ...config, homepageSections: sections }, rawMetadata)
   }
 
   async function toggleSection(sectionId: string, enabled: boolean): Promise<void> {
-    const { id, config } = await readStore()
+    const { id, config, rawMetadata } = await readStore()
     const homepageSections = config.homepageSections.map((s) =>
       s.id === sectionId ? { ...s, enabled } : s
     )
-    await writeConfig(id, { ...config, homepageSections })
+    await writeConfig(id, { ...config, homepageSections }, rawMetadata)
   }
 
   async function editPage(pageId: string, content: string): Promise<void> {
-    const { id, config } = await readStore()
+    const { id, config, rawMetadata } = await readStore()
     const contentPages = config.contentPages.map((p) =>
       p.id === pageId
         ? { ...p, content, lastUpdated: new Date().toISOString() }
         : p
     )
-    await writeConfig(id, { ...config, contentPages })
+    await writeConfig(id, { ...config, contentPages }, rawMetadata)
   }
 
   async function togglePagePublish(pageId: string, published: boolean): Promise<void> {
-    const { id, config } = await readStore()
+    const { id, config, rawMetadata } = await readStore()
     const contentPages = config.contentPages.map((p) =>
       p.id === pageId ? { ...p, isPublished: published } : p
     )
-    await writeConfig(id, { ...config, contentPages })
+    await writeConfig(id, { ...config, contentPages }, rawMetadata)
   }
 
   async function updateFooter(footerConfig: FooterConfig): Promise<void> {
-    const { id, config } = await readStore()
-    await writeConfig(id, { ...config, footerConfig })
+    const { id, config, rawMetadata } = await readStore()
+    await writeConfig(id, { ...config, footerConfig }, rawMetadata)
   }
 
   return {

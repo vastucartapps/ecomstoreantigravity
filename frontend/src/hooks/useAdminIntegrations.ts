@@ -147,9 +147,10 @@ async function readStore() {
 async function writeConfig(config: IntegrationsConfig) {
   const store = await readStore()
   if (!store) throw new Error("Store not found")
+  const existingMeta: Record<string, unknown> = (store.metadata as Record<string, unknown>) ?? {}
   await adminFetch(`/admin/stores/${store.id}`, {
     method: "POST",
-    body: { metadata: { integrations_config: config } },
+    body: { metadata: { ...existingMeta, integrations_config: config } },
   })
 }
 
