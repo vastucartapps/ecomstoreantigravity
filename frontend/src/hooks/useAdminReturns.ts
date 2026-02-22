@@ -206,7 +206,7 @@ function mapMedusaReturnDetail(r: any): ReturnDetail {
 
 function getAdminJwt(): string {
   if (typeof window === "undefined") return ""
-  return localStorage.getItem("medusa_auth_token") || ""
+  return localStorage.getItem("vastucart_admin_token") || localStorage.getItem("medusa_auth_token") || ""
 }
 
 async function adminFetch(path: string, options: RequestInit = {}): Promise<any> {

@@ -22,7 +22,7 @@ const BACKEND_URL =
 
 function getAdminToken(): string {
   if (typeof window === "undefined") return ""
-  return localStorage.getItem("medusa_auth_token") || ""
+  return localStorage.getItem("vastucart_admin_token") || localStorage.getItem("medusa_auth_token") || ""
 }
 
 export function useAdminEcosystemAds() {

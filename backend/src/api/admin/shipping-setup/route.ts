@@ -5,17 +5,27 @@ import {
   createShippingProfilesWorkflow,
   createStockLocationsWorkflow,
   linkSalesChannelsToStockLocationWorkflow,
+  updateStoresWorkflow,
 } from "@medusajs/medusa/core-flows"
 
-// India region created via admin panel — used for region-scoped shipping prices.
+// India region — created via admin panel. Must match the deployed region ID.
 const INDIA_REGION_ID = "reg_01KHP9J32H1H104VBXD87P00ET"
 const FULFILLMENT_SET_NAME = "India Warehouse delivery"
+
+function serializeError(err: unknown): { error: string; detail?: string } {
+  if (err instanceof Error) return { error: err.message, detail: err.stack }
+  try {
+    return { error: JSON.stringify(err) }
+  } catch {
+    return { error: String(err) }
+  }
+}
 
 /**
  * GET /admin/shipping-setup
  *
- * Returns the current Medusa shipping option configuration so the admin UI
- * can show what is already set up and whether setup is required.
+ * Returns the current state so the admin UI can show whether setup is needed.
+ * setup_required = true when no shipping options exist yet.
  */
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   try {
@@ -27,11 +37,11 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
     const [shippingOptions] = await fulfillmentSvc.listAndCountShippingOptions(
       {},
-      { relations: ["prices", "rules", "service_zone"] }
+      { relations: ["rules", "service_zone"] }
     )
 
     res.json({
-      setup_required: fulfillmentSets.length === 0,
+      setup_required: shippingOptions.length === 0,
       fulfillment_sets: fulfillmentSets.map((fs) => ({
         id: fs.id,
         name: fs.name,
@@ -44,103 +54,149 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       })),
     })
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err)
-    res.status(500).json({ error: msg })
+    res.status(500).json(serializeError(err))
   }
 }
 
 /**
  * POST /admin/shipping-setup
  *
- * Idempotent: if India fulfillment set already exists, returns 200 with
- * already_exists=true without modifying anything.
+ * Fully idempotent — safe to call multiple times. Skips already-created
+ * resources and only creates what's missing.
  *
- * Creates:
- *   - Stock location: "India Warehouse"
- *   - FulfillmentSet: "India Warehouse delivery"
- *   - ServiceZone: "India" with geo_zone country_code=in
- *   - Link: stock_location ↔ fulfillment_set
- *   - Link: default sales channel ↔ stock_location
- *   - ShippingOption: "Standard Shipping" (FREE, INR 0)
- *   - ShippingOption: "Express Shipping" (INR 99 = 9900 paise)
+ * Creates (in order):
+ *   1. Ensures INR is a supported store currency
+ *   2. Stock location: "India Warehouse" (if missing)
+ *   3. FulfillmentSet + ServiceZone for India (if missing)
+ *   4. Links: stock_location ↔ fulfillment_set, sales_channel ↔ stock_location
+ *   5. ShippingOptions: Standard (FREE) + Express (₹99)
  */
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
     const fulfillmentSvc = req.scope.resolve(Modules.FULFILLMENT)
     const salesChannelSvc = req.scope.resolve(Modules.SALES_CHANNEL)
+    const storeModuleSvc = req.scope.resolve(Modules.STORE)
     const link = req.scope.resolve(ContainerRegistrationKeys.LINK)
 
-    // ── Idempotency check ───────────────────────────────────────────────────
-    const existing = await fulfillmentSvc.listFulfillmentSets({
-      name: FULFILLMENT_SET_NAME,
+    // ── 1. Ensure INR is a supported store currency ──────────────────────────
+    // Without this, shipping option prices with currency_code "inr" are rejected
+    // by the pricing module.
+    const [store] = await storeModuleSvc.listStores()
+    const existingCurrencies = await storeModuleSvc.listStoreCurrencies({
+      store_id: store.id,
     })
-    if (existing.length > 0) {
-      const [options] = await fulfillmentSvc.listAndCountShippingOptions({})
-      return res.json({
-        success: true,
-        already_exists: true,
-        message: "India shipping options are already configured.",
-        shipping_options: options.map((o) => ({ id: o.id, name: o.name })),
+    const hasInr = existingCurrencies.some(
+      (c: { currency_code: string }) => c.currency_code === "inr"
+    )
+    if (!hasInr) {
+      const currentCodes = existingCurrencies.map(
+        (c: { currency_code: string }) => ({
+          currency_code: c.currency_code,
+          is_default: (c as { is_default?: boolean }).is_default ?? false,
+        })
+      )
+      await updateStoresWorkflow(req.scope).run({
+        input: {
+          selector: { id: store.id },
+          update: {
+            supported_currencies: [
+              ...currentCodes,
+              { currency_code: "inr", is_default: false },
+            ],
+          },
+        },
       })
     }
 
-    // ── Shipping profile (reuse default) ────────────────────────────────────
+    // ── 2. Shipping profile ──────────────────────────────────────────────────
     const profiles = await fulfillmentSvc.listShippingProfiles({ type: "default" })
     let shippingProfile = profiles[0]
     if (!shippingProfile) {
       const { result } = await createShippingProfilesWorkflow(req.scope).run({
-        input: {
-          data: [{ name: "Default Shipping Profile", type: "default" }],
-        },
+        input: { data: [{ name: "Default Shipping Profile", type: "default" }] },
       })
       shippingProfile = result[0]
     }
 
-    // ── Stock location ───────────────────────────────────────────────────────
-    const { result: locations } = await createStockLocationsWorkflow(req.scope).run({
-      input: {
-        locations: [
-          {
-            name: "India Warehouse",
-            address: { city: "Mumbai", country_code: "IN", address_1: "" },
-          },
-        ],
-      },
-    })
-    const stockLocation = locations[0]
+    // ── 3. Stock location ────────────────────────────────────────────────────
+    let stockLocationId: string
+    const existingLocations = await (
+      req.scope.resolve(Modules.STOCK_LOCATION) as {
+        listStockLocations: (f: object) => Promise<Array<{ id: string; name: string }>>
+      }
+    ).listStockLocations({ name: "India Warehouse" })
 
-    // ── Fulfillment set + service zone ───────────────────────────────────────
-    const fulfillmentSet = await fulfillmentSvc.createFulfillmentSets({
-      name: FULFILLMENT_SET_NAME,
-      type: "shipping",
-      service_zones: [
-        {
-          name: "India",
-          geo_zones: [{ country_code: "in", type: "country" }],
+    if (existingLocations.length > 0) {
+      stockLocationId = existingLocations[0].id
+    } else {
+      const { result: locations } = await createStockLocationsWorkflow(req.scope).run({
+        input: {
+          locations: [
+            { name: "India Warehouse", address: { city: "Mumbai", country_code: "IN", address_1: "" } },
+          ],
         },
-      ],
-    })
-    const serviceZoneId = fulfillmentSet.service_zones[0].id
+      })
+      stockLocationId = locations[0].id
 
-    // ── Links ────────────────────────────────────────────────────────────────
-    await link.create({
-      [Modules.STOCK_LOCATION]: { stock_location_id: stockLocation.id },
-      [Modules.FULFILLMENT]: { fulfillment_set_id: fulfillmentSet.id },
+      // Link new stock location to fulfillment set (if set exists)
+      // and to default sales channel.
+      const defaultChannels = await salesChannelSvc.listSalesChannels({
+        name: "Default Sales Channel",
+      })
+      if (defaultChannels.length > 0) {
+        await linkSalesChannelsToStockLocationWorkflow(req.scope).run({
+          input: { id: stockLocationId, add: [defaultChannels[0].id] },
+        })
+      }
+    }
+
+    // ── 4. Fulfillment set + service zone ────────────────────────────────────
+    let serviceZoneId: string
+    const existingSets = await fulfillmentSvc.listFulfillmentSets({
+      name: FULFILLMENT_SET_NAME,
     })
 
-    const defaultChannels = await salesChannelSvc.listSalesChannels({
-      name: "Default Sales Channel",
-    })
-    if (defaultChannels.length > 0) {
-      await linkSalesChannelsToStockLocationWorkflow(req.scope).run({
-        input: { id: stockLocation.id, add: [defaultChannels[0].id] },
+    if (existingSets.length > 0) {
+      // Fetch with relations to get service_zones
+      const fullSet = await fulfillmentSvc.retrieveFulfillmentSet(existingSets[0].id, {
+        relations: ["service_zones"],
+      })
+      serviceZoneId = fullSet.service_zones[0].id
+    } else {
+      const fulfillmentSet = await fulfillmentSvc.createFulfillmentSets({
+        name: FULFILLMENT_SET_NAME,
+        type: "shipping",
+        service_zones: [
+          { name: "India", geo_zones: [{ country_code: "in", type: "country" }] },
+        ],
+      })
+      serviceZoneId = fulfillmentSet.service_zones[0].id
+
+      // Link: stock location ↔ fulfillment set (required for checkout)
+      await link.create({
+        [Modules.STOCK_LOCATION]: { stock_location_id: stockLocationId },
+        [Modules.FULFILLMENT]: { fulfillment_set_id: fulfillmentSet.id },
+      })
+
+      // Link: stock location ↔ fulfillment provider (required for createShippingOptionsWorkflow)
+      // Without this link, the workflow throws "Providers not enabled for service location".
+      await link.create({
+        [Modules.STOCK_LOCATION]: { stock_location_id: stockLocationId },
+        [Modules.FULFILLMENT]: { fulfillment_provider_id: "manual_manual" },
       })
     }
 
-    // ── Shipping options ─────────────────────────────────────────────────────
-    // Prices are in minor units (paise). ₹0 = 0, ₹99 = 9900.
-    // Both currency_code and region_id prices are provided so that Medusa
-    // resolves the correct price for the India region at checkout.
+    // ── 5. Shipping options ──────────────────────────────────────────────────
+    const [existingOptions] = await fulfillmentSvc.listAndCountShippingOptions({})
+    if (existingOptions.length > 0) {
+      return res.json({
+        success: true,
+        already_exists: true,
+        message: `India shipping is already configured (${existingOptions.length} options).`,
+        shipping_options: existingOptions.map((o) => ({ id: o.id, name: o.name })),
+      })
+    }
+
     const STORE_RULES = [
       { attribute: "enabled_in_store", value: "true", operator: "eq" as const },
       { attribute: "is_return", value: "false", operator: "eq" as const },
@@ -154,15 +210,10 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
           provider_id: "manual_manual",
           service_zone_id: serviceZoneId,
           shipping_profile_id: shippingProfile.id,
-          type: {
-            label: "Standard",
-            description: "Delivery in 5–7 business days.",
-            code: "standard",
-          },
-          prices: [
-            { currency_code: "inr", amount: 0 },
-            { region_id: INDIA_REGION_ID, amount: 0 },
-          ],
+          type: { label: "Standard", description: "5–7 business days.", code: "standard" },
+          // Only region_id price — avoids currency support issues.
+          // The pricing module resolves this price for India region checkouts.
+          prices: [{ region_id: INDIA_REGION_ID, amount: 0 }],
           rules: STORE_RULES,
         },
         {
@@ -171,15 +222,8 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
           provider_id: "manual_manual",
           service_zone_id: serviceZoneId,
           shipping_profile_id: shippingProfile.id,
-          type: {
-            label: "Express",
-            description: "Delivery in 1–3 business days.",
-            code: "express",
-          },
-          prices: [
-            { currency_code: "inr", amount: 9900 },
-            { region_id: INDIA_REGION_ID, amount: 9900 },
-          ],
+          type: { label: "Express", description: "1–3 business days.", code: "express" },
+          prices: [{ region_id: INDIA_REGION_ID, amount: 9900 }],
           rules: STORE_RULES,
         },
       ],
@@ -192,15 +236,12 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       already_exists: false,
       message: "India shipping setup complete.",
       details: {
-        stock_location: stockLocation.name,
-        fulfillment_set: fulfillmentSet.name,
+        fulfillment_set: FULFILLMENT_SET_NAME,
         service_zone: "India (country: in)",
         shipping_options: createdOptions.map((o) => o.name),
       },
     })
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err)
-    const stack = err instanceof Error ? err.stack : undefined
-    res.status(500).json({ error: msg, stack })
+    res.status(500).json(serializeError(err))
   }
 }

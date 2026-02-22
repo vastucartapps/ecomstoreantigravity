@@ -12,7 +12,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 
 function getAdminToken(): string {
   if (typeof window === "undefined") return ""
-  return localStorage.getItem("medusa_auth_token") || ""
+  return localStorage.getItem("vastucart_admin_token") || localStorage.getItem("medusa_auth_token") || ""
 }
 
 const EMPTY_GOOGLE_MERCHANT: CategoryGoogleMerchant = {

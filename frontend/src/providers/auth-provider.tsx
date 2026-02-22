@@ -94,51 +94,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false
     }
 
-    // 1. Try the dedicated admin token first (survives customer logins)
-    if (typeof window !== "undefined") {
-      const adminToken = localStorage.getItem("vastucart_admin_token")
-      if (adminToken && (await tryAdminToken(adminToken))) return
-    }
+    // Path-aware auth: admin and customer sessions are resolved separately
+    // based on the current URL to prevent them from interfering with each other.
+    const isAdminPath =
+      typeof window !== "undefined" &&
+      window.location.pathname.startsWith("/admin")
 
-    // 2. Try customer session
-    try {
-      const { customer } = await medusa.store.customer.retrieve()
-      if (customer) {
-        setUser(mapCustomerToUser(customer))
-        return
+    if (isAdminPath) {
+      // ── Admin context ─────────────────────────────────────────────────────
+      // 1. Dedicated admin token (persists across customer login events).
+      if (typeof window !== "undefined") {
+        const adminToken = localStorage.getItem("vastucart_admin_token")
+        if (adminToken && (await tryAdminToken(adminToken))) return
       }
-    } catch {
-      // not a customer session — try admin user via SDK token
-    }
 
-    // 3. Fall back to SDK token for admin (covers freshly logged-in admin)
-    try {
-      const res = await medusa.client.fetch<{ user: any }>("/admin/users/me")
-      if (res.user) {
-        setUser({
-          id: res.user.id,
-          name:
-            [res.user.first_name, res.user.last_name]
-              .filter(Boolean)
-              .join(" ") || res.user.email,
-          email: res.user.email,
-          role: "admin",
-          avatarUrl: res.user.metadata?.avatar_url || null,
-          phone: null,
-          emailVerified: true,
-          memberSince: res.user.created_at || new Date().toISOString(),
-          currency: "INR",
-        })
-        // Persist to dedicated admin key for future collisions
-        if (typeof window !== "undefined") {
-          const token = localStorage.getItem("medusa_auth_token")
-          if (token) localStorage.setItem("vastucart_admin_token", token)
+      // 2. SDK token (covers the instant after adminLogin, before the dedicated
+      //    key is written).
+      try {
+        const res = await medusa.client.fetch<{ user: any }>("/admin/users/me")
+        if (res.user) {
+          setUser({
+            id: res.user.id,
+            name:
+              [res.user.first_name, res.user.last_name]
+                .filter(Boolean)
+                .join(" ") || res.user.email,
+            email: res.user.email,
+            role: "admin",
+            avatarUrl: res.user.metadata?.avatar_url || null,
+            phone: null,
+            emailVerified: true,
+            memberSince: res.user.created_at || new Date().toISOString(),
+            currency: "INR",
+          })
+          if (typeof window !== "undefined") {
+            const token = localStorage.getItem("medusa_auth_token")
+            if (token) localStorage.setItem("vastucart_admin_token", token)
+          }
+          return
         }
-        return
+      } catch {
+        // no admin session
       }
-    } catch {
-      // not an admin session either
+    } else {
+      // ── Customer / storefront context ─────────────────────────────────────
+      // Only check the Medusa customer session; never touch the admin token here.
+      try {
+        const { customer } = await medusa.store.customer.retrieve()
+        if (customer) {
+          setUser(mapCustomerToUser(customer))
+          return
+        }
+      } catch {
+        // no active customer session
+      }
     }
+
     setUser(null)
   }, [])
 

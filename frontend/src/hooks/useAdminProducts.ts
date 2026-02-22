@@ -34,9 +34,8 @@ function computeStockLevel(stock: number): StockLevel {
 }
 
 function getAdminToken(): string {
-  // Medusa JS SDK stores the JWT in localStorage as "medusa_auth_token"
   if (typeof window === "undefined") return ""
-  return localStorage.getItem("medusa_auth_token") || ""
+  return localStorage.getItem("vastucart_admin_token") || localStorage.getItem("medusa_auth_token") || ""
 }
 
 // ---------------------------------------------------------------------------
