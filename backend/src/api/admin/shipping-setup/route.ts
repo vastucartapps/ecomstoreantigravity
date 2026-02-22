@@ -81,20 +81,20 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     // ── 1. Ensure INR is a supported store currency ──────────────────────────
     // Without this, shipping option prices with currency_code "inr" are rejected
     // by the pricing module.
-    const [store] = await storeModuleSvc.listStores()
-    const existingCurrencies = await storeModuleSvc.listStoreCurrencies({
-      store_id: store.id,
-    })
+    const [store] = await storeModuleSvc.listStores(
+      {},
+      { relations: ["supported_currencies"] }
+    )
+    const existingCurrencies: { currency_code: string; is_default?: boolean }[] =
+      (store as any).supported_currencies || []
     const hasInr = existingCurrencies.some(
       (c: { currency_code: string }) => c.currency_code === "inr"
     )
     if (!hasInr) {
-      const currentCodes = existingCurrencies.map(
-        (c: { currency_code: string }) => ({
-          currency_code: c.currency_code,
-          is_default: (c as { is_default?: boolean }).is_default ?? false,
-        })
-      )
+      const currentCodes = existingCurrencies.map((c) => ({
+        currency_code: c.currency_code,
+        is_default: c.is_default ?? false,
+      }))
       await updateStoresWorkflow(req.scope).run({
         input: {
           selector: { id: store.id },

@@ -47,7 +47,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
     if (eligibility === "new_customers") {
       // Resolve customer ID: JWT session first, then cart lookup
-      let customerId: string | null = (req.auth_context as any)?.actor_id || null
+      let customerId: string | null = (req as any).auth_context?.actor_id || null
 
       if (!customerId) {
         const cartId = (req.query?.cart_id as string | undefined)?.trim()
@@ -69,7 +69,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
       const orderService = req.scope.resolve(Modules.ORDER)
       const [orders] = await orderService.listAndCountOrders(
-        { customer_id: customerId, status: ["pending", "completed"] },
+        { customer_id: customerId },
         { select: ["id"], take: 1 }
       )
 
