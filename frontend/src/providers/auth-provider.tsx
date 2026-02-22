@@ -61,6 +61,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
 
   const refreshUser = useCallback(async () => {
+    const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
+
+    // Helper: verify admin token and set user
+    const tryAdminToken = async (token: string): Promise<boolean> => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/admin/users/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) return false
+        const data = await res.json()
+        if (data.user) {
+          setUser({
+            id: data.user.id,
+            name:
+              [data.user.first_name, data.user.last_name]
+                .filter(Boolean)
+                .join(" ") || data.user.email,
+            email: data.user.email,
+            role: "admin",
+            avatarUrl: data.user.metadata?.avatar_url || null,
+            phone: null,
+            emailVerified: true,
+            memberSince: data.user.created_at || new Date().toISOString(),
+            currency: "INR",
+          })
+          return true
+        }
+      } catch {
+        // token invalid
+      }
+      return false
+    }
+
+    // 1. Try the dedicated admin token first (survives customer logins)
+    if (typeof window !== "undefined") {
+      const adminToken = localStorage.getItem("vastucart_admin_token")
+      if (adminToken && (await tryAdminToken(adminToken))) return
+    }
+
+    // 2. Try customer session
     try {
       const { customer } = await medusa.store.customer.retrieve()
       if (customer) {
@@ -68,8 +108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
     } catch {
-      // not a customer session — try admin user
+      // not a customer session — try admin user via SDK token
     }
+
+    // 3. Fall back to SDK token for admin (covers freshly logged-in admin)
     try {
       const res = await medusa.client.fetch<{ user: any }>("/admin/users/me")
       if (res.user) {
@@ -87,6 +129,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           memberSince: res.user.created_at || new Date().toISOString(),
           currency: "INR",
         })
+        // Persist to dedicated admin key for future collisions
+        if (typeof window !== "undefined") {
+          const token = localStorage.getItem("medusa_auth_token")
+          if (token) localStorage.setItem("vastucart_admin_token", token)
+        }
         return
       }
     } catch {
@@ -126,6 +173,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!authedAsCustomer) {
       // Pure admin user (not registered as a customer) — try user actor directly
       await medusa.auth.login("user", "emailpass", { email, password })
+      // Persist admin JWT to dedicated key so it survives customer logins
+      if (typeof window !== "undefined") {
+        const token = localStorage.getItem("medusa_auth_token")
+        if (token) localStorage.setItem("vastucart_admin_token", token)
+      }
       const res = await medusa.client.fetch<{ user: any }>("/admin/users/me")
       if (res.user) {
         setUser({
@@ -148,6 +200,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const adminLogin = async (email: string, password: string) => {
     await medusa.auth.login("user", "emailpass", { email, password })
+    // Persist the admin JWT under its dedicated key immediately so that
+    // a subsequent customer login cannot overwrite the admin session.
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("medusa_auth_token")
+      if (token) localStorage.setItem("vastucart_admin_token", token)
+    }
     try {
       const res = await medusa.client.fetch<{ user: any }>("/admin/users/me", {
         method: "GET",
