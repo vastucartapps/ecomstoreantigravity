@@ -32,7 +32,7 @@ export interface SwatchValue {
   color: string
 }
 
-/** A+ hero image block */
+/** A+ hero image block — full-width image with overlaid headline */
 export interface RichContentHero {
   id: string
   type: "hero"
@@ -51,6 +51,39 @@ export interface RichContentComparison {
   metrics: ComparisonMetric[]
 }
 
+/** A+ image + text side-by-side block */
+export interface RichContentImageText {
+  id: string
+  type: "image_text"
+  title: string
+  content: string
+  imageUrl: string
+}
+
+/** A+ text-only block */
+export interface RichContentText {
+  id: string
+  type: "text"
+  title: string
+  content: string
+}
+
+/** A+ standalone image block */
+export interface RichContentImage {
+  id: string
+  type: "image"
+  title: string
+  imageUrl: string
+}
+
+/** A+ full-width banner block with optional title overlay */
+export interface RichContentBanner {
+  id: string
+  type: "banner"
+  title: string
+  imageUrl: string
+}
+
 export interface ComparisonProduct {
   asin: string
   name: string
@@ -63,7 +96,13 @@ export interface ComparisonMetric {
   values: (boolean | string)[]
 }
 
-export type RichContentBlock = RichContentHero | RichContentComparison
+export type RichContentBlock =
+  | RichContentHero
+  | RichContentComparison
+  | RichContentImageText
+  | RichContentText
+  | RichContentImage
+  | RichContentBanner
 
 /** Specification group with key-value pairs */
 export interface SpecificationGroup {
