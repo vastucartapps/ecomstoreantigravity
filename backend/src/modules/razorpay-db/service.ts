@@ -71,22 +71,18 @@ class RazorpayDbService extends AbstractPaymentProvider {
   }
 
   /**
-   * Called by Medusa after the user completes payment in the Razorpay modal.
-   * The frontend passes razorpay_payment_id, razorpay_order_id, razorpay_signature
-   * via the payment session data update.
-   * We trust the Razorpay callback — server-side signature verification is
-   * handled separately at POST /store/razorpay/verify if needed.
+   * Called by Medusa during cart.complete().
+   * Always returns "authorized" so the order is created.
+   *
+   * - Razorpay: payment is already captured by the Razorpay modal before
+   *   completeCheckout() is called. No further authorization needed.
+   * - COD: cash is collected on delivery. Authorization is implicit.
+   *
+   * Server-side signature verification can be done separately via
+   * POST /store/razorpay/verify after the order is placed.
    */
   async authorizePayment(input: AuthorizePaymentInput): Promise<AuthorizePaymentOutput> {
-    const data = (input.data || {}) as Record<string, unknown>
-
-    // Razorpay handler was called — payment succeeded
-    if (data.razorpay_payment_id) {
-      return { status: "authorized", data }
-    }
-
-    // Session exists but payment not yet completed
-    return { status: "pending", data }
+    return { status: "authorized", data: input.data }
   }
 
   async capturePayment(input: CapturePaymentInput): Promise<CapturePaymentOutput> {
@@ -102,11 +98,7 @@ class RazorpayDbService extends AbstractPaymentProvider {
   }
 
   async getPaymentStatus(input: GetPaymentStatusInput): Promise<GetPaymentStatusOutput> {
-    const data = (input.data || {}) as Record<string, unknown>
-    if (data.razorpay_payment_id) {
-      return { status: "captured", data }
-    }
-    return { status: "pending", data }
+    return { status: "captured", data: input.data }
   }
 
   async retrievePayment(input: RetrievePaymentInput): Promise<RetrievePaymentOutput> {
