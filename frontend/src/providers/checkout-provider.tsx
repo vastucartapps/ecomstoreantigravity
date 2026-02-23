@@ -29,6 +29,9 @@ interface CheckoutContextValue {
   shippingOptions: ShippingOption[]
   selectedShippingId: string | null
   loadShippingOptions: () => Promise<void>
+  /** Apply a shipping method to the cart and refresh totals (does NOT advance step). */
+  applyShippingMethod: (optionId: string) => Promise<void>
+  /** Legacy: apply shipping and advance to payment step. */
   selectShippingMethod: (optionId: string) => Promise<void>
   codEnabled: boolean
   toggleCod: (enabled: boolean) => void
@@ -159,6 +162,24 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     }
   }, [cart, cartId])
 
+  // Apply a shipping method to the cart and refresh totals WITHOUT advancing step.
+  // Called when the user clicks a shipping option — updates cart total in real time.
+  const applyShippingMethod = useCallback(async (optionId: string) => {
+    setIsProcessing(true)
+    setError(null)
+    try {
+      const id = cart?.id || cartId
+      if (!id) throw new Error("No cart found")
+      await medusa.store.cart.addShippingMethod(id, { option_id: optionId })
+      await refreshCart()
+      setSelectedShippingId(optionId)
+    } catch (err: any) {
+      setError(err?.message || "Failed to apply shipping method. Please try again.")
+    } finally {
+      setIsProcessing(false)
+    }
+  }, [cart, cartId, refreshCart])
+
   // Fix #2: Surface shipping method errors instead of silently advancing
   const selectShippingMethod = useCallback(async (optionId: string) => {
     setIsProcessing(true)
@@ -245,7 +266,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         step, setStep, goBack, goToStep,
         contactEmail, contactPhone, setContactEmail, setContactPhone, submitContact,
         savedAddresses, loadSavedAddresses, setAddresses, selectedAddressId, setSelectedAddressId,
-        shippingOptions, selectedShippingId, loadShippingOptions, selectShippingMethod,
+        shippingOptions, selectedShippingId, loadShippingOptions, applyShippingMethod, selectShippingMethod,
         codEnabled, toggleCod,
         paymentMethod, setPaymentMethod, initPayment, completeCheckout,
         isProcessing, error, setError,

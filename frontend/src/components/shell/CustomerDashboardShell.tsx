@@ -62,100 +62,17 @@ function isActiveItem(href: string, pathname: string): boolean {
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
-export default function CustomerDashboardShell({ children }: CustomerDashboardShellProps) {
-  const { user, isLoading, logout } = useAuth()
-  const router = useRouter()
-  const pathname = usePathname()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [unreadCount, setUnreadCount] = useState(0)
+interface SidebarContentProps {
+  user: { name: string; email: string; avatarUrl?: string | null }
+  pathname: string
+  handleLogout: () => void
+  unreadCount: number
+}
 
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.push("/login")
-    }
-  }, [isLoading, user, router])
-
-  // Close sidebar on route change (mobile)
-  useEffect(() => {
-    setSidebarOpen(false)
-  }, [pathname])
-
-  // Fetch unread notification count
-  useEffect(() => {
-    if (!user) return
-    const fetchCount = async () => {
-      try {
-        const res = await fetch(`${BACKEND_URL}/store/customers/me/notifications?limit=1`, {
-          headers: { "x-publishable-api-key": PUB_KEY },
-          credentials: "include",
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setUnreadCount(data.unread_count || 0)
-        }
-      } catch {}
-    }
-    fetchCount()
-    const interval = setInterval(fetchCount, 60000)
-    return () => clearInterval(interval)
-  }, [user])
-
-  const handleLogout = async () => {
-    await logout()
-    router.push("/")
-  }
-
-  if (isLoading) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "60vh",
-          fontFamily: fonts.body,
-          backgroundColor: bg.primary,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "16px",
-          }}
-        >
-          <div
-            style={{
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              border: `3px solid ${primary[100]}`,
-              borderTopColor: primary[500],
-              animation: "spin 0.8s linear infinite",
-            }}
-          />
-          <p
-            style={{
-              color: earth[400],
-              fontSize: "14px",
-              fontFamily: fonts.body,
-              margin: 0,
-            }}
-          >
-            Loading your account…
-          </p>
-        </div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return null
-  }
-
-  const SidebarContent = () => (
+// MUST be module-level — not inside CustomerDashboardShell — otherwise React creates a new
+// component type on every render, causing unnecessary unmount/remount on every state update.
+function SidebarContent({ user, pathname, handleLogout, unreadCount }: SidebarContentProps) {
+  return (
     <div
       style={{
         display: "flex",
@@ -359,6 +276,100 @@ export default function CustomerDashboardShell({ children }: CustomerDashboardSh
       </div>
     </div>
   )
+}
+
+export default function CustomerDashboardShell({ children }: CustomerDashboardShellProps) {
+  const { user, isLoading, logout } = useAuth()
+  const router = useRouter()
+  const pathname = usePathname()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push("/login")
+    }
+  }, [isLoading, user, router])
+
+  // Close sidebar on route change (mobile)
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [pathname])
+
+  // Fetch unread notification count
+  useEffect(() => {
+    if (!user) return
+    const fetchCount = async () => {
+      try {
+        const res = await fetch(`${BACKEND_URL}/store/customers/me/notifications?limit=1`, {
+          headers: { "x-publishable-api-key": PUB_KEY },
+          credentials: "include",
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setUnreadCount(data.unread_count || 0)
+        }
+      } catch {}
+    }
+    fetchCount()
+    const interval = setInterval(fetchCount, 60000)
+    return () => clearInterval(interval)
+  }, [user])
+
+  const handleLogout = async () => {
+    await logout()
+    router.push("/")
+  }
+
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "60vh",
+          fontFamily: fonts.body,
+          backgroundColor: bg.primary,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "16px",
+          }}
+        >
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              border: `3px solid ${primary[100]}`,
+              borderTopColor: primary[500],
+              animation: "spin 0.8s linear infinite",
+            }}
+          />
+          <p
+            style={{
+              color: earth[400],
+              fontSize: "14px",
+              fontFamily: fonts.body,
+              margin: 0,
+            }}
+          >
+            Loading your account…
+          </p>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return null
+  }
 
   return (
     <>
@@ -520,7 +531,7 @@ export default function CustomerDashboardShell({ children }: CustomerDashboardSh
                 <X size={20} strokeWidth={2} />
               </button>
             </div>
-            <SidebarContent />
+            <SidebarContent user={user} pathname={pathname} handleLogout={handleLogout} unreadCount={unreadCount} />
           </div>
         </div>
       )}
@@ -552,7 +563,7 @@ export default function CustomerDashboardShell({ children }: CustomerDashboardSh
             boxShadow: "1px 0 4px rgba(1, 63, 71, 0.04)",
           }}
         >
-          <SidebarContent />
+          <SidebarContent user={user} pathname={pathname} handleLogout={handleLogout} unreadCount={unreadCount} />
         </aside>
 
         {/* Content area */}

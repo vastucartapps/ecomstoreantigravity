@@ -66,7 +66,8 @@ export function ShippingStep() {
     shippingOptions,
     selectedShippingId,
     loadShippingOptions,
-    selectShippingMethod,
+    applyShippingMethod,
+    setStep,
     codEnabled,
     toggleCod,
     goBack,
@@ -102,10 +103,10 @@ export function ShippingStep() {
       .catch(() => {})
   }, [])
 
-  // Auto-select first option when options load
+  // Auto-select first option when options load and apply it to cart
   useEffect(() => {
-    if (shippingOptions.length > 0 && !localSelected) {
-      setLocalSelected(shippingOptions[0].id)
+    if (shippingOptions.length > 0 && !localSelected && !selectedShippingId) {
+      handleSelectOption(shippingOptions[0].id)
     }
   }, [shippingOptions])
 
@@ -121,10 +122,15 @@ export function ShippingStep() {
     grandTotal >= codConfig.minOrder &&
     grandTotal <= codConfig.maxOrder
 
-  const handleContinue = async () => {
-    const optionId = localSelected || shippingOptions[0]?.id
-    if (!optionId) return
-    await selectShippingMethod(optionId)
+  // Clicking a shipping option applies it to the cart immediately (live total update).
+  const handleSelectOption = async (optionId: string) => {
+    setLocalSelected(optionId)
+    await applyShippingMethod(optionId)
+  }
+
+  const handleContinue = () => {
+    if (!selectedShippingId && !localSelected) return
+    setStep("payment")
   }
 
   const formatPrice = (amount: number) =>
@@ -153,14 +159,14 @@ export function ShippingStep() {
                 border: `1.5px solid ${isSelected ? primary[500] : "#e8e0d8"}`,
                 background: isSelected ? primary[50] : bg.card,
               }}
-              onClick={() => setLocalSelected(option.id)}
+              onClick={() => handleSelectOption(option.id)}
             >
               <input
                 type="radio"
                 name="shipping"
                 value={option.id}
                 checked={isSelected}
-                onChange={() => setLocalSelected(option.id)}
+                onChange={() => handleSelectOption(option.id)}
                 className="flex-shrink-0"
                 style={{ accentColor: primary[500] }}
               />

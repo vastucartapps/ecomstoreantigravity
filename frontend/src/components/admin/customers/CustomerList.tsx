@@ -18,6 +18,21 @@ const c = {
 }
 const fonts = { heading: "'Lora', serif", body: "'Open Sans', sans-serif", mono: "'IBM Plex Mono', monospace" }
 
+// MUST be module-level — not inside CustomerList — otherwise React creates a new component
+// type on every render, unmounting/remounting the element and destroying any interaction state.
+function SortIcon({ field, sortField, sortDirection }: {
+  field: string
+  sortField: CustomerFilters["sortField"]
+  sortDirection: CustomerFilters["sortDirection"]
+}) {
+  if (sortField !== field) return null
+  return sortDirection === "asc" ? (
+    <ChevronUp size={16} style={{ color: c.primary500 }} />
+  ) : (
+    <ChevronDown size={16} style={{ color: c.primary500 }} />
+  )
+}
+
 export function CustomerList({ customers, filters, totalCount, onChangeFilters, onViewCustomer }: CustomerListProps) {
 
   const segmentCounts = useMemo(() => {
@@ -131,15 +146,6 @@ export function CustomerList({ customers, filters, totalCount, onChangeFilters, 
       case "inactive": return "Inactive"
       case "high_value": return "High Value"
     }
-  }
-
-  const SortIcon = ({ field }: { field: string }) => {
-    if (filters.sortField !== field) return null
-    return filters.sortDirection === "asc" ? (
-      <ChevronUp size={16} style={{ color: c.primary500 }} />
-    ) : (
-      <ChevronDown size={16} style={{ color: c.primary500 }} />
-    )
   }
 
   return (
@@ -264,7 +270,7 @@ export function CustomerList({ customers, filters, totalCount, onChangeFilters, 
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                     Customer
-                    <SortIcon field="name" />
+                    <SortIcon field="name" sortField={filters.sortField} sortDirection={filters.sortDirection} />
                   </div>
                 </th>
                 <th
@@ -296,7 +302,7 @@ export function CustomerList({ customers, filters, totalCount, onChangeFilters, 
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                     Orders
-                    <SortIcon field="totalOrders" />
+                    <SortIcon field="totalOrders" sortField={filters.sortField} sortDirection={filters.sortDirection} />
                   </div>
                 </th>
                 <th
@@ -315,7 +321,7 @@ export function CustomerList({ customers, filters, totalCount, onChangeFilters, 
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                     Lifetime Value
-                    <SortIcon field="lifetimeValue" />
+                    <SortIcon field="lifetimeValue" sortField={filters.sortField} sortDirection={filters.sortDirection} />
                   </div>
                 </th>
                 <th
@@ -347,7 +353,7 @@ export function CustomerList({ customers, filters, totalCount, onChangeFilters, 
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                     Joined
-                    <SortIcon field="joinedAt" />
+                    <SortIcon field="joinedAt" sortField={filters.sortField} sortDirection={filters.sortDirection} />
                   </div>
                 </th>
                 <th

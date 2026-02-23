@@ -1,12 +1,27 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { CreditCard, Banknote, Shield, ArrowLeft, Package, MapPin, Truck } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useCart } from "@/providers/cart-provider"
 import { useCheckout } from "@/providers/checkout-provider"
 import { primary, earth, bg, fonts } from "@/lib/theme"
 import { normalizeImageUrl } from "@/lib/image-url"
+
+const RAZORPAY_KEY = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || ""
+
+/** Dynamically load the Razorpay checkout.js script (idempotent). */
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false)
+    if ((window as any).Razorpay) return resolve(true)
+    const script = document.createElement("script")
+    script.src = "https://checkout.razorpay.com/v1/checkout.js"
+    script.onload = () => resolve(true)
+    script.onerror = () => resolve(false)
+    document.body.appendChild(script)
+  })
+}
 
 export function PaymentStep() {
   const router = useRouter()
@@ -27,6 +42,8 @@ export function PaymentStep() {
   } = useCheckout()
 
   const [localError, setLocalError] = useState<string | null>(null)
+  const [rzpLoading, setRzpLoading] = useState(false)
+  const rzpRef = useRef<any>(null)
 
   useEffect(() => {
     // Initialize payment session when landing on this step
@@ -42,9 +59,86 @@ export function PaymentStep() {
   const shippingAddr = cart?.shipping_address
   const selectedOption = shippingOptions.find((o) => o.id === selectedShippingId)
 
+  // Get the active Razorpay payment session from the cart, if any.
+  const razorpaySession = (() => {
+    const sessions = (cart as any)?.payment_collection?.payment_sessions || []
+    return sessions.find(
+      (s: any) => s.provider_id?.includes("razorpay") && s.status !== "canceled"
+    ) || null
+  })()
+
+  const handleRazorpayPayment = async () => {
+    setLocalError(null)
+    setError(null)
+    setRzpLoading(true)
+
+    try {
+      // Ensure script is loaded
+      const loaded = await loadRazorpayScript()
+      if (!loaded) throw new Error("Failed to load Razorpay. Please check your internet connection.")
+
+      const orderId = razorpaySession?.data?.id
+      if (!orderId) throw new Error("Razorpay order not initialized. Please refresh and try again.")
+
+      const key = RAZORPAY_KEY
+      if (!key) throw new Error("Razorpay is not configured. Please contact support.")
+
+      return new Promise<void>((resolve, reject) => {
+        const options = {
+          key,
+          amount: cart?.total || 0,         // in paise — Razorpay validates against order amount
+          currency: "INR",
+          order_id: orderId,
+          name: "VastuCart",
+          description: "Order Payment",
+          prefill: {
+            name: [shippingAddr?.first_name, shippingAddr?.last_name].filter(Boolean).join(" "),
+            email: contactEmail,
+            contact: shippingAddr?.phone || "",
+          },
+          theme: { color: primary[500] },
+          handler: async (_response: any) => {
+            // Razorpay payment successful — now complete the Medusa cart/order
+            try {
+              const { orderId: medusaOrderId } = await completeCheckout()
+              router.push(`/order-confirmation/${medusaOrderId}`)
+              resolve()
+            } catch (err: any) {
+              reject(err)
+            }
+          },
+          modal: {
+            ondismiss: () => {
+              reject(new Error("Payment cancelled. Your cart is safe — try again when ready."))
+            },
+          },
+        }
+
+        const rzp = new (window as any).Razorpay(options)
+        rzpRef.current = rzp
+        rzp.on("payment.failed", (response: any) => {
+          reject(new Error(response?.error?.description || "Payment failed. Please try again."))
+        })
+        rzp.open()
+      })
+    } catch (err: any) {
+      setLocalError(err?.message || "Payment failed. Please try again.")
+    } finally {
+      setRzpLoading(false)
+    }
+  }
+
   const handlePlaceOrder = async () => {
     setLocalError(null)
     setError(null)
+
+    // Route Razorpay through the proper checkout.js popup flow
+    if (paymentMethod === "razorpay" && razorpaySession && RAZORPAY_KEY) {
+      await handleRazorpayPayment()
+      return
+    }
+
+    // COD or system default — complete directly
     try {
       const { orderId } = await completeCheckout()
       router.push(`/order-confirmation/${orderId}`)
@@ -232,11 +326,13 @@ export function PaymentStep() {
         </button>
         <button
           onClick={handlePlaceOrder}
-          disabled={isProcessing}
+          disabled={isProcessing || rzpLoading}
           className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           style={{ background: `linear-gradient(135deg, ${primary[500]}, #054348)`, fontFamily: fonts.body }}
         >
-          {isProcessing ? "Placing Order..." : `Place Order · ₹${grandTotal.toLocaleString("en-IN")}`}
+          {isProcessing || rzpLoading
+            ? (rzpLoading ? "Opening Payment..." : "Placing Order...")
+            : `Place Order · ₹${grandTotal.toLocaleString("en-IN")}`}
         </button>
       </div>
     </div>

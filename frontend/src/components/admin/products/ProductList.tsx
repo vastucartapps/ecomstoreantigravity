@@ -57,6 +57,22 @@ const fonts = {
   mono: "'IBM Plex Mono', monospace",
 }
 
+// Extracted to module level — inline skeleton inside ProductList caused
+// unnecessary unmount/remount on every state change in the parent.
+function SkeletonCard() {
+  return (
+    <div className="overflow-hidden rounded-lg animate-pulse" style={{ backgroundColor: c.card, boxShadow: c.shadow }}>
+      <div className="aspect-square bg-stone-200" />
+      <div className="p-4 space-y-2">
+        <div className="h-3 bg-stone-200 rounded w-1/2" />
+        <div className="h-4 bg-stone-200 rounded w-3/4" />
+        <div className="h-3 bg-stone-200 rounded w-1/3" />
+        <div className="h-5 bg-stone-200 rounded w-1/2 mt-3" />
+      </div>
+    </div>
+  )
+}
+
 export function ProductList({
   products,
   categories,
@@ -139,18 +155,6 @@ export function ProductList({
       default: return { bg: c.subtle, text: c.earth600, label: stockLevel }
     }
   }
-
-  const SkeletonCard = () => (
-    <div className="overflow-hidden rounded-lg animate-pulse" style={{ backgroundColor: c.card, boxShadow: c.shadow }}>
-      <div className="aspect-square bg-stone-200" />
-      <div className="p-4 space-y-2">
-        <div className="h-3 bg-stone-200 rounded w-1/2" />
-        <div className="h-4 bg-stone-200 rounded w-3/4" />
-        <div className="h-3 bg-stone-200 rounded w-1/3" />
-        <div className="h-5 bg-stone-200 rounded w-1/2 mt-3" />
-      </div>
-    </div>
-  )
 
   const emptyState = (
     <div

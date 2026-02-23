@@ -42,81 +42,20 @@ const EMPTY_FORM: AddressFormData = {
   address2: "", city: "", state: "", pincode: "", country: "in",
 }
 
-export function AddressStep() {
-  const { user } = useAuth()
-  const { savedAddresses, loadSavedAddresses, setAddresses, selectedAddressId, setSelectedAddressId, goBack, isProcessing, error, setError } = useCheckout()
-  const [showNewForm, setShowNewForm] = useState(false)
-  const [form, setForm] = useState<AddressFormData>(EMPTY_FORM)
-  const [billingSame, setBillingSame] = useState(true)
-  const [billingForm, setBillingForm] = useState<AddressFormData>(EMPTY_FORM)
-  const [localError, setLocalError] = useState<string | null>(null)
+// Module-level constants — defined outside any component so they are stable
+// references across renders (avoids the inline-component focus-loss anti-pattern).
+const inputCls = "w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
+const inputStyle = { border: "1.5px solid #e8e0d8", color: earth[700], fontFamily: fonts.body, background: bg.card }
 
-  useEffect(() => {
-    if (user) loadSavedAddresses()
-    else setShowNewForm(true)
-  }, [user])
-
-  const validate = (f: AddressFormData): string | null => {
-    if (!f.firstName || !f.lastName) return "Full name is required"
-    if (!f.address1) return "Street address is required"
-    if (!f.city) return "City is required"
-    if (!f.state) return "State is required"
-    if (!f.pincode) return "Pincode/ZIP is required"
-    if (f.country === "in" && !/^\d{6}$/.test(f.pincode)) return "Indian pincode must be 6 digits"
-    return null
-  }
-
-  const toPayload = (f: AddressFormData): AddressPayload => ({
-    first_name: f.firstName,
-    last_name: f.lastName,
-    address_1: f.address1,
-    address_2: f.address2 || undefined,
-    city: f.city,
-    province: f.state,
-    postal_code: f.pincode,
-    country_code: f.country,
-    phone: f.phone || undefined,
-  })
-
-  const handleSubmitNew = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLocalError(null)
-    setError(null)
-    const err = validate(form)
-    if (err) { setLocalError(err); return }
-    const shipping = toPayload(form)
-    const billing = billingSame ? undefined : toPayload(billingForm)
-    try {
-      await setAddresses(shipping, billing)
-    } catch {}
-  }
-
-  const handleUseSaved = async () => {
-    if (!selectedAddressId) { setLocalError("Please select a delivery address"); return }
-    const addr = savedAddresses.find((a) => a.id === selectedAddressId)
-    if (!addr) return
-    setLocalError(null)
-    try {
-      await setAddresses({
-        first_name: addr.first_name || addr.name?.split(" ")[0] || "",
-        last_name: addr.last_name || addr.name?.split(" ").slice(1).join(" ") || "",
-        address_1: addr.address_1 || addr.street || "",
-        address_2: addr.address_2 || "",
-        city: addr.city || "",
-        province: addr.province || addr.state || "",
-        postal_code: addr.postal_code || addr.pincode || "",
-        country_code: addr.country_code || "in",
-        phone: addr.phone || "",
-      })
-    } catch {}
-  }
-
-  const displayError = localError || error
-
-  const inputCls = "w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
-  const inputStyle = { border: "1.5px solid #e8e0d8", color: earth[700], fontFamily: fonts.body, background: bg.card }
-
-  const AddressFormFields = ({ data, onChange, prefix = "checkout" }: { data: AddressFormData; onChange: (d: AddressFormData) => void; prefix?: string }) => (
+// AddressFormFields MUST be declared at module level (outside AddressStep).
+// If declared inside AddressStep, React sees a new component type on every
+// render and unmounts + remounts it, destroying input focus after each keystroke.
+function AddressFormFields({ data, onChange, prefix = "checkout" }: {
+  data: AddressFormData
+  onChange: (d: AddressFormData) => void
+  prefix?: string
+}) {
+  return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div>
         <label htmlFor={`${prefix}-first-name`} className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>First Name *</label>
@@ -191,6 +130,78 @@ export function AddressStep() {
       </div>
     </div>
   )
+}
+
+export function AddressStep() {
+  const { user } = useAuth()
+  const { savedAddresses, loadSavedAddresses, setAddresses, selectedAddressId, setSelectedAddressId, goBack, isProcessing, error, setError } = useCheckout()
+  const [showNewForm, setShowNewForm] = useState(false)
+  const [form, setForm] = useState<AddressFormData>(EMPTY_FORM)
+  const [billingSame, setBillingSame] = useState(true)
+  const [billingForm, setBillingForm] = useState<AddressFormData>(EMPTY_FORM)
+  const [localError, setLocalError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (user) loadSavedAddresses()
+    else setShowNewForm(true)
+  }, [user])
+
+  const validate = (f: AddressFormData): string | null => {
+    if (!f.firstName || !f.lastName) return "Full name is required"
+    if (!f.address1) return "Street address is required"
+    if (!f.city) return "City is required"
+    if (!f.state) return "State is required"
+    if (!f.pincode) return "Pincode/ZIP is required"
+    if (f.country === "in" && !/^\d{6}$/.test(f.pincode)) return "Indian pincode must be 6 digits"
+    return null
+  }
+
+  const toPayload = (f: AddressFormData): AddressPayload => ({
+    first_name: f.firstName,
+    last_name: f.lastName,
+    address_1: f.address1,
+    address_2: f.address2 || undefined,
+    city: f.city,
+    province: f.state,
+    postal_code: f.pincode,
+    country_code: f.country,
+    phone: f.phone || undefined,
+  })
+
+  const handleSubmitNew = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLocalError(null)
+    setError(null)
+    const err = validate(form)
+    if (err) { setLocalError(err); return }
+    const shipping = toPayload(form)
+    const billing = billingSame ? undefined : toPayload(billingForm)
+    try {
+      await setAddresses(shipping, billing)
+    } catch {}
+  }
+
+  const handleUseSaved = async () => {
+    if (!selectedAddressId) { setLocalError("Please select a delivery address"); return }
+    const addr = savedAddresses.find((a) => a.id === selectedAddressId)
+    if (!addr) return
+    setLocalError(null)
+    try {
+      await setAddresses({
+        first_name: addr.first_name || addr.name?.split(" ")[0] || "",
+        last_name: addr.last_name || addr.name?.split(" ").slice(1).join(" ") || "",
+        address_1: addr.address_1 || addr.street || "",
+        address_2: addr.address_2 || "",
+        city: addr.city || "",
+        province: addr.province || addr.state || "",
+        postal_code: addr.postal_code || addr.pincode || "",
+        country_code: addr.country_code || "in",
+        phone: addr.phone || "",
+      })
+    } catch {}
+  }
+
+  const displayError = localError || error
 
   return (
     <div className="space-y-5">
