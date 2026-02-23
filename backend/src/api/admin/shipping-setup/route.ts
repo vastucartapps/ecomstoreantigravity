@@ -8,8 +8,6 @@ import {
   updateStoresWorkflow,
 } from "@medusajs/medusa/core-flows"
 
-// India region — created via admin panel. Must match the deployed region ID.
-const INDIA_REGION_ID = "reg_01KHP9J32H1H104VBXD87P00ET"
 const FULFILLMENT_SET_NAME = "India Warehouse delivery"
 
 function serializeError(err: unknown): { error: string; detail?: string } {
@@ -76,7 +74,24 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     const fulfillmentSvc = req.scope.resolve(Modules.FULFILLMENT)
     const salesChannelSvc = req.scope.resolve(Modules.SALES_CHANNEL)
     const storeModuleSvc = req.scope.resolve(Modules.STORE)
+    const regionModuleSvc = req.scope.resolve(Modules.REGION)
     const link = req.scope.resolve(ContainerRegistrationKeys.LINK)
+
+    // ── 0. Resolve India region dynamically ──────────────────────────────────
+    // Never hardcode a region ID — it differs per deployment.
+    const allRegions = await regionModuleSvc.listRegions({})
+    if (allRegions.length === 0) {
+      return res.status(400).json({
+        error: "No regions found. Please create an India region in Admin → Settings → Regions first.",
+      })
+    }
+    // Prefer a region with "India" or "IN" in the name/currency, else fall back to first.
+    const indiaRegion =
+      allRegions.find((r: any) =>
+        r.name?.toLowerCase().includes("india") ||
+        r.currency_code?.toLowerCase() === "inr"
+      ) || allRegions[0]
+    const INDIA_REGION_ID = indiaRegion.id
 
     // ── 1. Ensure INR is a supported store currency ──────────────────────────
     // Without this, shipping option prices with currency_code "inr" are rejected
