@@ -339,13 +339,13 @@ export function useAdminOrders() {
       }
 
       if (filters.dateFrom) {
-        params.set("created_at[$gte]", new Date(filters.dateFrom).toISOString())
+        params.set("created_at[gte]", new Date(filters.dateFrom).toISOString())
       }
       if (filters.dateTo) {
         // Add 1 day to include the full end date
         const end = new Date(filters.dateTo)
         end.setDate(end.getDate() + 1)
-        params.set("created_at[$lte]", end.toISOString())
+        params.set("created_at[lte]", end.toISOString())
       }
 
       // Server-side native status filter
