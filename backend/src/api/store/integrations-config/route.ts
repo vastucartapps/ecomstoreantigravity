@@ -48,6 +48,17 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const ga4Raw = findIntegration("ga4")
     const pixelRaw = findIntegration("meta-pixel")
     const chatwootRaw = findIntegration("chatwoot")
+    const whatsappRaw = findIntegration("whatsapp")
+
+    // Active marketing tags — strip-sensitive (pixelId is always public)
+    const marketingTags = (cfg.marketingTags || [])
+      .filter((t: any) => t.isActive && t.pixelId)
+      .map((t: any) => ({
+        id: t.id,
+        name: t.name,
+        platform: t.platform,
+        pixelId: t.pixelId,
+      }))
 
     res.json({
       ga4:
@@ -74,6 +85,14 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
                 "https://app.chatwoot.com",
             }
           : null,
+      whatsapp:
+        whatsappRaw?.isConnected && whatsappRaw.configFields?.phoneNumber
+          ? {
+              isConnected: true,
+              phoneNumber: whatsappRaw.configFields.phoneNumber,
+            }
+          : null,
+      marketingTags,
       seoDefaults: cfg.seoDefaults || null,
       openGraph: cfg.openGraph || null,
     })
@@ -82,6 +101,8 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       ga4: null,
       metaPixel: null,
       chatwoot: null,
+      whatsapp: null,
+      marketingTags: [],
       seoDefaults: null,
       openGraph: null,
     })

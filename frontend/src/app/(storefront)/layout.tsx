@@ -39,13 +39,15 @@ export default async function StorefrontLayout({
     }))
   }
 
-  let trackingConfig = { ga4: null, metaPixel: null, chatwoot: null }
+  let trackingConfig = { ga4: null, metaPixel: null, chatwoot: null, whatsapp: null, marketingTags: [] as any[] }
   if (trackingRes.status === "fulfilled" && trackingRes.value.ok) {
     const data = await trackingRes.value.json()
     trackingConfig = {
       ga4: data.ga4 || null,
       metaPixel: data.metaPixel || null,
       chatwoot: data.chatwoot || null,
+      whatsapp: data.whatsapp || null,
+      marketingTags: data.marketingTags || [],
     }
   }
 

@@ -388,6 +388,7 @@ export function CategoryListing({
             Showing {products.length} of {totalCount} results
           </p>
           <div className="flex items-center gap-3">
+            {filterGroups.length > 0 && (
             <button
               onClick={() => setMobileFiltersOpen(true)}
               className="lg:hidden flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all"
@@ -399,6 +400,7 @@ export function CategoryListing({
             >
               <SlidersHorizontal className="w-4 h-4" /> Filters
             </button>
+            )}
             <select
               value={currentSort}
               onChange={(e) => onSortChange?.(e.target.value)}
@@ -421,7 +423,8 @@ export function CategoryListing({
 
         {/* Main layout */}
         <div className="flex gap-8">
-          {/* Desktop sidebar */}
+          {/* Desktop sidebar — hidden when no filter groups */}
+          {filterGroups.length > 0 && (
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div
               className="sticky top-6 rounded-xl p-5"
@@ -436,6 +439,7 @@ export function CategoryListing({
               />
             </div>
           </aside>
+          )}
 
           {/* Product grid */}
           <div className="flex-1">
@@ -525,8 +529,8 @@ export function CategoryListing({
         </div>
       </div>
 
-      {/* Mobile filter drawer */}
-      {mobileFiltersOpen && (
+      {/* Mobile filter drawer — only when filter groups exist */}
+      {mobileFiltersOpen && filterGroups.length > 0 && (
         <>
           <div
             className="fixed inset-0 z-40 bg-black/30"

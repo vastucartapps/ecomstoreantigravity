@@ -16,22 +16,14 @@ if (process.env.STRIPE_API_KEY) {
   })
 }
 
-if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
-  paymentProviders.push({
-    resolve: "@devx-commerce/razorpay/providers/payment-razorpay",
-    id: "razorpay",
-    options: {
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
-      razorpay_account: process.env.RAZORPAY_ACCOUNT,
-      automatic_expiry_period: 30,
-      manual_expiry_period: 20,
-      refund_speed: "normal",
-      webhook_secret: process.env.RAZORPAY_WEBHOOK_SECRET,
-      auto_capture: true,
-    },
-  })
-}
+// Razorpay — always registered; reads key_id + key_secret from
+// store.metadata.payments_tax_config.gateways (Admin > Payments).
+// No Coolify env vars needed for payment keys.
+paymentProviders.push({
+  resolve: "./src/modules/razorpay-db",
+  id: "razorpay",
+  options: {},
+})
 
 if (process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET) {
   paymentProviders.push({

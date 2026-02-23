@@ -27,16 +27,21 @@ const STEP_META: { id: CheckoutStepId; label: string }[] = [
 function CheckoutContent() {
   const router = useRouter()
   const { cart, isLoading } = useCart()
-  const { step, goToStep } = useCheckout()
+  const { step, goToStep, completedOrderId } = useCheckout()
 
   const items = cart?.items || []
   const hasItems = items.length > 0
 
+  // Only redirect to /cart if the cart is genuinely empty AND no order has been
+  // placed in this session. completedOrderId is set by completeCheckout() before
+  // navigation begins, so this guard never fires during the route transition
+  // (even if clearCart() on the order-confirmation page empties the cart while
+  // this page is still mounted).
   useEffect(() => {
-    if (!isLoading && !hasItems) {
+    if (!isLoading && !hasItems && !completedOrderId) {
       router.replace("/cart")
     }
-  }, [isLoading, hasItems])
+  }, [isLoading, hasItems, completedOrderId])
 
   if (isLoading) {
     return (
@@ -46,7 +51,7 @@ function CheckoutContent() {
     )
   }
 
-  if (!hasItems) return null
+  if (!hasItems && !completedOrderId) return null
 
   const subtotal = (cart?.subtotal || 0) / 100
   const mrpTotal = items.reduce((sum: number, item: any) => {

@@ -71,16 +71,16 @@ function mapOrderStatus(order: any): OrderStatus {
 }
 
 function mapPaymentMethod(providerId?: string): PaymentMethod {
-  if (!providerId) return "stripe"
+  if (!providerId) return "razorpay"
   const id = providerId.toLowerCase()
   if (id.includes("razorpay")) return "razorpay"
   if (id.includes("stripe")) return "stripe"
-  if (id.includes("paypal")) return "stripe"
-  if (id.includes("cod")) return "cod"
+  if (id.includes("paypal")) return "wallet"
+  if (id.includes("cod") || id.includes("manual")) return "cod"
   if (id.includes("upi")) return "upi"
   if (id.includes("netbanking")) return "netbanking"
   if (id.includes("wallet")) return "wallet"
-  return "stripe"
+  return "razorpay"
 }
 
 function mapPaymentStatus(collection?: any): PaymentStatus {

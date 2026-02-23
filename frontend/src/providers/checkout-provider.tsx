@@ -34,6 +34,7 @@ interface CheckoutContextValue {
   /** Legacy: apply shipping and advance to payment step. */
   selectShippingMethod: (optionId: string) => Promise<void>
   codEnabled: boolean
+  codConfig: { fee: number; minOrder: number; maxOrder: number } | null
   toggleCod: (enabled: boolean) => void
   // Payment
   paymentMethod: string
@@ -41,6 +42,10 @@ interface CheckoutContextValue {
   razorpayKeyId: string | null
   initPayment: () => Promise<void>
   completeCheckout: () => Promise<{ orderId: string }>
+  // Tracks when an order has been placed in this session so the empty-cart guard
+  // in the checkout page does not redirect to /cart while the route transition is
+  // still in progress (the cart becomes null before the old page unmounts).
+  completedOrderId: string | null
   // State
   isProcessing: boolean
   error: string | null
@@ -62,10 +67,12 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([])
   const [selectedShippingId, setSelectedShippingId] = useState<string | null>(null)
   const [codEnabled, setCodEnabled] = useState(false)
+  const [codConfig, setCodConfig] = useState<{ fee: number; minOrder: number; maxOrder: number } | null>(null)
   const [paymentMethod, setPaymentMethod] = useState("system")
   const [razorpayKeyId, setRazorpayKeyId] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [completedOrderId, setCompletedOrderId] = useState<string | null>(null)
 
   const setStep = (s: CheckoutStepId) => setStepState(s)
 
@@ -206,27 +213,51 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     else setPaymentMethod("system")
   }
 
-  // Fix #6: Fetch available payment providers instead of hardcoding pp_system_default
   const initPayment = useCallback(async () => {
     if (!cart) return
 
-    // Fetch Razorpay public key from admin panel settings (single source of truth)
+    // Clear any stale error from a previous attempt before doing anything else —
+    // including before the early-return guard, so the error is always wiped on re-entry.
+    setError(null)
+
+    // Fetch Razorpay public key + COD config from admin panel settings (single source of truth)
+    let razorpayKey: string | null = null
     try {
-      const cfgRes = await fetch(`${BACKEND_URL}/store/payment-config`, {
-        headers: { "x-publishable-api-key": PUB_KEY },
-      })
-      if (cfgRes.ok) {
-        const cfg = await cfgRes.json()
-        setRazorpayKeyId(cfg.razorpay_key_id || null)
+      const [cfgRes, shippingRes] = await Promise.allSettled([
+        fetch(`${BACKEND_URL}/store/payment-config`, {
+          headers: { "x-publishable-api-key": PUB_KEY },
+        }),
+        fetch(`${BACKEND_URL}/store/shipping-config`, {
+          headers: { "x-publishable-api-key": PUB_KEY },
+        }),
+      ])
+
+      if (cfgRes.status === "fulfilled" && cfgRes.value.ok) {
+        const cfg = await cfgRes.value.json()
+        razorpayKey = cfg.razorpay_key_id || null
+        setRazorpayKeyId(razorpayKey)
+      }
+
+      if (shippingRes.status === "fulfilled" && shippingRes.value.ok) {
+        const shData = await shippingRes.value.json()
+        const cod = shData?.config?.cod
+        if (cod?.enabled === true) {
+          setCodEnabled(true)
+          setCodConfig({
+            fee: cod.fee ?? 0,
+            minOrder: cod.minOrder ?? 0,
+            maxOrder: cod.maxOrder ?? Infinity,
+          })
+        }
       }
     } catch {}
 
-    // Guard: skip if a valid (non-cancelled) payment session already exists
-    const existingSessions = (cart as any)?.payment_collection?.payment_sessions
-    if (existingSessions?.some((s: any) => s.status !== "canceled")) return
+    // Guard: skip if payment_collection already exists with a valid (non-cancelled) session
+    const paymentCollection = (cart as any)?.payment_collection
+    const existingSessions: any[] = paymentCollection?.payment_sessions || []
+    if (existingSessions.some((s: any) => s.status !== "canceled")) return
 
     setIsProcessing(true)
-    setError(null)
     try {
       // Fetch available payment providers for this cart
       const res = await fetch(
@@ -241,21 +272,52 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      // Prefer Razorpay if available (primary gateway for India), otherwise first available
+      // Use Razorpay only if admin has configured keys; otherwise use system default (for COD)
       const razorpayProvider = providers.find((p) => p.id?.includes("razorpay"))
-      const providerId = (razorpayProvider || providers[0]).id
+      const systemProvider = providers.find((p) => p.id === "pp_system_default")
+      let providerId: string
+      if (razorpayKey && razorpayProvider) {
+        providerId = razorpayProvider.id
+      } else if (systemProvider) {
+        providerId = systemProvider.id
+      } else {
+        providerId = providers[0].id
+      }
 
-      await medusa.store.payment.initiatePaymentSession(cart, {
-        provider_id: providerId,
-      })
-    } catch (err: any) {
-      setError(err?.message || "Failed to initialize payment. Please try again.")
+      // If collection already exists but has no active sessions, add session to existing collection
+      if (paymentCollection?.id) {
+        await fetch(
+          `${BACKEND_URL}/store/payment-collections/${paymentCollection.id}/payment-sessions`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-publishable-api-key": PUB_KEY,
+            },
+            body: JSON.stringify({ provider_id: providerId }),
+          }
+        )
+      } else {
+        await medusa.store.payment.initiatePaymentSession(cart, {
+          provider_id: providerId,
+        })
+      }
+      // Refresh cart so the payment_collection is updated in state (guard works on next call)
+      await refreshCart().catch(() => {})
+    } catch {
+      // A 500 here usually means a concurrent initPayment call already created the collection
+      // (React Strict Mode double-invokes effects in development). Refresh cart silently —
+      // errors will surface at order-placement time if the session is truly missing.
+      await refreshCart().catch(() => {})
     } finally {
       setIsProcessing(false)
     }
-  }, [cart])
+  }, [cart, refreshCart])
 
-  // Fix #3: Proper order ID extraction from Medusa v2 cart.complete() response
+  // Complete the order. Sets completedOrderId BEFORE returning so the checkout
+  // page's empty-cart guard (which checks !completedOrderId) does not fire
+  // during the route transition — even if clearCart() is called on the
+  // order-confirmation page while the checkout page is still mounted.
   const completeCheckout = useCallback(async (): Promise<{ orderId: string }> => {
     setIsProcessing(true)
     setError(null)
@@ -270,7 +332,9 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         throw new Error("Order was created but no order ID was returned. Please check your order history.")
       }
 
-      clearCart()
+      // Mark the order as completed BEFORE returning so the checkout guard
+      // is already suppressed when clearCart() fires on the next page.
+      setCompletedOrderId(orderId)
       return { orderId }
     } catch (err: any) {
       const msg = err?.message || "Failed to complete order. Please try again."
@@ -279,7 +343,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsProcessing(false)
     }
-  }, [cart, cartId, clearCart])
+  }, [cart, cartId])
 
   return (
     <CheckoutContext.Provider
@@ -288,8 +352,9 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         contactEmail, contactPhone, setContactEmail, setContactPhone, submitContact,
         savedAddresses, loadSavedAddresses, setAddresses, selectedAddressId, setSelectedAddressId,
         shippingOptions, selectedShippingId, loadShippingOptions, applyShippingMethod, selectShippingMethod,
-        codEnabled, toggleCod,
+        codEnabled, codConfig, toggleCod,
         paymentMethod, setPaymentMethod, razorpayKeyId, initPayment, completeCheckout,
+        completedOrderId,
         isProcessing, error, setError,
       }}
     >

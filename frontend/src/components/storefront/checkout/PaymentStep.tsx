@@ -31,6 +31,7 @@ export function PaymentStep() {
     setPaymentMethod,
     razorpayKeyId,
     codEnabled,
+    codConfig,
     shippingOptions,
     selectedShippingId,
     initPayment,
@@ -42,15 +43,25 @@ export function PaymentStep() {
   } = useCheckout()
 
   const RAZORPAY_KEY = razorpayKeyId || ""
+  const showRazorpay = Boolean(RAZORPAY_KEY)
+  const showCod = codEnabled
 
   const [localError, setLocalError] = useState<string | null>(null)
   const [rzpLoading, setRzpLoading] = useState(false)
   const rzpRef = useRef<any>(null)
 
   useEffect(() => {
-    // Initialize payment session when landing on this step
+    setError(null)
     initPayment()
   }, [])
+
+  // Set default selection: Razorpay if key configured, else COD if enabled
+  useEffect(() => {
+    if (paymentMethod === "system" || !paymentMethod) {
+      if (showRazorpay) setPaymentMethod("razorpay")
+      else if (showCod) setPaymentMethod("cod")
+    }
+  }, [showRazorpay, showCod])
 
   const items = cart?.items || []
   const subtotal = (cart?.subtotal || 0) / 100
@@ -61,7 +72,6 @@ export function PaymentStep() {
   const shippingAddr = cart?.shipping_address
   const selectedOption = shippingOptions.find((o) => o.id === selectedShippingId)
 
-  // Get the active Razorpay payment session from the cart, if any.
   const razorpaySession = (() => {
     const sessions = (cart as any)?.payment_collection?.payment_sessions || []
     return sessions.find(
@@ -75,20 +85,16 @@ export function PaymentStep() {
     setRzpLoading(true)
 
     try {
-      // Ensure script is loaded
       const loaded = await loadRazorpayScript()
       if (!loaded) throw new Error("Failed to load Razorpay. Please check your internet connection.")
 
       const orderId = razorpaySession?.data?.id
       if (!orderId) throw new Error("Razorpay order not initialized. Please refresh and try again.")
 
-      const key = RAZORPAY_KEY
-      if (!key) throw new Error("Razorpay is not configured. Please contact support.")
-
       return new Promise<void>((resolve, reject) => {
         const options = {
-          key,
-          amount: cart?.total || 0,         // in paise — Razorpay validates against order amount
+          key: RAZORPAY_KEY,
+          amount: cart?.total || 0,        // in paise
           currency: "INR",
           order_id: orderId,
           name: "VastuCart",
@@ -100,10 +106,9 @@ export function PaymentStep() {
           },
           theme: { color: primary[500] },
           handler: async (_response: any) => {
-            // Razorpay payment successful — now complete the Medusa cart/order
             try {
               const { orderId: medusaOrderId } = await completeCheckout()
-              router.push(`/order-confirmation/${medusaOrderId}`)
+              router.push(`/order-confirmation/${medusaOrderId}?clear=1`)
               resolve()
             } catch (err: any) {
               reject(err)
@@ -136,7 +141,7 @@ export function PaymentStep() {
 
     if (paymentMethod === "razorpay") {
       if (!RAZORPAY_KEY) {
-        setLocalError("Razorpay is not configured. Please contact support.")
+        setLocalError("Razorpay is not configured. Go to Admin → Payments and add your keys.")
         return
       }
       if (!razorpaySession) {
@@ -147,18 +152,28 @@ export function PaymentStep() {
       return
     }
 
-    if (paymentMethod === "stripe" || paymentMethod === "paypal") {
-      setLocalError("This payment method is not yet available. Please select Razorpay or Cash on Delivery.")
+    if (paymentMethod === "cod") {
+      // Validate against admin COD rules
+      if (codConfig) {
+        if (codConfig.minOrder > 0 && grandTotal < codConfig.minOrder) {
+          setLocalError(`COD requires a minimum order of ₹${codConfig.minOrder.toLocaleString("en-IN")}. Your order is ₹${grandTotal.toLocaleString("en-IN")}.`)
+          return
+        }
+        if (codConfig.maxOrder < Infinity && grandTotal > codConfig.maxOrder) {
+          setLocalError(`COD is not available for orders above ₹${codConfig.maxOrder.toLocaleString("en-IN")}. Please pay online.`)
+          return
+        }
+      }
+      try {
+        const { orderId } = await completeCheckout()
+        router.push(`/order-confirmation/${orderId}?clear=1`)
+      } catch (err: any) {
+        setLocalError(err?.message || "Failed to place order. Please try again.")
+      }
       return
     }
 
-    // COD or system default — complete directly
-    try {
-      const { orderId } = await completeCheckout()
-      router.push(`/order-confirmation/${orderId}`)
-    } catch (err: any) {
-      setLocalError(err?.message || "Failed to place order. Please try again.")
-    }
+    setLocalError("Please select a payment method.")
   }
 
   const displayError = localError || error
@@ -170,6 +185,8 @@ export function PaymentStep() {
       .join(", ")
   }
 
+  const noPaymentConfigured = !showRazorpay && !showCod
+
   return (
     <div className="space-y-5">
       {/* Order review */}
@@ -180,15 +197,14 @@ export function PaymentStep() {
         <div className="divide-y" style={{ borderColor: "#f0ebe4" }}>
           {items.slice(0, 3).map((item: any) => (
             <div key={item.id} className="flex items-center gap-3 px-4 py-3">
-              {item.thumbnail && (
+              {item.thumbnail ? (
                 <img
                   src={normalizeImageUrl(item.thumbnail)}
                   alt={item.product_title || ""}
                   className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                   style={{ border: "1px solid #f0ebe4" }}
                 />
-              )}
-              {!item.thumbnail && (
+              ) : (
                 <div className="w-12 h-12 rounded-lg flex-shrink-0 flex items-center justify-center" style={{ background: "#f0ebe4" }}>
                   <Package className="w-5 h-5" style={{ color: earth[300] }} />
                 </div>
@@ -217,7 +233,7 @@ export function PaymentStep() {
         </div>
       </div>
 
-      {/* Delivery + contact info */}
+      {/* Delivery info */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="p-3.5 rounded-xl" style={{ background: "#f9f6f2", border: "1px solid #f0ebe4" }}>
           <div className="flex items-center gap-2 mb-1.5">
@@ -237,60 +253,79 @@ export function PaymentStep() {
         </div>
       </div>
 
-      {/* Payment method */}
+      {/* Payment method — radio selection between what admin has configured */}
       <div>
         <p className="text-xs font-semibold mb-2.5 uppercase tracking-wide" style={{ color: earth[500] }}>Payment Method</p>
         <div className="space-y-2">
-          {/* COD */}
-          {codEnabled && (
-            <div
-              className="flex items-center gap-3 p-4 rounded-xl"
-              style={{ border: `1.5px solid ${primary[500]}`, background: primary[50] }}
+
+          {/* Online Payment via Razorpay */}
+          {showRazorpay && (
+            <label
+              className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all"
+              style={{
+                border: `1.5px solid ${paymentMethod === "razorpay" ? primary[500] : "#e8e0d8"}`,
+                background: paymentMethod === "razorpay" ? primary[50] : bg.card,
+              }}
             >
-              <Banknote className="w-5 h-5" style={{ color: primary[500] }} />
+              <input
+                type="radio"
+                name="payment"
+                value="razorpay"
+                checked={paymentMethod === "razorpay"}
+                onChange={() => setPaymentMethod("razorpay")}
+                style={{ accentColor: primary[500] }}
+              />
+              <CreditCard className="w-4 h-4 flex-shrink-0" style={{ color: paymentMethod === "razorpay" ? primary[500] : earth[400] }} />
               <div>
-                <p className="text-sm font-semibold" style={{ color: earth[700] }}>Cash on Delivery</p>
-                <p className="text-xs" style={{ color: earth[400] }}>Pay ₹{grandTotal.toLocaleString("en-IN")} when your order arrives</p>
+                <p className="text-sm font-semibold" style={{ color: earth[700] }}>Online Payment</p>
+                <p className="text-xs" style={{ color: earth[400] }}>UPI · Credit/Debit Card · Net Banking via Razorpay</p>
               </div>
-            </div>
+            </label>
           )}
 
-          {/* Online payment (stubbed) */}
-          {!codEnabled && (
-            <>
-              {["razorpay", "stripe", "paypal"].map((method) => {
-                const labels: Record<string, string> = {
-                  razorpay: "Razorpay (UPI, Cards, Net Banking)",
-                  stripe: "Stripe (International Cards)",
-                  paypal: "PayPal",
-                }
-                const isSelected = paymentMethod === method
-                return (
-                  <label
-                    key={method}
-                    className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all"
-                    style={{
-                      border: `1.5px solid ${isSelected ? primary[500] : "#e8e0d8"}`,
-                      background: isSelected ? primary[50] : bg.card,
-                    }}
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      value={method}
-                      checked={isSelected}
-                      onChange={() => setPaymentMethod(method)}
-                      style={{ accentColor: primary[500] }}
-                    />
-                    <CreditCard className="w-4 h-4" style={{ color: isSelected ? primary[500] : earth[400] }} />
-                    <span className="text-sm font-medium" style={{ color: earth[700] }}>{labels[method]}</span>
-                  </label>
-                )
-              })}
-              <p className="text-xs px-1" style={{ color: earth[300] }}>
-                Payment gateway integration coming soon. Order will be placed on test mode.
+          {/* Cash on Delivery */}
+          {showCod && (
+            <label
+              className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all"
+              style={{
+                border: `1.5px solid ${paymentMethod === "cod" ? primary[500] : "#e8e0d8"}`,
+                background: paymentMethod === "cod" ? primary[50] : bg.card,
+              }}
+            >
+              <input
+                type="radio"
+                name="payment"
+                value="cod"
+                checked={paymentMethod === "cod"}
+                onChange={() => setPaymentMethod("cod")}
+                style={{ accentColor: primary[500] }}
+              />
+              <Banknote className="w-4 h-4 flex-shrink-0" style={{ color: paymentMethod === "cod" ? primary[500] : earth[400] }} />
+              <div>
+                <p className="text-sm font-semibold" style={{ color: earth[700] }}>
+                  Cash on Delivery
+                  {codConfig?.fee && codConfig.fee > 0 ? ` (+₹${codConfig.fee} fee)` : ""}
+                </p>
+                <p className="text-xs" style={{ color: earth[400] }}>
+                  Pay ₹{(grandTotal + (codConfig?.fee || 0)).toLocaleString("en-IN")} when your order arrives
+                  {codConfig?.minOrder && codConfig.minOrder > 0
+                    ? ` · Min order ₹${codConfig.minOrder.toLocaleString("en-IN")}`
+                    : ""}
+                  {codConfig?.maxOrder && codConfig.maxOrder < Infinity
+                    ? ` · Max ₹${codConfig.maxOrder.toLocaleString("en-IN")}`
+                    : ""}
+                </p>
+              </div>
+            </label>
+          )}
+
+          {/* No payment method configured */}
+          {noPaymentConfigured && (
+            <div className="p-4 rounded-xl" style={{ background: "#FEF3C7", border: "1px solid #FDE68A" }}>
+              <p className="text-sm" style={{ color: "#92400E" }}>
+                No payment method configured. Please contact support.
               </p>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -340,13 +375,15 @@ export function PaymentStep() {
         </button>
         <button
           onClick={handlePlaceOrder}
-          disabled={isProcessing || rzpLoading}
+          disabled={isProcessing || rzpLoading || noPaymentConfigured}
           className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           style={{ background: `linear-gradient(135deg, ${primary[500]}, #054348)`, fontFamily: fonts.body }}
         >
           {isProcessing || rzpLoading
             ? (rzpLoading ? "Opening Payment..." : "Placing Order...")
-            : `Place Order · ₹${grandTotal.toLocaleString("en-IN")}`}
+            : paymentMethod === "cod"
+              ? `Place Order · ₹${grandTotal.toLocaleString("en-IN")} (COD)`
+              : `Pay ₹${grandTotal.toLocaleString("en-IN")}`}
         </button>
       </div>
     </div>

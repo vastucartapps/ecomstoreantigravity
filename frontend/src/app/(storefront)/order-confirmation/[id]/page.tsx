@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { CheckCircle2, Package, MapPin, Download, ShoppingBag, Loader2, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { medusa } from "@/lib/medusa"
+import { useCart } from "@/providers/cart-provider"
 import { primary, earth, bg, fonts } from "@/lib/theme"
 import { normalizeImageUrl } from "@/lib/image-url"
 import { getRegionId } from "@/lib/region"
@@ -14,12 +15,26 @@ import { DEFAULT_HSN } from "@/lib/gst-utils"
 export default function OrderConfirmationPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { clearCart } = useCart()
   const orderId = params?.id as string
 
   const [order, setOrder] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [downloadingPdf, setDownloadingPdf] = useState(false)
   const [relatedProducts, setRelatedProducts] = useState<any[]>([])
+
+  // Clear the cart once when arriving from a completed checkout (?clear=1).
+  // Doing this here (not in the checkout flow) avoids the race condition where
+  // clearing the cart triggers the checkout page's empty-cart redirect guard
+  // before router.push() to this page has finished.
+  useEffect(() => {
+    if (searchParams?.get("clear") === "1") {
+      clearCart()
+      // Replace URL to remove the signal param — clean URL in browser history
+      router.replace(`/order-confirmation/${orderId}`)
+    }
+  }, [])
 
   useEffect(() => {
     if (!orderId || orderId === "unknown") {
