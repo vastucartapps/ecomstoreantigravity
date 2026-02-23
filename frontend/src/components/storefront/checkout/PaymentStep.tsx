@@ -8,6 +8,9 @@ import { useCheckout } from "@/providers/checkout-provider"
 import { primary, earth, bg, fonts } from "@/lib/theme"
 import { normalizeImageUrl } from "@/lib/image-url"
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
+const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+
 
 /** Dynamically load the Razorpay checkout.js script (idempotent). */
 function loadRazorpayScript(): Promise<boolean> {
@@ -72,13 +75,6 @@ export function PaymentStep() {
   const shippingAddr = cart?.shipping_address
   const selectedOption = shippingOptions.find((o) => o.id === selectedShippingId)
 
-  const razorpaySession = (() => {
-    const sessions = (cart as any)?.payment_collection?.payment_sessions || []
-    return sessions.find(
-      (s: any) => s.provider_id?.includes("razorpay") && s.status !== "canceled"
-    ) || null
-  })()
-
   const handleRazorpayPayment = async () => {
     setLocalError(null)
     setError(null)
@@ -88,12 +84,28 @@ export function PaymentStep() {
       const loaded = await loadRazorpayScript()
       if (!loaded) throw new Error("Failed to load Razorpay. Please check your internet connection.")
 
-      const orderId = razorpaySession?.data?.id
-      if (!orderId) throw new Error("Razorpay order not initialized. Please refresh and try again.")
+      // Create the Razorpay order via our store API (which has access to store.metadata keys)
+      const createRes = await fetch(`${BACKEND_URL}/store/razorpay/create-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-publishable-api-key": PUB_KEY,
+        },
+        body: JSON.stringify({
+          amount: (cart?.total || 0) / 100,  // paise → rupees (route expects rupees)
+          currency: "INR",
+        }),
+      })
+      const createData = await createRes.json()
+      if (!createRes.ok || !createData.order_id) {
+        throw new Error(createData.error || "Failed to initialize payment. Please try again.")
+      }
+
+      const { order_id: orderId, key_id: liveKeyId } = createData
 
       return new Promise<void>((resolve, reject) => {
         const options = {
-          key: RAZORPAY_KEY,
+          key: liveKeyId || RAZORPAY_KEY,
           amount: cart?.total || 0,        // in paise
           currency: "INR",
           order_id: orderId,
@@ -140,14 +152,6 @@ export function PaymentStep() {
     setError(null)
 
     if (paymentMethod === "razorpay") {
-      if (!RAZORPAY_KEY) {
-        setLocalError("Razorpay is not configured. Go to Admin → Payments and add your keys.")
-        return
-      }
-      if (!razorpaySession) {
-        setLocalError("Payment session not ready. Please wait a moment and try again.")
-        return
-      }
       await handleRazorpayPayment()
       return
     }
