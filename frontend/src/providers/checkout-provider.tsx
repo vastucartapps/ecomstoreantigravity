@@ -252,10 +252,12 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
       }
     } catch {}
 
-    // Guard: skip if payment_collection already exists with a valid (non-cancelled) session
+    // Guard: skip only if we already have an active Razorpay session (avoids duplicate creation).
+    // Do NOT guard on pp_system_default — that session is always present and would block
+    // Razorpay session creation when the user first reaches the payment step.
     const paymentCollection = (cart as any)?.payment_collection
     const existingSessions: any[] = paymentCollection?.payment_sessions || []
-    if (existingSessions.some((s: any) => s.status !== "canceled")) return
+    if (existingSessions.some((s: any) => s.provider_id?.includes("razorpay") && s.status !== "canceled")) return
 
     setIsProcessing(true)
     try {
