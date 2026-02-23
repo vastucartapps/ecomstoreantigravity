@@ -82,13 +82,6 @@ function SearchContent() {
   const limit = 20
 
   const searchProducts = useCallback(async () => {
-    if (!query) {
-      setProducts([])
-      setTotalCount(0)
-      setIsLoading(false)
-      return
-    }
-
     setIsLoading(true)
     const headers: Record<string, string> = {
       "x-publishable-api-key":
@@ -100,8 +93,9 @@ function SearchContent() {
       const regionParam = regionId ? `&region_id=${regionId}` : ""
       const offset = (currentPage - 1) * limit
       const sortParam = getSortParams(currentSort)
+      const queryParam = query ? `&q=${encodeURIComponent(query)}` : ""
       const res = await fetch(
-        `${BACKEND_URL}/store/products?q=${encodeURIComponent(query)}&limit=${limit}&offset=${offset}${sortParam}&fields=id,title,handle,thumbnail,created_at,metadata,variants.id,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity,images.url${regionParam}`,
+        `${BACKEND_URL}/store/products?limit=${limit}&offset=${offset}${queryParam}${sortParam}&fields=id,title,handle,thumbnail,created_at,metadata,variants.id,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity,images.url${regionParam}`,
         { headers }
       )
       const data = await res.json()
@@ -120,10 +114,10 @@ function SearchContent() {
   }, [searchProducts])
 
   const categoryHero: CategoryHero = {
-    name: query ? `Search: "${query}"` : "Search",
+    name: query ? `Search: "${query}"` : "Shop All Products",
     description: query
       ? `Showing results for "${query}"`
-      : "Enter a search term to find products",
+      : "Browse our complete collection of authentic spiritual products",
     imageUrl: FALLBACK_HERO,
     slug: "search",
     productCount: totalCount,
@@ -131,7 +125,7 @@ function SearchContent() {
 
   const breadcrumbs: Breadcrumb[] = [
     { label: "Home", href: "/" },
-    { label: `Search: "${query}"`, href: null },
+    { label: query ? `Search: "${query}"` : "Shop", href: null },
   ]
 
   const totalPages = Math.ceil(totalCount / limit)
@@ -175,7 +169,7 @@ function SearchContent() {
     }
   }
 
-  // No results state
+  // No results state — only shown when a query was entered but nothing matched
   if (!isLoading && query && products.length === 0) {
     return (
       <div style={{ background: bg.primary, minHeight: "70vh" }}>

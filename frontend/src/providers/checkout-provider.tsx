@@ -234,8 +234,16 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         { headers: { "x-publishable-api-key": PUB_KEY } }
       )
       const data = await res.json()
-      const providers = data.payment_providers || []
-      const providerId = providers[0]?.id || "pp_system_default"
+      const providers: any[] = data.payment_providers || []
+
+      if (providers.length === 0) {
+        setError("No payment providers available. Please contact support.")
+        return
+      }
+
+      // Prefer Razorpay if available (primary gateway for India), otherwise first available
+      const razorpayProvider = providers.find((p) => p.id?.includes("razorpay"))
+      const providerId = (razorpayProvider || providers[0]).id
 
       await medusa.store.payment.initiatePaymentSession(cart, {
         provider_id: providerId,

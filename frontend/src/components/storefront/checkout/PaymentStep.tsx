@@ -134,9 +134,21 @@ export function PaymentStep() {
     setLocalError(null)
     setError(null)
 
-    // Route Razorpay through the proper checkout.js popup flow
-    if (paymentMethod === "razorpay" && razorpaySession && RAZORPAY_KEY) {
+    if (paymentMethod === "razorpay") {
+      if (!RAZORPAY_KEY) {
+        setLocalError("Razorpay is not configured. Please contact support.")
+        return
+      }
+      if (!razorpaySession) {
+        setLocalError("Payment session not ready. Please wait a moment and try again.")
+        return
+      }
       await handleRazorpayPayment()
+      return
+    }
+
+    if (paymentMethod === "stripe" || paymentMethod === "paypal") {
+      setLocalError("This payment method is not yet available. Please select Razorpay or Cash on Delivery.")
       return
     }
 
