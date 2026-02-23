@@ -321,16 +321,18 @@ class EcosystemAdsService extends MedusaService({
 
   // ─── Public Banner Serving ───────────────────────────────────────────
 
-  async getBannersForSite(subdomain: string): Promise<any[]> {
+  async getBannersForSite(
+    subdomain: string
+  ): Promise<{ site_id: string | null; banners: any[] }> {
     // Find site by subdomain
     const sites = await this.listEcosystemSites(
       { subdomain },
       { take: 1 }
     )
-    if (sites.length === 0) return []
+    if (sites.length === 0) return { site_id: null, banners: [] }
 
     const site = sites[0]
-    if (!site.is_active) return []
+    if (!site.is_active) return { site_id: site.id, banners: [] }
 
     // Get active slots for this site
     const slots = await this.listEcosystemSlots(
@@ -374,7 +376,7 @@ class EcosystemAdsService extends MedusaService({
       }
     }
 
-    return results
+    return { site_id: site.id, banners: results }
   }
 
   // ─── Social Posts ────────────────────────────────────────────────────

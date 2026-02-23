@@ -36,6 +36,7 @@ import {
   fonts,
   shadows,
 } from "@/lib/theme"
+import { normalizeImageUrl } from "@/lib/image-url"
 import type {
   AdminEcosystemAdsProps,
   AdTab,
@@ -543,7 +544,7 @@ function BannerForm({
                     ) : existing ? (
                       <>
                         <img
-                          src={existing.imageUrl}
+                          src={normalizeImageUrl(existing.imageUrl)}
                           alt={ratio}
                           className="absolute inset-0 w-full h-full object-cover"
                         />
@@ -813,7 +814,7 @@ function BannerCard({
                       >
                         {cr.imageUrl ? (
                           <img
-                            src={cr.imageUrl}
+                            src={normalizeImageUrl(cr.imageUrl)}
                             alt={cr.ratio}
                             className="w-full h-full object-cover"
                           />
@@ -1220,8 +1221,7 @@ function SiteCard({
                       <option value="">Assign banner...</option>
                       {banners
                         .filter(
-                          (b) =>
-                            b.is_active && b.creatives.some((cr) => cr.ratio === slot.ratio)
+                          (b) => b.is_active
                         )
                         .map((b) => (
                           <option key={b.id} value={b.id}>

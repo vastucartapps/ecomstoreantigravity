@@ -331,7 +331,7 @@ export function useAdminOrders() {
       params.set("offset", String(offset))
       params.set(
         "fields",
-        "id,display_id,status,payment_status,total,currency_code,created_at,email,metadata,*customer,*items,*payment_collections,*payment_collections.payments"
+        "id,display_id,status,payment_status,total,currency_code,created_at,email,metadata,*customer,*items,*payment_collections"
       )
 
       if (filters.search) {
@@ -356,12 +356,12 @@ export function useAdminOrders() {
 
       // Sorting (server-side for date and total)
       if (filters.sortField === "date") {
-        params.set("order[created_at]", filters.sortDirection)
+        params.set("order[created_at]", filters.sortDirection.toUpperCase())
       } else if (filters.sortField === "total") {
-        params.set("order[total]", filters.sortDirection)
+        params.set("order[total]", filters.sortDirection.toUpperCase())
       } else {
         // Default server sort by date desc
-        params.set("order[created_at]", "desc")
+        params.set("order[created_at]", "DESC")
       }
 
       const res = await adminFetch<{ orders: any[]; count: number }>(
@@ -394,7 +394,7 @@ export function useAdminOrders() {
   const fetchOrderDetail = useCallback(async (id: string): Promise<OrderDetail | null> => {
     try {
       const res = await adminFetch<{ order: any }>(
-        `/admin/orders/${id}?fields=id,display_id,status,payment_status,total,subtotal,discount_total,shipping_total,tax_total,currency_code,email,created_at,updated_at,metadata,*customer,*items,*shipping_address,*fulfillments,*payment_collections,*payment_collections.payments`
+        `/admin/orders/${id}?fields=id,display_id,status,payment_status,total,subtotal,discount_total,shipping_total,tax_total,currency_code,email,created_at,updated_at,metadata,*customer,*items,*shipping_address,*fulfillments,*payment_collections`
       )
       const order = res.order
       if (!order) return null

@@ -142,7 +142,7 @@ export function useAdminCustomers() {
       params.set("limit", String(perPage))
       params.set("offset", String(offset))
       params.set("fields", "id,first_name,last_name,email,phone,metadata,created_at")
-      params.set("order[created_at]", "desc")
+      params.set("order[created_at]", "DESC")
       if (search) {
         params.set("q", search)
       }
@@ -152,7 +152,7 @@ export function useAdminCustomers() {
           `/admin/customers?${params.toString()}`
         ),
         adminFetch<{ orders: any[]; count: number }>(
-          `/admin/orders?fields=id,total,created_at,status,metadata,customer_id&limit=500&order[created_at]=desc`
+          `/admin/orders?fields=id,total,created_at,status,metadata,customer_id&limit=500&order[created_at]=DESC`
         ),
       ])
 

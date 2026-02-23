@@ -6,11 +6,12 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const adsService = req.scope.resolve(ECOSYSTEM_ADS_MODULE) as any
     const subdomain = req.params.subdomain
 
-    const banners = await adsService.getBannersForSite(subdomain)
+    const { site_id, banners } = await adsService.getBannersForSite(subdomain)
 
     // Set cache headers for ecosystem sites
     res.setHeader("Cache-Control", "public, max-age=60, s-maxage=60")
-    res.json({ banners })
+    // site_id is included so partner sites can use it for tracking calls
+    res.json({ site_id, banners })
   } catch (err: any) {
     res.status(500).json({ message: err.message || "Failed to get banners" })
   }
