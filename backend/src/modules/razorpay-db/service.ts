@@ -31,17 +31,21 @@ import crypto from "crypto"
 class RazorpayDbService extends AbstractPaymentProvider {
   static identifier = "razorpay-db"
 
-  protected storeService_: any
-
   constructor(container: any, options: any) {
     super(container, options)
-    this.storeService_ = container.resolve(Modules.STORE)
+    // Do NOT call container.resolve() here — in Medusa v2 payment providers,
+    // `container` is an Awilix cradle (proxy). Calling cradle.resolve() makes
+    // Awilix look for a dep named "resolve" → AwilixResolutionError.
+    // Access other modules lazily via cradle property access in methods below.
   }
 
   // ── Read keys from admin panel settings ──────────────────────────────────
 
   private async getKeys(): Promise<{ key_id: string; key_secret: string }> {
-    const stores = await this.storeService_.listStores({}, { take: 1 })
+    // Resolve the store module service lazily via Awilix cradle property access.
+    // (this as any).container_ is set by AbstractPaymentProvider.constructor.
+    const storeService = (this as any).container_[Modules.STORE]
+    const stores = await storeService.listStores({}, { take: 1 })
     const gateways = (stores?.[0]?.metadata as any)?.payments_tax_config?.gateways
     const key_id: string = gateways?.razorpay?.keyId || ""
     const key_secret: string = gateways?.razorpay?.keySecret || ""
