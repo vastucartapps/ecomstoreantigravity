@@ -1,4 +1,4 @@
-import { medusa, adminFetch } from "@/lib/medusa"
+import { adminFetch } from "@/lib/medusa"
 import type {
   StorefrontConfig,
   Announcement,
@@ -6,6 +6,8 @@ import type {
   HomepageSection,
   ContentPage,
   FooterConfig,
+  HeroSlide,
+  MarketingSlide,
 } from "@/types/admin-storefront"
 
 const DEFAULT_ANNOUNCEMENT: Announcement = {
@@ -161,7 +163,7 @@ async function readStore(): Promise<{ id: string; config: StorefrontConfig; rawM
 }
 
 async function writeConfig(storeId: string, config: StorefrontConfig, rawMetadata: Record<string, unknown>): Promise<void> {
-  await medusa.client.fetch(`/admin/stores/${storeId}`, {
+  await adminFetch(`/admin/stores/${storeId}`, {
     method: "POST",
     body: { metadata: { ...rawMetadata, storefront_config: config } },
   })
@@ -231,6 +233,60 @@ export function useAdminStorefront() {
     await writeConfig(id, { ...config, footerConfig }, rawMetadata)
   }
 
+  // ── Hero Slides ────────────────────────────────────────────────────────────
+
+  async function fetchHeroSlides(): Promise<HeroSlide[]> {
+    const res = await adminFetch<{ hero_slides: HeroSlide[] }>("/admin/hero-slides")
+    return res.hero_slides || []
+  }
+
+  async function createHeroSlide(data: Omit<HeroSlide, "id">): Promise<HeroSlide> {
+    const res = await adminFetch<{ hero_slide: HeroSlide }>("/admin/hero-slides", {
+      method: "POST",
+      body: data,
+    })
+    return res.hero_slide
+  }
+
+  async function updateHeroSlide(id: string, data: Partial<HeroSlide>): Promise<HeroSlide> {
+    const res = await adminFetch<{ hero_slide: HeroSlide }>(`/admin/hero-slides/${id}`, {
+      method: "POST",
+      body: data,
+    })
+    return res.hero_slide
+  }
+
+  async function deleteHeroSlide(id: string): Promise<void> {
+    await adminFetch(`/admin/hero-slides/${id}`, { method: "DELETE" })
+  }
+
+  // ── Marketing Slides (Login page) ─────────────────────────────────────────
+
+  async function fetchMarketingSlides(): Promise<MarketingSlide[]> {
+    const res = await adminFetch<{ marketing_slides: MarketingSlide[] }>("/admin/marketing-slides")
+    return res.marketing_slides || []
+  }
+
+  async function createMarketingSlide(data: Omit<MarketingSlide, "id">): Promise<MarketingSlide> {
+    const res = await adminFetch<{ marketing_slide: MarketingSlide }>("/admin/marketing-slides", {
+      method: "POST",
+      body: data,
+    })
+    return res.marketing_slide
+  }
+
+  async function updateMarketingSlide(id: string, data: Partial<MarketingSlide>): Promise<MarketingSlide> {
+    const res = await adminFetch<{ marketing_slide: MarketingSlide }>(`/admin/marketing-slides/${id}`, {
+      method: "POST",
+      body: data,
+    })
+    return res.marketing_slide
+  }
+
+  async function deleteMarketingSlide(id: string): Promise<void> {
+    await adminFetch(`/admin/marketing-slides/${id}`, { method: "DELETE" })
+  }
+
   return {
     fetchConfig,
     updateAnnouncement,
@@ -240,5 +296,13 @@ export function useAdminStorefront() {
     editPage,
     togglePagePublish,
     updateFooter,
+    fetchHeroSlides,
+    createHeroSlide,
+    updateHeroSlide,
+    deleteHeroSlide,
+    fetchMarketingSlides,
+    createMarketingSlide,
+    updateMarketingSlide,
+    deleteMarketingSlide,
   }
 }

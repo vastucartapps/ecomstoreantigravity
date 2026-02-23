@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { medusa } from "@/lib/medusa"
+import { medusa, adminFetch } from "@/lib/medusa"
 import type {
   CustomerRow,
   CustomerDetail,
@@ -114,7 +114,7 @@ function mapMedusaAddress(addr: any): CustomerAddress {
 
 async function getAdminAuthor(): Promise<string> {
   try {
-    const res = await medusa.client.fetch<{ user: any }>("/admin/users/me")
+    const res = await adminFetch<{ user: any }>("/admin/users/me")
     return (
       [res.user?.first_name, res.user?.last_name].filter(Boolean).join(" ") ||
       res.user?.email ||
@@ -148,10 +148,10 @@ export function useAdminCustomers() {
       }
 
       const [customerRes, ordersRes] = await Promise.all([
-        medusa.client.fetch<{ customers: any[]; count: number }>(
+        adminFetch<{ customers: any[]; count: number }>(
           `/admin/customers?${params.toString()}`
         ),
-        medusa.client.fetch<{ orders: any[]; count: number }>(
+        adminFetch<{ orders: any[]; count: number }>(
           `/admin/orders?fields=id,total,created_at,status,metadata,customer_id&limit=500&order[created_at]=desc`
         ),
       ])
@@ -207,13 +207,13 @@ export function useAdminCustomers() {
     async (id: string): Promise<CustomerDetail | null> => {
       try {
         const [customerRes, ordersRes, loyaltyRes] = await Promise.all([
-          medusa.client.fetch<{ customer: any }>(
+          adminFetch<{ customer: any }>(
             `/admin/customers/${id}?fields=id,first_name,last_name,email,phone,metadata,created_at,*addresses`
           ),
-          medusa.client.fetch<{ orders: any[]; count: number }>(
+          adminFetch<{ orders: any[]; count: number }>(
             `/admin/orders?customer_id=${id}&fields=id,display_id,total,created_at,status,metadata,*items&order[created_at]=desc&limit=5`
           ),
-          medusa.client.fetch<{ points: number }>(
+          adminFetch<{ points: number }>(
             `/admin/customers/${id}/loyalty`
           ).catch(() => ({ points: 0 })),
         ])
@@ -279,7 +279,7 @@ export function useAdminCustomers() {
       try {
         const author = await getAdminAuthor()
 
-        const currentRes = await medusa.client.fetch<{ customer: any }>(
+        const currentRes = await adminFetch<{ customer: any }>(
           `/admin/customers/${customerId}?fields=id,metadata`
         )
         const existingMeta = currentRes.customer?.metadata || {}
@@ -294,7 +294,7 @@ export function useAdminCustomers() {
           createdAt: new Date().toISOString(),
         }
 
-        await medusa.client.fetch(`/admin/customers/${customerId}`, {
+        await adminFetch(`/admin/customers/${customerId}`, {
           method: "POST",
           body: { metadata: { ...existingMeta, admin_notes: [...existingNotes, newNote] } },
         })

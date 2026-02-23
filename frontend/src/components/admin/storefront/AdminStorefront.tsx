@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Save,
   Upload,
@@ -18,6 +18,8 @@ import {
   Pencil,
   Check,
   X,
+  SlidersHorizontal,
+  UserCircle,
 } from "lucide-react"
 import {
   primary,
@@ -37,9 +39,12 @@ import type {
   FooterConfig,
   FooterColumn,
   FooterLink,
+  HeroSlide,
+  MarketingSlide,
 } from "@/types/admin-storefront"
+import { normalizeImageUrl } from "@/lib/image-url"
 
-type ActiveTab = "announcement" | "branding" | "homepage" | "content" | "footer"
+type ActiveTab = "announcement" | "branding" | "homepage" | "content" | "footer" | "hero" | "login-slides"
 
 const cardStyle: React.CSSProperties = {
   background: `linear-gradient(#ffffff, #ffffff) padding-box, linear-gradient(90deg, ${primary[500]}, #2a7a72, ${secondary[500]}) border-box`,
@@ -369,6 +374,8 @@ export function AdminStorefront({
   homepageSections: initialSections,
   contentPages,
   footerConfig: initialFooter,
+  heroSlides: initialHeroSlides,
+  marketingSlides: initialMarketingSlides,
   onUpdateAnnouncement,
   onUpdateBranding,
   onReorderSection,
@@ -376,6 +383,12 @@ export function AdminStorefront({
   onEditPage,
   onTogglePagePublish,
   onUpdateFooter,
+  onCreateHeroSlide,
+  onUpdateHeroSlide,
+  onDeleteHeroSlide,
+  onCreateMarketingSlide,
+  onUpdateMarketingSlide,
+  onDeleteMarketingSlide,
 }: AdminStorefrontProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("announcement")
 
@@ -384,6 +397,30 @@ export function AdminStorefront({
   const [branding, setBranding] = useState<Branding>(initialBranding)
   const [sections, setSections] = useState<HomepageSection[]>(initialSections)
   const [footer, setFooter] = useState<FooterConfig>(initialFooter)
+
+  // Slides state
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(initialHeroSlides)
+  const [marketingSlides, setMarketingSlides] = useState<MarketingSlide[]>(initialMarketingSlides)
+
+  // Hero slide form
+  const [heroFormOpen, setHeroFormOpen] = useState(false)
+  const [editingHeroId, setEditingHeroId] = useState<string | null>(null)
+  const [heroForm, setHeroForm] = useState<Omit<HeroSlide, "id">>({ image_url: "", heading: "", subtext: "", cta_label: "Shop Now", cta_link: "/", is_active: true, display_order: 1 })
+  const [savingHero, setSavingHero] = useState(false)
+
+  // Marketing slide form
+  const [mktFormOpen, setMktFormOpen] = useState(false)
+  const [editingMktId, setEditingMktId] = useState<string | null>(null)
+  const [mktForm, setMktForm] = useState<Omit<MarketingSlide, "id">>({ image_url: "", quote: "", attribution: "VastuCart", is_active: true, display_order: 1 })
+  const [savingMkt, setSavingMkt] = useState(false)
+
+  // Sync internal state when parent re-fetches config (e.g. on page reload or background refresh)
+  useEffect(() => { setAnnouncement(initialAnnouncement) }, [initialAnnouncement])
+  useEffect(() => { setBranding(initialBranding) }, [initialBranding])
+  useEffect(() => { setSections(initialSections) }, [initialSections])
+  useEffect(() => { setFooter(initialFooter) }, [initialFooter])
+  useEffect(() => { setHeroSlides(initialHeroSlides) }, [initialHeroSlides])
+  useEffect(() => { setMarketingSlides(initialMarketingSlides) }, [initialMarketingSlides])
 
   // Content page editor
   const [editingPageId, setEditingPageId] = useState<string | null>(null)
@@ -399,6 +436,8 @@ export function AdminStorefront({
   const [togglingPage, setTogglingPage] = useState<string | null>(null)
 
   const tabs: { key: ActiveTab; label: string; Icon: typeof Megaphone }[] = [
+    { key: "hero", label: "Hero Slides", Icon: SlidersHorizontal },
+    { key: "login-slides", label: "Login Slides", Icon: UserCircle },
     { key: "announcement", label: "Announcement", Icon: Megaphone },
     { key: "branding", label: "Branding", Icon: Store },
     { key: "homepage", label: "Homepage Sections", Icon: Layout },
@@ -538,6 +577,432 @@ export function AdminStorefront({
           </button>
         ))}
       </div>
+
+      {/* ── Hero Slides Tab ── */}
+      {activeTab === "hero" && (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
+            <div>
+              <h2 style={{ fontFamily: fonts.heading, fontSize: "20px", fontWeight: 600, color: earth[700], margin: 0 }}>
+                Hero Slides
+              </h2>
+              <p style={{ fontSize: "13px", color: earth[400], margin: "6px 0 0 0" }}>
+                Full-width banner slides shown on the homepage. Each slide has an image, heading, subtext, and a CTA button.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingHeroId(null)
+                setHeroForm({ image_url: "", heading: "", subtext: "", cta_label: "Shop Now", cta_link: "/", is_active: true, display_order: heroSlides.length + 1 })
+                setHeroFormOpen(true)
+              }}
+              style={{ ...saveBtnStyle, gap: "6px" }}
+            >
+              <Plus size={16} /> Add Slide
+            </button>
+          </div>
+
+          {/* Slide list */}
+          {heroSlides.length === 0 && !heroFormOpen && (
+            <div style={{ textAlign: "center", padding: "48px 0", color: earth[400], fontSize: "14px" }}>
+              No hero slides yet. Add your first slide to display a banner on the homepage.
+            </div>
+          )}
+          <div style={{ display: "grid", gap: "16px", marginBottom: heroFormOpen ? "24px" : 0 }}>
+            {heroSlides.map((slide) => (
+              <div
+                key={slide.id}
+                style={{
+                  display: "flex",
+                  gap: "16px",
+                  padding: "16px",
+                  background: slide.is_active ? "#fafaf9" : "#f5f5f4",
+                  border: `1px solid ${earth[300]}`,
+                  borderRadius: "10px",
+                  alignItems: "center",
+                  opacity: slide.is_active ? 1 : 0.7,
+                }}
+              >
+                {/* Image preview */}
+                <div style={{ width: "120px", height: "70px", borderRadius: "6px", overflow: "hidden", flexShrink: 0, background: earth[200], display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {slide.image_url ? (
+                    <img
+                      src={normalizeImageUrl(slide.image_url)}
+                      alt={slide.heading}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
+                    />
+                  ) : (
+                    <SlidersHorizontal size={24} style={{ color: earth[400] }} />
+                  )}
+                </div>
+
+                {/* Text */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: "15px", fontWeight: 600, color: earth[700], margin: "0 0 4px 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {slide.heading || <em style={{ color: earth[300] }}>No heading</em>}
+                  </p>
+                  <p style={{ fontSize: "13px", color: earth[500], margin: "0 0 4px 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {slide.subtext}
+                  </p>
+                  <p style={{ fontSize: "12px", color: earth[400], margin: 0, fontFamily: fonts.mono }}>
+                    {slide.cta_label} → {slide.cta_link}
+                  </p>
+                </div>
+
+                {/* Order badge */}
+                <span style={{ fontSize: "12px", fontWeight: 700, color: earth[400], fontFamily: fonts.mono, flexShrink: 0 }}>#{slide.display_order}</span>
+
+                {/* Active toggle */}
+                <label style={{ position: "relative", display: "inline-block", width: "44px", height: "24px", cursor: "pointer", flexShrink: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={slide.is_active}
+                    onChange={async () => {
+                      const updated = await onUpdateHeroSlide(slide.id, { is_active: !slide.is_active })
+                      setHeroSlides((prev) => prev.map((s) => s.id === slide.id ? updated : s))
+                    }}
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                  />
+                  <span style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: slide.is_active ? primary[500] : earth[300], borderRadius: "24px", transition: "all 200ms" }}>
+                    <span style={{ position: "absolute", height: "18px", width: "18px", left: slide.is_active ? "23px" : "3px", bottom: "3px", background: "#fff", borderRadius: "50%", transition: "all 200ms" }} />
+                  </span>
+                </label>
+
+                {/* Edit */}
+                <button
+                  onClick={() => {
+                    setEditingHeroId(slide.id)
+                    setHeroForm({ image_url: slide.image_url, heading: slide.heading, subtext: slide.subtext, cta_label: slide.cta_label, cta_link: slide.cta_link, is_active: slide.is_active, display_order: slide.display_order })
+                    setHeroFormOpen(true)
+                  }}
+                  style={{ padding: "6px 12px", background: "transparent", border: `1px solid ${primary[500]}`, borderRadius: "6px", color: primary[500], fontSize: "13px", fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
+                >
+                  <Pencil size={13} style={{ display: "inline", marginRight: "4px" }} />Edit
+                </button>
+
+                {/* Delete */}
+                <button
+                  onClick={async () => {
+                    if (!confirm("Delete this slide?")) return
+                    await onDeleteHeroSlide(slide.id)
+                    setHeroSlides((prev) => prev.filter((s) => s.id !== slide.id))
+                  }}
+                  style={{ padding: "6px 10px", background: "transparent", border: `1px solid #fca5a5`, borderRadius: "6px", color: "#ef4444", fontSize: "13px", cursor: "pointer", flexShrink: 0 }}
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Add/Edit form */}
+          {heroFormOpen && (
+            <div style={{ padding: "24px", background: primary[50], borderRadius: "10px", border: `1px solid ${primary[200]}` }}>
+              <h3 style={{ fontFamily: fonts.heading, fontSize: "17px", fontWeight: 600, color: earth[700], margin: "0 0 20px 0" }}>
+                {editingHeroId ? "Edit Slide" : "New Slide"}
+              </h3>
+              <div style={{ display: "grid", gap: "16px" }}>
+                {/* Image URL */}
+                <div>
+                  <label style={labelStyle}>Image URL</label>
+                  <input
+                    type="text"
+                    value={heroForm.image_url}
+                    onChange={(e) => setHeroForm({ ...heroForm, image_url: e.target.value })}
+                    placeholder="https://images.unsplash.com/... or https://sapi.vastucart.in/api/uploads/..."
+                    style={{ ...inputStyle, fontFamily: fonts.mono }}
+                    onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                    onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                  />
+                  {/* Live image preview */}
+                  {heroForm.image_url && (
+                    <div style={{ marginTop: "8px", borderRadius: "8px", overflow: "hidden", height: "140px", background: earth[200] }}>
+                      <img
+                        src={normalizeImageUrl(heroForm.image_url)}
+                        alt="Preview"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
+                      />
+                    </div>
+                  )}
+                  <p style={{ fontSize: "12px", color: earth[400], margin: "6px 0 0 0" }}>
+                    Paste an image URL. Recommended size: 1400×500px. Use Unsplash, or upload via MinIO and paste the URL here.
+                  </p>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={labelStyle}>Heading</label>
+                    <input type="text" value={heroForm.heading} onChange={(e) => setHeroForm({ ...heroForm, heading: e.target.value })} placeholder="Discover Sacred Products" style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Display Order</label>
+                    <input type="number" min={1} value={heroForm.display_order} onChange={(e) => setHeroForm({ ...heroForm, display_order: Number(e.target.value) })} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Subtext</label>
+                  <input type="text" value={heroForm.subtext} onChange={(e) => setHeroForm({ ...heroForm, subtext: e.target.value })} placeholder="Authentic crystals, yantras and spiritual wellness products" style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={labelStyle}>CTA Button Label</label>
+                    <input type="text" value={heroForm.cta_label} onChange={(e) => setHeroForm({ ...heroForm, cta_label: e.target.value })} placeholder="Shop Now" style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>CTA Link</label>
+                    <input type="text" value={heroForm.cta_link} onChange={(e) => setHeroForm({ ...heroForm, cta_link: e.target.value })} placeholder="/collections/crystals" style={{ ...inputStyle, fontFamily: fonts.mono }} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                  </div>
+                </div>
+
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                  <input type="checkbox" checked={heroForm.is_active} onChange={(e) => setHeroForm({ ...heroForm, is_active: e.target.checked })} style={{ width: "18px", height: "18px" }} />
+                  <span style={{ fontSize: "14px", fontWeight: 600, color: earth[700] }}>Active (visible on homepage)</span>
+                </label>
+              </div>
+
+              <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
+                <button
+                  disabled={savingHero}
+                  onClick={async () => {
+                    setSavingHero(true)
+                    try {
+                      if (editingHeroId) {
+                        await onUpdateHeroSlide(editingHeroId, heroForm)
+                        setHeroSlides((prev) => prev.map((s) => s.id === editingHeroId ? { ...s, ...heroForm } : s))
+                      } else {
+                        await onCreateHeroSlide(heroForm)
+                      }
+                      setHeroFormOpen(false)
+                      setEditingHeroId(null)
+                    } finally {
+                      setSavingHero(false)
+                    }
+                  }}
+                  style={{ ...saveBtnStyle, opacity: savingHero ? 0.7 : 1, cursor: savingHero ? "not-allowed" : "pointer" }}
+                >
+                  {savingHero ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+                  {editingHeroId ? "Save Changes" : "Add Slide"}
+                </button>
+                <button onClick={() => { setHeroFormOpen(false); setEditingHeroId(null) }} style={{ padding: "10px 20px", background: "transparent", color: earth[600], border: `1px solid ${earth[300]}`, borderRadius: "8px", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Login Slides Tab ── */}
+      {activeTab === "login-slides" && (
+        <div style={cardStyle}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
+            <div>
+              <h2 style={{ fontFamily: fonts.heading, fontSize: "20px", fontWeight: 600, color: earth[700], margin: 0 }}>
+                Login Page Slides
+              </h2>
+              <p style={{ fontSize: "13px", color: earth[400], margin: "6px 0 0 0" }}>
+                Inspirational slides shown on the right panel of the Login, Register and Forgot Password pages.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingMktId(null)
+                setMktForm({ image_url: "", quote: "", attribution: "VastuCart", is_active: true, display_order: marketingSlides.length + 1 })
+                setMktFormOpen(true)
+              }}
+              style={{ ...saveBtnStyle, gap: "6px" }}
+            >
+              <Plus size={16} /> Add Slide
+            </button>
+          </div>
+
+          {/* Slide list */}
+          {marketingSlides.length === 0 && !mktFormOpen && (
+            <div style={{ textAlign: "center", padding: "48px 0", color: earth[400], fontSize: "14px" }}>
+              No login slides yet. The login page will show default placeholder images until you add slides here.
+            </div>
+          )}
+          <div style={{ display: "grid", gap: "16px", marginBottom: mktFormOpen ? "24px" : 0 }}>
+            {marketingSlides.map((slide) => (
+              <div
+                key={slide.id}
+                style={{
+                  display: "flex",
+                  gap: "16px",
+                  padding: "16px",
+                  background: slide.is_active ? "#fafaf9" : "#f5f5f4",
+                  border: `1px solid ${earth[300]}`,
+                  borderRadius: "10px",
+                  alignItems: "center",
+                  opacity: slide.is_active ? 1 : 0.7,
+                }}
+              >
+                {/* Image preview */}
+                <div style={{ width: "100px", height: "70px", borderRadius: "6px", overflow: "hidden", flexShrink: 0, background: earth[200], display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {slide.image_url ? (
+                    <img
+                      src={normalizeImageUrl(slide.image_url)}
+                      alt="Login slide"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
+                    />
+                  ) : (
+                    <UserCircle size={24} style={{ color: earth[400] }} />
+                  )}
+                </div>
+
+                {/* Quote */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: "14px", fontStyle: "italic", color: earth[700], margin: "0 0 4px 0", overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                    "{slide.quote || <em style={{ color: earth[300] }}>No quote</em>}"
+                  </p>
+                  <p style={{ fontSize: "12px", color: earth[400], margin: 0 }}>— {slide.attribution}</p>
+                </div>
+
+                <span style={{ fontSize: "12px", fontWeight: 700, color: earth[400], fontFamily: fonts.mono, flexShrink: 0 }}>#{slide.display_order}</span>
+
+                {/* Active toggle */}
+                <label style={{ position: "relative", display: "inline-block", width: "44px", height: "24px", cursor: "pointer", flexShrink: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={slide.is_active}
+                    onChange={async () => {
+                      const updated = await onUpdateMarketingSlide(slide.id, { is_active: !slide.is_active })
+                      setMarketingSlides((prev) => prev.map((s) => s.id === slide.id ? updated : s))
+                    }}
+                    style={{ opacity: 0, width: 0, height: 0 }}
+                  />
+                  <span style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: slide.is_active ? primary[500] : earth[300], borderRadius: "24px", transition: "all 200ms" }}>
+                    <span style={{ position: "absolute", height: "18px", width: "18px", left: slide.is_active ? "23px" : "3px", bottom: "3px", background: "#fff", borderRadius: "50%", transition: "all 200ms" }} />
+                  </span>
+                </label>
+
+                {/* Edit */}
+                <button
+                  onClick={() => {
+                    setEditingMktId(slide.id)
+                    setMktForm({ image_url: slide.image_url, quote: slide.quote, attribution: slide.attribution, is_active: slide.is_active, display_order: slide.display_order })
+                    setMktFormOpen(true)
+                  }}
+                  style={{ padding: "6px 12px", background: "transparent", border: `1px solid ${primary[500]}`, borderRadius: "6px", color: primary[500], fontSize: "13px", fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
+                >
+                  <Pencil size={13} style={{ display: "inline", marginRight: "4px" }} />Edit
+                </button>
+
+                {/* Delete */}
+                <button
+                  onClick={async () => {
+                    if (!confirm("Delete this slide?")) return
+                    await onDeleteMarketingSlide(slide.id)
+                    setMarketingSlides((prev) => prev.filter((s) => s.id !== slide.id))
+                  }}
+                  style={{ padding: "6px 10px", background: "transparent", border: `1px solid #fca5a5`, borderRadius: "6px", color: "#ef4444", fontSize: "13px", cursor: "pointer", flexShrink: 0 }}
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Add/Edit form */}
+          {mktFormOpen && (
+            <div style={{ padding: "24px", background: primary[50], borderRadius: "10px", border: `1px solid ${primary[200]}` }}>
+              <h3 style={{ fontFamily: fonts.heading, fontSize: "17px", fontWeight: 600, color: earth[700], margin: "0 0 20px 0" }}>
+                {editingMktId ? "Edit Slide" : "New Login Slide"}
+              </h3>
+              <div style={{ display: "grid", gap: "16px" }}>
+                {/* Image URL */}
+                <div>
+                  <label style={labelStyle}>Image URL</label>
+                  <input
+                    type="text"
+                    value={mktForm.image_url}
+                    onChange={(e) => setMktForm({ ...mktForm, image_url: e.target.value })}
+                    placeholder="https://images.unsplash.com/... or MinIO URL"
+                    style={{ ...inputStyle, fontFamily: fonts.mono }}
+                    onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                    onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                  />
+                  {mktForm.image_url && (
+                    <div style={{ marginTop: "8px", borderRadius: "8px", overflow: "hidden", height: "160px", background: earth[200] }}>
+                      <img
+                        src={normalizeImageUrl(mktForm.image_url)}
+                        alt="Preview"
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
+                      />
+                    </div>
+                  )}
+                  <p style={{ fontSize: "12px", color: earth[400], margin: "6px 0 0 0" }}>
+                    Tall portrait-style images work best (e.g. 800×1200px). The image fills the right panel of the auth page.
+                  </p>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Quote / Message</label>
+                  <textarea
+                    value={mktForm.quote}
+                    onChange={(e) => setMktForm({ ...mktForm, quote: e.target.value })}
+                    placeholder="Transform your space with the ancient wisdom of Vastu Shastra..."
+                    rows={3}
+                    style={{ ...inputStyle, resize: "vertical" }}
+                    onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                    onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                  />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={labelStyle}>Attribution</label>
+                    <input type="text" value={mktForm.attribution} onChange={(e) => setMktForm({ ...mktForm, attribution: e.target.value })} placeholder="VastuCart" style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Display Order</label>
+                    <input type="number" min={1} value={mktForm.display_order} onChange={(e) => setMktForm({ ...mktForm, display_order: Number(e.target.value) })} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                  </div>
+                </div>
+
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                  <input type="checkbox" checked={mktForm.is_active} onChange={(e) => setMktForm({ ...mktForm, is_active: e.target.checked })} style={{ width: "18px", height: "18px" }} />
+                  <span style={{ fontSize: "14px", fontWeight: 600, color: earth[700] }}>Active (shown on login/register/forgot-password pages)</span>
+                </label>
+              </div>
+
+              <div style={{ display: "flex", gap: "12px", marginTop: "20px" }}>
+                <button
+                  disabled={savingMkt}
+                  onClick={async () => {
+                    setSavingMkt(true)
+                    try {
+                      if (editingMktId) {
+                        await onUpdateMarketingSlide(editingMktId, mktForm)
+                        setMarketingSlides((prev) => prev.map((s) => s.id === editingMktId ? { ...s, ...mktForm } : s))
+                      } else {
+                        await onCreateMarketingSlide(mktForm)
+                      }
+                      setMktFormOpen(false)
+                      setEditingMktId(null)
+                    } finally {
+                      setSavingMkt(false)
+                    }
+                  }}
+                  style={{ ...saveBtnStyle, opacity: savingMkt ? 0.7 : 1, cursor: savingMkt ? "not-allowed" : "pointer" }}
+                >
+                  {savingMkt ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+                  {editingMktId ? "Save Changes" : "Add Slide"}
+                </button>
+                <button onClick={() => { setMktFormOpen(false); setEditingMktId(null) }} style={{ padding: "10px 20px", background: "transparent", color: earth[600], border: `1px solid ${earth[300]}`, borderRadius: "8px", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Announcement Tab ── */}
       {activeTab === "announcement" && (

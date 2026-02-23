@@ -1,7 +1,8 @@
 "use client"
 
 import { useCallback } from "react"
-import { medusa } from "@/lib/medusa"
+import { medusa, adminFetch } from "@/lib/medusa"
+import { normalizeImageUrl } from "@/lib/image-url"
 import type {
   OrderRow,
   OrderDetail,
@@ -207,7 +208,7 @@ function mapMedusaOrderDetail(o: any, customerOrderCount: number): OrderDetail {
     id: item.id,
     productName: item.title || item.product_title || "",
     variantLabel: item.variant_title || item.subtitle || "",
-    imageUrl: item.thumbnail || "",
+    imageUrl: normalizeImageUrl(item.thumbnail || ""),
     quantity: item.quantity || 1,
     price: Math.round((item.unit_price || 0) / 100),
     lineTotal: Math.round((item.subtotal || (item.unit_price || 0) * (item.quantity || 1)) / 100),
@@ -298,7 +299,7 @@ function applySortClientSide(rows: OrderRow[], sortField: string, sortDirection:
 
 async function getAdminAuthor(): Promise<string> {
   try {
-    const res = await medusa.client.fetch<{ user: any }>("/admin/users/me")
+    const res = await adminFetch<{ user: any }>("/admin/users/me")
     return (
       [res.user?.first_name, res.user?.last_name].filter(Boolean).join(" ") ||
       res.user?.email ||
@@ -363,7 +364,7 @@ export function useAdminOrders() {
         params.set("order[created_at]", "desc")
       }
 
-      const res = await medusa.client.fetch<{ orders: any[]; count: number }>(
+      const res = await adminFetch<{ orders: any[]; count: number }>(
         `/admin/orders?${params.toString()}`
       )
 
@@ -392,7 +393,7 @@ export function useAdminOrders() {
 
   const fetchOrderDetail = useCallback(async (id: string): Promise<OrderDetail | null> => {
     try {
-      const res = await medusa.client.fetch<{ order: any }>(
+      const res = await adminFetch<{ order: any }>(
         `/admin/orders/${id}?fields=id,display_id,status,payment_status,total,subtotal,discount_total,shipping_total,tax_total,currency_code,email,created_at,updated_at,metadata,*customer,*items,*shipping_address,*fulfillments,*payment_collections,*payment_collections.payments`
       )
       const order = res.order
@@ -402,7 +403,7 @@ export function useAdminOrders() {
       let customerOrderCount = 0
       if (order.customer?.id) {
         try {
-          const countRes = await medusa.client.fetch<{ count: number }>(
+          const countRes = await adminFetch<{ count: number }>(
             `/admin/orders?customer_id=${order.customer.id}&fields=id&limit=1`
           )
           customerOrderCount = countRes.count || 0
@@ -437,7 +438,7 @@ export function useAdminOrders() {
         const tsKey = `${status}_at`
         metadataUpdate[tsKey] = new Date().toISOString()
 
-        await medusa.client.fetch(`/admin/orders/${orderId}`, {
+        await adminFetch(`/admin/orders/${orderId}`, {
           method: "POST",
           body: { metadata: metadataUpdate },
         })
@@ -455,7 +456,7 @@ export function useAdminOrders() {
         const author = await getAdminAuthor()
 
         // Fetch current metadata
-        const currentRes = await medusa.client.fetch<{ order: any }>(
+        const currentRes = await adminFetch<{ order: any }>(
           `/admin/orders/${orderId}?fields=id,metadata`
         )
         const existingMeta = currentRes.order?.metadata || {}
@@ -472,7 +473,7 @@ export function useAdminOrders() {
 
         const updatedNotes = [...existingNotes, newNote]
 
-        await medusa.client.fetch(`/admin/orders/${orderId}`, {
+        await adminFetch(`/admin/orders/${orderId}`, {
           method: "POST",
           body: { metadata: { ...existingMeta, notes: updatedNotes } },
         })

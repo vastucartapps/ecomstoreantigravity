@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { medusa } from "@/lib/medusa"
+import { medusa, adminFetch } from "@/lib/medusa"
 import type {
   TimePeriod,
   DashboardStat,
@@ -82,7 +82,7 @@ function dayLabel(d: Date, period: TimePeriod) {
 
 async function fetchOrders(startISO: string, endISO: string) {
   try {
-    const res = await medusa.client.fetch<{ orders: any[]; count: number }>(
+    const res = await adminFetch<{ orders: any[]; count: number }>(
       `/admin/orders?limit=500&created_at[$gte]=${encodeURIComponent(startISO)}&created_at[$lte]=${encodeURIComponent(endISO)}&fields=id,display_id,status,payment_status,total,currency_code,email,created_at,*customer,items.id,metadata`
     )
     return res.orders || []
@@ -93,7 +93,7 @@ async function fetchOrders(startISO: string, endISO: string) {
 
 async function fetchCustomers(startISO: string, endISO: string) {
   try {
-    const res = await medusa.client.fetch<{ customers: any[]; count: number }>(
+    const res = await adminFetch<{ customers: any[]; count: number }>(
       `/admin/customers?limit=500&created_at[$gte]=${encodeURIComponent(startISO)}&created_at[$lte]=${encodeURIComponent(endISO)}&fields=id,created_at`
     )
     return res.customers || []
@@ -104,7 +104,7 @@ async function fetchCustomers(startISO: string, endISO: string) {
 
 async function fetchLowStockProducts() {
   try {
-    const res = await medusa.client.fetch<{ products: any[] }>(
+    const res = await adminFetch<{ products: any[] }>(
       `/admin/products?limit=500&fields=id,title,variants.inventory_quantity,variants.title,variants.id`
     )
     const products = res.products || []
@@ -121,7 +121,7 @@ async function fetchLowStockProducts() {
 
 async function fetchPendingReturns() {
   try {
-    const res = await medusa.client.fetch<{ returns: any[]; count: number }>(
+    const res = await adminFetch<{ returns: any[]; count: number }>(
       `/admin/returns?limit=50&status=requested`
     )
     return (res.returns || []).length
@@ -132,7 +132,7 @@ async function fetchPendingReturns() {
 
 async function fetchPendingReviews() {
   try {
-    const res = await medusa.client.fetch<{ product_reviews: any[]; count: number }>(
+    const res = await adminFetch<{ product_reviews: any[]; count: number }>(
       `/admin/product-reviews?status=pending&limit=1`
     )
     return res.count || (res.product_reviews || []).length

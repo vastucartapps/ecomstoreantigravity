@@ -2,6 +2,7 @@
 
 import { useCallback } from "react"
 import { medusa, adminFetch as libAdminFetch } from "@/lib/medusa"
+import { normalizeImageUrl } from "@/lib/image-url"
 import type { Category, CategoryOption, CategoryGoogleMerchant } from "@/types/admin-category"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -34,7 +35,7 @@ function mapMedusaCategory(c: any): Category {
     name: c.name || "",
     slug: c.handle || "",
     description: c.description || "",
-    imageUrl: c.metadata?.image_url || "",
+    imageUrl: normalizeImageUrl(c.metadata?.image_url || ""),
     parentId: c.parent_category?.id || null,
     parentName: c.parent_category?.name || null,
     status: c.is_active ? "active" : "inactive",

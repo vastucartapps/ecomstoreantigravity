@@ -945,11 +945,32 @@ export function ProductWizard({
       case "merchant":
         return (
           <div>
-            <h3 className="font-semibold mb-4" style={{ color: c.earth700, fontFamily: fonts.heading }}>Google Merchant Centre</h3>
+            <h3 className="font-semibold mb-1" style={{ color: c.earth700, fontFamily: fonts.heading }}>Google Merchant Centre</h3>
+            <p className="text-xs mb-4" style={{ color: c.earth400, fontFamily: fonts.body }}>
+              These fields help Google Shopping show your products to the right buyers. Only GTIN or MPN is required — fill what applies.
+            </p>
 
-            <InputField label="GTIN" value={formData.merchantCentre?.gtin || ""} onChange={(v) => updateNestedField("merchantCentre", "gtin", v)} placeholder="e.g., 00012345600012" help="UPC, EAN, JAN, or ISBN code" />
-            <InputField label="MPN (Manufacturer Part Number)" value={formData.merchantCentre?.mpn || ""} onChange={(v) => updateNestedField("merchantCentre", "mpn", v)} placeholder="e.g., VC-IDOL-GAN-M" />
-            <InputField label="Brand" value={formData.merchantCentre?.brand || ""} onChange={(v) => updateNestedField("merchantCentre", "brand", v)} placeholder="e.g., VastuCart" />
+            <InputField
+              label="GTIN (Barcode)"
+              value={formData.merchantCentre?.gtin || ""}
+              onChange={(v) => updateNestedField("merchantCentre", "gtin", v)}
+              placeholder="e.g., 00012345600012"
+              help="Leave blank if your product has no barcode. Google will use MPN + Brand instead."
+            />
+            <InputField
+              label="MPN (Manufacturer Part Number)"
+              value={formData.merchantCentre?.mpn || ""}
+              onChange={(v) => updateNestedField("merchantCentre", "mpn", v)}
+              placeholder="e.g., VC-IDOL-GAN-M"
+              help="Your internal SKU or model number. Use if no GTIN."
+            />
+            <InputField
+              label="Brand"
+              value={formData.merchantCentre?.brand || ""}
+              onChange={(v) => updateNestedField("merchantCentre", "brand", v)}
+              placeholder="e.g., VastuCart"
+              help="Your brand name. Required when GTIN or MPN is provided."
+            />
             <SelectField
               label="Condition"
               value={formData.merchantCentre?.condition || "new"}
@@ -960,9 +981,89 @@ export function ProductWizard({
                 { value: "used", label: "Used" },
               ]}
             />
-            <InputField label="Age Group" value={formData.merchantCentre?.ageGroup || ""} onChange={(v) => updateNestedField("merchantCentre", "ageGroup", v)} placeholder="e.g., adult, kids" />
-            <InputField label="Gender" value={formData.merchantCentre?.gender || ""} onChange={(v) => updateNestedField("merchantCentre", "gender", v)} placeholder="e.g., male, female, unisex" />
-            <InputField label="Google Product Category" value={formData.merchantCentre?.googleCategory || ""} onChange={(v) => updateNestedField("merchantCentre", "googleCategory", v)} placeholder="e.g., Religious Items > Hindu Religious Items" help="Use Google's product taxonomy" />
+            <SelectField
+              label="Age Group"
+              value={formData.merchantCentre?.ageGroup || "adult"}
+              onChange={(v) => updateNestedField("merchantCentre", "ageGroup", v)}
+              options={[
+                { value: "adult", label: "Adult (18+)" },
+                { value: "all ages", label: "All Ages" },
+                { value: "teen", label: "Teen (13–17)" },
+                { value: "kids", label: "Kids (5–12)" },
+                { value: "toddler", label: "Toddler (1–5)" },
+                { value: "infant", label: "Infant (0–12 months)" },
+                { value: "newborn", label: "Newborn (0–3 months)" },
+              ]}
+            />
+            <SelectField
+              label="Gender"
+              value={formData.merchantCentre?.gender || "unisex"}
+              onChange={(v) => updateNestedField("merchantCentre", "gender", v)}
+              options={[
+                { value: "unisex", label: "Unisex" },
+                { value: "male", label: "Male" },
+                { value: "female", label: "Female" },
+              ]}
+            />
+
+            {/* Google Product Category — searchable with VastuCart presets */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1" style={{ color: c.earth700, fontFamily: fonts.body }}>
+                Google Product Category
+              </label>
+              <input
+                type="text"
+                value={formData.merchantCentre?.googleCategory || ""}
+                onChange={(e) => updateNestedField("merchantCentre", "googleCategory", e.target.value)}
+                placeholder="Click a category below or type a custom path"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all"
+                style={{ borderColor: c.earth300, fontFamily: fonts.body }}
+              />
+              <p className="text-xs mt-1 mb-2" style={{ color: c.earth400, fontFamily: fonts.body }}>
+                Select the most relevant category for your product — this determines which Google Shopping searches it appears in.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {[
+                  { value: "Religious & Ceremonial > Religious Items", hint: "Idols, yantras, puja items, spiritual artifacts" },
+                  { value: "Religious & Ceremonial > Religious Items > Prayer Beads", hint: "Rudraksha malas, crystal malas, prayer beads" },
+                  { value: "Home & Garden > Decor > Decorative Accents > Figurines & Sculptures", hint: "Decorative idols, figurines, statues" },
+                  { value: "Home & Garden > Decor > Wall Décor", hint: "Wall yantras, copper plates, wall hangings" },
+                  { value: "Home & Garden > Decor > Candles & Home Fragrance", hint: "Incense sticks, dhoop, agarbatti, aromatherapy" },
+                  { value: "Health & Beauty > Health Care > Alternative & Natural Medicine", hint: "Healing crystals, energy stones, reiki items" },
+                  { value: "Jewelry > Gemstone Jewelry", hint: "Crystal/gemstone pendants, bracelets, necklaces" },
+                  { value: "Jewelry > Beaded Jewelry", hint: "Bead jewelry, mala necklaces, gemstone malas" },
+                  { value: "Arts & Entertainment > Hobby & Collectible Items", hint: "Collectible spiritual items, rare artifacts" },
+                  { value: "Media > Books", hint: "Vastu guides, spiritual books, astrology" },
+                ].map((cat) => (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => updateNestedField("merchantCentre", "googleCategory", cat.value)}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "10px",
+                      padding: "8px 12px",
+                      background: formData.merchantCentre?.googleCategory === cat.value ? c.primary50 : "#f9f6f1",
+                      border: `1px solid ${formData.merchantCentre?.googleCategory === cat.value ? c.primary400 : "#e8ddd4"}`,
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      width: "100%",
+                      transition: "all 150ms",
+                    }}
+                  >
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: c.primary500, fontFamily: fonts.body, flexShrink: 0, marginTop: "1px" }}>
+                      {formData.merchantCentre?.googleCategory === cat.value ? "✓ " : ""}
+                    </span>
+                    <span style={{ flex: 1 }}>
+                      <span style={{ display: "block", fontSize: "12px", fontWeight: 600, color: c.earth700, fontFamily: fonts.body }}>{cat.value}</span>
+                      <span style={{ display: "block", fontSize: "11px", color: c.earth400, fontFamily: fonts.body }}>{cat.hint}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )
 

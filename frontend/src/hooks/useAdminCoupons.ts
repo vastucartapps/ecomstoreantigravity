@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { medusa, adminFetch } from "@/lib/medusa"
+import { adminFetch } from "@/lib/medusa"
 import type {
   CouponRow,
   CouponDetail,
@@ -281,14 +281,14 @@ export function useAdminCoupons() {
         if (id) {
           // Update — do not touch status here; admin uses the toggle button to
           // enable/disable. Sending status on every edit would override it.
-          await medusa.client.fetch(`/admin/promotions/${id}`, {
+          await adminFetch(`/admin/promotions/${id}`, {
             method: "POST",
             body: payload,
           })
         } else {
           // Create — explicitly activate so the coupon is usable immediately.
           // Medusa defaults to status: "draft" which customers cannot use.
-          await medusa.client.fetch("/admin/promotions", {
+          await adminFetch("/admin/promotions", {
             method: "POST",
             body: { ...payload, status: "active" },
           })
@@ -303,7 +303,7 @@ export function useAdminCoupons() {
 
   const deleteCoupon = useCallback(async (id: string): Promise<boolean> => {
     try {
-      await medusa.client.fetch(`/admin/promotions/${id}`, {
+      await adminFetch(`/admin/promotions/${id}`, {
         method: "DELETE",
       })
       return true
@@ -316,7 +316,7 @@ export function useAdminCoupons() {
     async (id: string, currentStatus: CouponStatus): Promise<boolean> => {
       try {
         const newStatus = currentStatus === "active" ? "inactive" : "active"
-        await medusa.client.fetch(`/admin/promotions/${id}`, {
+        await adminFetch(`/admin/promotions/${id}`, {
           method: "POST",
           body: { status: newStatus },
         })
@@ -376,7 +376,7 @@ export function useAdminCoupons() {
           date: new Date().toISOString(),
         }
 
-        await medusa.client.fetch("/admin/gift-cards", {
+        await adminFetch("/admin/gift-cards", {
           method: "POST",
           body: {
             code: giftCode,
@@ -402,7 +402,7 @@ export function useAdminCoupons() {
     async (id: string, currentStatus: GiftCardStatus): Promise<boolean> => {
       try {
         const isCurrentlyActive = currentStatus === "active"
-        await medusa.client.fetch(`/admin/gift-cards/${id}`, {
+        await adminFetch(`/admin/gift-cards/${id}`, {
           method: "POST",
           body: { is_disabled: isCurrentlyActive },
         })

@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { medusa } from "@/lib/medusa"
+import { medusa, adminFetch } from "@/lib/medusa"
 import type { ReviewItem, QAItem, ReviewBulkAction, ReviewStatus, QAStatus } from "@/types/admin-review"
 
 export function useAdminReviews() {
@@ -15,7 +15,7 @@ export function useAdminReviews() {
       if (search) params.set("search", search)
       params.set("limit", "200")
 
-      const res = await medusa.client.fetch<{ reviews: ReviewItem[]; count: number }>(
+      const res = await adminFetch<{ reviews: ReviewItem[]; count: number }>(
         `/admin/reviews?${params.toString()}`
       )
       return { reviews: res.reviews || [], count: res.count || 0 }
@@ -26,7 +26,7 @@ export function useAdminReviews() {
   const approveReview = useCallback(
     async (reviewId: string, adminResponse?: string): Promise<boolean> => {
       try {
-        await medusa.client.fetch(`/admin/reviews/${reviewId}/approve`, {
+        await adminFetch(`/admin/reviews/${reviewId}/approve`, {
           method: "POST",
           body: { admin_response: adminResponse || null },
         })
@@ -41,7 +41,7 @@ export function useAdminReviews() {
   const rejectReview = useCallback(
     async (reviewId: string, reason?: string): Promise<boolean> => {
       try {
-        await medusa.client.fetch(`/admin/reviews/${reviewId}/reject`, {
+        await adminFetch(`/admin/reviews/${reviewId}/reject`, {
           method: "POST",
           body: { reason: reason || null },
         })
@@ -56,7 +56,7 @@ export function useAdminReviews() {
   const bulkAction = useCallback(
     async (action: ReviewBulkAction, reviewIds: string[]): Promise<boolean> => {
       try {
-        await medusa.client.fetch("/admin/reviews/bulk", {
+        await adminFetch("/admin/reviews/bulk", {
           method: "POST",
           body: { action, review_ids: reviewIds },
         })
@@ -78,7 +78,7 @@ export function useAdminReviews() {
       if (search) params.set("search", search)
       params.set("limit", "200")
 
-      const res = await medusa.client.fetch<{ questions: QAItem[]; count: number }>(
+      const res = await adminFetch<{ questions: QAItem[]; count: number }>(
         `/admin/qa?${params.toString()}`
       )
       return { questions: res.questions || [], count: res.count || 0 }
@@ -89,7 +89,7 @@ export function useAdminReviews() {
   const answerQuestion = useCallback(
     async (qaId: string, answer: string): Promise<boolean> => {
       try {
-        await medusa.client.fetch(`/admin/qa/${qaId}/answer`, {
+        await adminFetch(`/admin/qa/${qaId}/answer`, {
           method: "POST",
           body: { answer },
         })
@@ -104,7 +104,7 @@ export function useAdminReviews() {
   const editAnswer = useCallback(
     async (qaId: string, answer: string): Promise<boolean> => {
       try {
-        await medusa.client.fetch(`/admin/qa/${qaId}/answer`, {
+        await adminFetch(`/admin/qa/${qaId}/answer`, {
           method: "POST",
           body: { answer },
         })
@@ -119,7 +119,7 @@ export function useAdminReviews() {
   const deleteAnswer = useCallback(
     async (qaId: string): Promise<boolean> => {
       try {
-        await medusa.client.fetch(`/admin/qa/${qaId}/answer`, {
+        await adminFetch(`/admin/qa/${qaId}/answer`, {
           method: "DELETE",
         })
         return true

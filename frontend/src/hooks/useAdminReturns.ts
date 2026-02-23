@@ -2,6 +2,7 @@
 
 import { useCallback } from "react"
 import { medusa } from "@/lib/medusa"
+import { normalizeImageUrl } from "@/lib/image-url"
 import type {
   ReturnCard,
   ReturnDetail,
@@ -109,7 +110,7 @@ function mapMedusaReturnCard(r: any): ReturnCard {
     customerName,
     customerEmail: customer.email || "",
     productName: product.title || firstItem.title || "Product",
-    productImageUrl: thumbnail,
+    productImageUrl: normalizeImageUrl(thumbnail),
     variantLabel: variantParts.join(" / "),
     reason: mapReturnReason(r),
     status: mapReturnStatus(r),
@@ -174,7 +175,7 @@ function mapMedusaReturnDetail(r: any): ReturnDetail {
       id: product.id || "",
       name: product.title || firstItem.title || "Product",
       variantLabel: variantParts.join(" / "),
-      imageUrl: thumbnail,
+      imageUrl: normalizeImageUrl(thumbnail),
       quantity: itemQty,
       price: itemPrice,
       currency,

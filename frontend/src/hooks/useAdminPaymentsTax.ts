@@ -1,4 +1,4 @@
-import { medusa, adminFetch } from "@/lib/medusa"
+import { adminFetch } from "@/lib/medusa"
 import type {
   PaymentsTaxConfig,
   GatewayConfig,
@@ -76,7 +76,7 @@ async function readStore(): Promise<{ id: string; config: PaymentsTaxConfig; raw
 }
 
 async function writeConfig(storeId: string, config: PaymentsTaxConfig, rawMetadata: Record<string, unknown>): Promise<void> {
-  await medusa.client.fetch(`/admin/stores/${storeId}`, {
+  await adminFetch(`/admin/stores/${storeId}`, {
     method: "POST",
     body: { metadata: { ...rawMetadata, payments_tax_config: config } },
   })
@@ -159,7 +159,7 @@ export function useAdminPaymentsTax() {
   }
 
   async function saveProductOverride(override: ProductTaxOverride): Promise<void> {
-    await medusa.client.fetch(`/admin/products/${override.productId}`, {
+    await adminFetch(`/admin/products/${override.productId}`, {
       method: "POST",
       body: {
         metadata: {

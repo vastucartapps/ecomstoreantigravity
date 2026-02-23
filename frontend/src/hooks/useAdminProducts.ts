@@ -2,6 +2,7 @@
 
 import { useCallback } from "react"
 import { medusa, adminFetch as libAdminFetch } from "@/lib/medusa"
+import { normalizeImageUrl } from "@/lib/image-url"
 import type {
   Product,
   ProductDetail,
@@ -99,7 +100,7 @@ function mapMedusaProduct(p: any): Product {
     currency: "INR",
     stock,
     stockLevel: computeStockLevel(stock),
-    imageUrl: p.thumbnail || p.images?.[0]?.url || "",
+    imageUrl: normalizeImageUrl(p.thumbnail || p.images?.[0]?.url || ""),
     rating: p.metadata?.rating || 0,
     reviewCount: p.metadata?.review_count || 0,
     variantCount: p.variants?.length || 0,

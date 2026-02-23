@@ -1,4 +1,4 @@
-import { medusa, adminFetch } from "@/lib/medusa"
+import { adminFetch } from "@/lib/medusa"
 import type {
   ShippingConfig,
   ShippingZone,
@@ -33,7 +33,7 @@ async function readStore(): Promise<{ id: string; config: ShippingConfig; rawMet
 }
 
 async function writeConfig(storeId: string, config: ShippingConfig, rawMetadata: Record<string, unknown>): Promise<void> {
-  await medusa.client.fetch(`/admin/stores/${storeId}`, {
+  await adminFetch(`/admin/stores/${storeId}`, {
     method: "POST",
     body: { metadata: { ...rawMetadata, shipping_config: config } },
   })

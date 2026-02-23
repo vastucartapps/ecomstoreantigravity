@@ -7,7 +7,7 @@ import { Search, Heart, ShoppingBag, User, Menu, X, Bell, ExternalLink } from "l
 import { useAuth } from "@/providers/auth-provider"
 import { useCart } from "@/providers/cart-provider"
 import { useWishlist } from "@/providers/wishlist-provider"
-import { useAnnouncement } from "@/providers/announcement-provider"
+import { useAnnouncement, useBranding, useStorefrontFooter } from "@/providers/announcement-provider"
 import { CartDrawer } from "@/components/storefront/cart/CartDrawer"
 import { primary, secondary, earth, bg, gradients, fonts } from "./theme"
 
@@ -34,6 +34,8 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
     isActive: announcementActive,
     dismiss,
   } = useAnnouncement()
+  const branding = useBranding()
+  const footerConfig = useStorefrontFooter()
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
@@ -151,34 +153,37 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 gap-4">
-            {/* Mobile hamburger */}
-            <button
-              className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-colors"
-              style={{ color: primary[500] }}
-              onClick={() => setMobileMenuOpen(true)}
-              aria-label="Open menu"
-            >
-              <Menu size={22} />
-            </button>
-
-            {/* Logo */}
-            <Link
-              href="/"
-              className="flex items-center gap-2 flex-shrink-0"
-              aria-label="VastuCart Home"
-            >
-              <img
-                src="/VastuCartLogo.png"
-                alt="VastuCart Logo"
-                className="h-9 w-9 object-contain"
-              />
-              <span
-                className="hidden sm:block font-bold text-xl tracking-tight"
-                style={{ fontFamily: fonts.heading, color: primary[500] }}
+            {/* Left: hamburger + logo grouped so logo stays left-aligned on mobile */}
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {/* Mobile hamburger */}
+              <button
+                className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-colors"
+                style={{ color: primary[500] }}
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="Open menu"
               >
-                VastuCart
-              </span>
-            </Link>
+                <Menu size={22} />
+              </button>
+
+              {/* Logo */}
+              <Link
+                href="/"
+                className="flex items-center gap-2"
+                aria-label={`${branding.storeName} Home`}
+              >
+                <img
+                  src={branding.logoUrl || "/VastuCartLogo.png"}
+                  alt={`${branding.storeName} Logo`}
+                  className="h-9 w-9 object-contain"
+                />
+                <span
+                  className="font-bold text-xl tracking-tight"
+                  style={{ fontFamily: fonts.heading, color: primary[500] }}
+                >
+                  {branding.storeName}
+                </span>
+              </Link>
+            </div>
 
             {/* Desktop search */}
             <form
@@ -524,15 +529,15 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <img
-                  src="/VastuCartLogo.png"
-                  alt="VastuCart"
+                  src={branding.logoUrl || "/VastuCartLogo.png"}
+                  alt={branding.storeName}
                   className="h-8 w-8 object-contain"
                 />
                 <span
                   className="font-bold text-lg"
                   style={{ fontFamily: fonts.heading, color: primary[500] }}
                 >
-                  VastuCart
+                  {branding.storeName}
                 </span>
               </Link>
               <button
@@ -714,130 +719,119 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* 4-column grid */}
+          {/* 4-column grid: Brand | Link cols from admin | Newsletter */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-            {/* Column 1: Brand */}
+            {/* Column 1: Brand — dynamic from admin branding settings */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <img
-                  src="/VastuCartLogo.png"
-                  alt="VastuCart"
+                  src={branding.logoUrl || "/VastuCartLogo.png"}
+                  alt={branding.storeName}
                   className="h-10 w-10 object-contain"
                 />
                 <span
                   className="font-bold text-xl"
                   style={{ fontFamily: fonts.heading }}
                 >
-                  VastuCart
+                  {branding.storeName}
                 </span>
               </div>
               <p
                 className="text-sm leading-relaxed opacity-80"
                 style={{ fontFamily: fonts.body }}
               >
-                Your trusted destination for authentic crystals, yantras, rudraksha, and spiritual wellness products. Rooted in tradition, delivered with care.
+                {branding.tagline}
               </p>
-              {/* Social icons */}
-              <div className="flex items-center gap-3 pt-1">
-                {/* Instagram */}
-                <a
-                  href="https://instagram.com/vastucart"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                  style={{ backgroundColor: "rgba(255,255,255,0.12)" }}
-                  aria-label="Instagram"
-                >
-                  <svg width="17" height="17" fill="white" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
-                  </svg>
-                </a>
-                {/* Facebook */}
-                <a
-                  href="https://facebook.com/vastucart"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                  style={{ backgroundColor: "rgba(255,255,255,0.12)" }}
-                  aria-label="Facebook"
-                >
-                  <svg width="17" height="17" fill="white" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                  </svg>
-                </a>
-                {/* YouTube */}
-                <a
-                  href="https://youtube.com/vastucart"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                  style={{ backgroundColor: "rgba(255,255,255,0.12)" }}
-                  aria-label="YouTube"
-                >
-                  <svg width="19" height="17" fill="white" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z" />
-                  </svg>
-                </a>
+              {/* Contact info */}
+              <div className="space-y-1">
+                {branding.contactEmail && (
+                  <a
+                    href={`mailto:${branding.contactEmail}`}
+                    className="block text-xs opacity-70 hover:opacity-100 transition-opacity"
+                    style={{ fontFamily: fonts.body }}
+                  >
+                    {branding.contactEmail}
+                  </a>
+                )}
+                {branding.contactPhone && (
+                  <a
+                    href={`tel:${branding.contactPhone.replace(/\s/g, "")}`}
+                    className="block text-xs opacity-70 hover:opacity-100 transition-opacity"
+                    style={{ fontFamily: fonts.body }}
+                  >
+                    {branding.contactPhone}
+                  </a>
+                )}
               </div>
+              {/* Social icons — shown when enabled in admin footer settings */}
+              {footerConfig.showSocialLinks && (
+                <div className="flex items-center gap-3 pt-1">
+                  <a
+                    href="https://instagram.com/vastucart"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
+                    style={{ backgroundColor: "rgba(255,255,255,0.12)" }}
+                    aria-label="Instagram"
+                  >
+                    <svg width="17" height="17" fill="white" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                    </svg>
+                  </a>
+                  <a
+                    href="https://facebook.com/vastucart"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
+                    style={{ backgroundColor: "rgba(255,255,255,0.12)" }}
+                    aria-label="Facebook"
+                  >
+                    <svg width="17" height="17" fill="white" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                    </svg>
+                  </a>
+                  <a
+                    href="https://youtube.com/vastucart"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
+                    style={{ backgroundColor: "rgba(255,255,255,0.12)" }}
+                    aria-label="YouTube"
+                  >
+                    <svg width="19" height="17" fill="white" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z" />
+                    </svg>
+                  </a>
+                </div>
+              )}
             </div>
 
-            {/* Column 2: Quick Links */}
-            <div className="space-y-4">
-              <h3
-                className="font-semibold text-base"
-                style={{ fontFamily: fonts.heading }}
-              >
-                Quick Links
-              </h3>
-              <ul className="space-y-2">
-                {[
-                  { label: "About Us", href: "/about" },
-                  { label: "Contact", href: "/contact" },
-                  { label: "Blog", href: "https://blog.vastucart.in" },
-                  { label: "Track Order", href: "/track-order" },
-                ].map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-sm opacity-75 hover:opacity-100 transition-opacity"
-                      style={{ fontFamily: fonts.body }}
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* Columns 2–3: Dynamic link columns from admin footer settings */}
+            {footerConfig.columns.slice(0, 2).map((col) => (
+              <div key={col.title} className="space-y-4">
+                <h3
+                  className="font-semibold text-base"
+                  style={{ fontFamily: fonts.heading }}
+                >
+                  {col.title}
+                </h3>
+                <ul className="space-y-2">
+                  {col.links.map((lnk) => (
+                    <li key={lnk.url}>
+                      <Link
+                        href={lnk.url}
+                        className="text-sm opacity-75 hover:opacity-100 transition-opacity"
+                        style={{ fontFamily: fonts.body }}
+                      >
+                        {lnk.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
 
-            {/* Column 3: Customer Service */}
-            <div className="space-y-4">
-              <h3
-                className="font-semibold text-base"
-                style={{ fontFamily: fonts.heading }}
-              >
-                Customer Service
-              </h3>
-              <ul className="space-y-2">
-                {[
-                  { label: "Shipping Policy", href: "/shipping-policy" },
-                  { label: "Return Policy", href: "/refund-policy" },
-                  { label: "Privacy Policy", href: "/privacy-policy" },
-                  { label: "Terms & Conditions", href: "/terms" },
-                ].map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="text-sm opacity-75 hover:opacity-100 transition-opacity"
-                      style={{ fontFamily: fonts.body }}
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Column 4: Newsletter */}
+            {/* Column 4: Newsletter — always shown */}
             <div className="space-y-4">
               <h3
                 className="font-semibold text-base"
@@ -897,7 +891,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
               className="text-sm opacity-60 text-center sm:text-left"
               style={{ fontFamily: fonts.body }}
             >
-              &copy; 2026 VastuCart. All rights reserved.
+              {footerConfig.copyrightText}
             </p>
 
             {/* Payment method badges */}

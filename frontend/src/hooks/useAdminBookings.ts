@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { medusa, adminFetch } from "@/lib/medusa"
+import { adminFetch } from "@/lib/medusa"
 import type {
   BookingRow,
   BookingStatus,
@@ -123,7 +123,7 @@ export function useAdminBookings() {
   const updateStatus = useCallback(
     async (id: string, status: BookingStatus): Promise<boolean> => {
       try {
-        await medusa.client.fetch(`/admin/bookings/${id}`, {
+        await adminFetch(`/admin/bookings/${id}`, {
           method: "POST",
           body: { status },
         })
@@ -138,7 +138,7 @@ export function useAdminBookings() {
   const setMeetingLink = useCallback(
     async (id: string, link: string): Promise<boolean> => {
       try {
-        await medusa.client.fetch(`/admin/bookings/${id}`, {
+        await adminFetch(`/admin/bookings/${id}`, {
           method: "POST",
           body: { meeting_link: link },
         })
@@ -153,7 +153,7 @@ export function useAdminBookings() {
   const addNotes = useCallback(
     async (id: string, notes: string): Promise<boolean> => {
       try {
-        await medusa.client.fetch(`/admin/bookings/${id}`, {
+        await adminFetch(`/admin/bookings/${id}`, {
           method: "POST",
           body: { notes },
         })
@@ -185,7 +185,7 @@ export function useAdminBookings() {
   const updateSlotConfig = useCallback(
     async (config: TimeSlotConfig): Promise<boolean> => {
       try {
-        await medusa.client.fetch("/admin/bookings/slot-config", {
+        await adminFetch("/admin/bookings/slot-config", {
           method: "POST",
           body: config as unknown as Record<string, unknown>,
         })
@@ -228,7 +228,7 @@ export function useAdminBookings() {
 
   const unblockDate = useCallback(async (id: string): Promise<boolean> => {
     try {
-      await medusa.client.fetch(`/admin/bookings/blocked-dates/${id}`, {
+      await adminFetch(`/admin/bookings/blocked-dates/${id}`, {
         method: "DELETE",
       })
       return true

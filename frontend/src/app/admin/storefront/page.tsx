@@ -9,11 +9,15 @@ import type {
   Announcement,
   Branding,
   FooterConfig,
+  HeroSlide,
+  MarketingSlide,
 } from "@/types/admin-storefront"
 
 export default function StorefrontPage() {
   const hook = useAdminStorefront()
   const [config, setConfig] = useState<StorefrontConfig | null>(null)
+  const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
+  const [marketingSlides, setMarketingSlides] = useState<MarketingSlide[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
@@ -27,8 +31,14 @@ export default function StorefrontPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const c = await hook.fetchConfig()
+      const [c, hs, ms] = await Promise.all([
+        hook.fetchConfig(),
+        hook.fetchHeroSlides(),
+        hook.fetchMarketingSlides(),
+      ])
       setConfig(c)
+      setHeroSlides(hs)
+      setMarketingSlides(ms)
     } catch (e: any) {
       setError(e.message || "Failed to load storefront settings")
     } finally {
@@ -108,65 +118,151 @@ export default function StorefrontPage() {
         homepageSections={config.homepageSections}
         contentPages={config.contentPages}
         footerConfig={config.footerConfig}
+        heroSlides={heroSlides}
+        marketingSlides={marketingSlides}
         onUpdateAnnouncement={async (a: Announcement) => {
-          await hook.updateAnnouncement(a)
-          setConfig((prev) => prev ? { ...prev, announcement: a } : prev)
-          showToast("Announcement saved")
+          try {
+            await hook.updateAnnouncement(a)
+            setConfig((prev) => prev ? { ...prev, announcement: a } : prev)
+            showToast("Announcement saved")
+          } catch {
+            showToast("Failed to save announcement", "error")
+          }
         }}
         onUpdateBranding={async (b: Branding) => {
-          await hook.updateBranding(b)
-          setConfig((prev) => prev ? { ...prev, branding: b } : prev)
-          showToast("Branding saved")
+          try {
+            await hook.updateBranding(b)
+            setConfig((prev) => prev ? { ...prev, branding: b } : prev)
+            showToast("Branding saved")
+          } catch {
+            showToast("Failed to save branding", "error")
+          }
         }}
         onReorderSection={async (id: string, direction: "up" | "down") => {
-          await hook.reorderSection(id, direction)
-          // Config state is updated optimistically in the component;
-          // reload to sync with server after a short delay
+          try {
+            await hook.reorderSection(id, direction)
+          } catch {
+            showToast("Failed to reorder section", "error")
+          }
         }}
         onToggleSection={async (id: string, enabled: boolean) => {
-          await hook.toggleSection(id, enabled)
-          setConfig((prev) => {
-            if (!prev) return prev
-            return {
-              ...prev,
-              homepageSections: prev.homepageSections.map((s) =>
-                s.id === id ? { ...s, enabled } : s
-              ),
-            }
-          })
+          try {
+            await hook.toggleSection(id, enabled)
+            setConfig((prev) => {
+              if (!prev) return prev
+              return {
+                ...prev,
+                homepageSections: prev.homepageSections.map((s) =>
+                  s.id === id ? { ...s, enabled } : s
+                ),
+              }
+            })
+          } catch {
+            showToast("Failed to update section", "error")
+          }
         }}
         onEditPage={async (id: string, content: string) => {
-          await hook.editPage(id, content)
-          setConfig((prev) => {
-            if (!prev) return prev
-            return {
-              ...prev,
-              contentPages: prev.contentPages.map((p) =>
-                p.id === id
-                  ? { ...p, content, lastUpdated: new Date().toISOString() }
-                  : p
-              ),
-            }
-          })
-          showToast("Page content saved")
+          try {
+            await hook.editPage(id, content)
+            setConfig((prev) => {
+              if (!prev) return prev
+              return {
+                ...prev,
+                contentPages: prev.contentPages.map((p) =>
+                  p.id === id
+                    ? { ...p, content, lastUpdated: new Date().toISOString() }
+                    : p
+                ),
+              }
+            })
+            showToast("Page content saved")
+          } catch {
+            showToast("Failed to save page content", "error")
+          }
         }}
         onTogglePagePublish={async (id: string, published: boolean) => {
-          await hook.togglePagePublish(id, published)
-          setConfig((prev) => {
-            if (!prev) return prev
-            return {
-              ...prev,
-              contentPages: prev.contentPages.map((p) =>
-                p.id === id ? { ...p, isPublished: published } : p
-              ),
-            }
-          })
-          showToast(published ? "Page published" : "Page set to draft")
+          try {
+            await hook.togglePagePublish(id, published)
+            setConfig((prev) => {
+              if (!prev) return prev
+              return {
+                ...prev,
+                contentPages: prev.contentPages.map((p) =>
+                  p.id === id ? { ...p, isPublished: published } : p
+                ),
+              }
+            })
+            showToast(published ? "Page published" : "Page set to draft")
+          } catch {
+            showToast("Failed to update page status", "error")
+          }
         }}
         onUpdateFooter={async (f: FooterConfig) => {
-          await hook.updateFooter(f)
-          setConfig((prev) => prev ? { ...prev, footerConfig: f } : prev)
-          showToast("Footer saved")
+          try {
+            await hook.updateFooter(f)
+            setConfig((prev) => prev ? { ...prev, footerConfig: f } : prev)
+            showToast("Footer saved")
+          } catch {
+            showToast("Failed to save footer", "error")
+          }
+        }}
+        onCreateHeroSlide={async (data) => {
+          try {
+            const slide = await hook.createHeroSlide(data)
+            setHeroSlides((prev) => [...prev, slide].sort((a, b) => a.display_order - b.display_order))
+            showToast("Hero slide added")
+          } catch {
+            showToast("Failed to add hero slide", "error")
+          }
+        }}
+        onUpdateHeroSlide={async (id, data) => {
+          try {
+            const slide = await hook.updateHeroSlide(id, data)
+            setHeroSlides((prev) => prev.map((s) => s.id === id ? slide : s))
+            showToast("Hero slide saved")
+            return slide
+          } catch {
+            showToast("Failed to save hero slide", "error")
+            throw new Error("Failed")
+          }
+        }}
+        onDeleteHeroSlide={async (id) => {
+          try {
+            await hook.deleteHeroSlide(id)
+            setHeroSlides((prev) => prev.filter((s) => s.id !== id))
+            showToast("Hero slide deleted")
+          } catch {
+            showToast("Failed to delete hero slide", "error")
+          }
+        }}
+        onCreateMarketingSlide={async (data) => {
+          try {
+            const slide = await hook.createMarketingSlide(data)
+            setMarketingSlides((prev) => [...prev, slide].sort((a, b) => a.display_order - b.display_order))
+            showToast("Login slide added")
+          } catch {
+            showToast("Failed to add login slide", "error")
+          }
+        }}
+        onUpdateMarketingSlide={async (id, data) => {
+          try {
+            const slide = await hook.updateMarketingSlide(id, data)
+            setMarketingSlides((prev) => prev.map((s) => s.id === id ? slide : s))
+            showToast("Login slide saved")
+            return slide
+          } catch {
+            showToast("Failed to save login slide", "error")
+            throw new Error("Failed")
+          }
+        }}
+        onDeleteMarketingSlide={async (id) => {
+          try {
+            await hook.deleteMarketingSlide(id)
+            setMarketingSlides((prev) => prev.filter((s) => s.id !== id))
+            showToast("Login slide deleted")
+          } catch {
+            showToast("Failed to delete login slide", "error")
+          }
         }}
       />
 

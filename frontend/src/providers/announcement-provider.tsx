@@ -8,12 +8,31 @@ import {
   type ReactNode,
 } from "react"
 
-const BACKEND_URL =
-  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
-const PUB_KEY =
-  process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
+const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
-interface AnnouncementContextValue {
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface BrandingValue {
+  storeName: string
+  tagline: string
+  logoUrl: string
+  faviconUrl: string
+  contactEmail: string
+  contactPhone: string
+  address: string
+}
+
+export interface FooterLink { label: string; url: string }
+export interface FooterColumn { title: string; links: FooterLink[] }
+export interface FooterValue {
+  columns: FooterColumn[]
+  copyrightText: string
+  showSocialLinks: boolean
+}
+
+interface StorefrontContextValue {
+  // Announcement
   text: string | null
   link: string | null
   linkText: string | null
@@ -22,13 +41,64 @@ interface AnnouncementContextValue {
   isActive: boolean
   isDismissed: boolean
   dismiss: () => void
+  // Branding
+  branding: BrandingValue
+  // Footer
+  footer: FooterValue
 }
 
-const AnnouncementContext = createContext<AnnouncementContextValue | null>(null)
+// ─── Defaults ─────────────────────────────────────────────────────────────────
 
+const DEFAULT_BRANDING: BrandingValue = {
+  storeName: "VastuCart",
+  tagline: "Sacred Essentials for Your Spiritual Journey",
+  logoUrl: "/VastuCartLogo.png",
+  faviconUrl: "/favicon.ico",
+  contactEmail: "support@vastucart.com",
+  contactPhone: "+91 98765 43210",
+  address: "42 Temple Lane, Varanasi, Uttar Pradesh 221001, India",
+}
+
+const DEFAULT_FOOTER: FooterValue = {
+  columns: [
+    {
+      title: "Quick Links",
+      links: [
+        { label: "Home", url: "/" },
+        { label: "All Products", url: "/search" },
+        { label: "Best Sellers", url: "/collections/best-sellers" },
+        { label: "New Arrivals", url: "/collections/new-arrivals" },
+      ],
+    },
+    {
+      title: "Customer Care",
+      links: [
+        { label: "Contact Us", url: "/contact" },
+        { label: "Shipping Policy", url: "/shipping-policy" },
+        { label: "Refund & Returns", url: "/refund-policy" },
+        { label: "FAQs", url: "/faq" },
+      ],
+    },
+    {
+      title: "About",
+      links: [
+        { label: "Our Story", url: "/about" },
+        { label: "Privacy Policy", url: "/privacy-policy" },
+        { label: "Terms & Conditions", url: "/terms" },
+      ],
+    },
+  ],
+  copyrightText: `© ${new Date().getFullYear()} VastuCart. All rights reserved.`,
+  showSocialLinks: true,
+}
+
+// ─── Context ──────────────────────────────────────────────────────────────────
+
+const StorefrontContext = createContext<StorefrontContextValue | null>(null)
 const DISMISSED_KEY = "vastucart_announcement_dismissed"
 
 export function AnnouncementProvider({ children }: { children: ReactNode }) {
+  // Announcement
   const [text, setText] = useState<string | null>(null)
   const [link, setLink] = useState<string | null>(null)
   const [linkText, setLinkText] = useState<string | null>(null)
@@ -37,49 +107,63 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
   const [serverActive, setServerActive] = useState(false)
   const [isDismissed, setIsDismissed] = useState(false)
 
+  // Branding + footer
+  const [branding, setBranding] = useState<BrandingValue>(DEFAULT_BRANDING)
+  const [footer, setFooter] = useState<FooterValue>(DEFAULT_FOOTER)
+
   useEffect(() => {
-    // Check if already dismissed this session
     if (typeof window !== "undefined" && sessionStorage.getItem(DISMISSED_KEY)) {
       setIsDismissed(true)
     }
 
-    const fetchAnnouncement = async () => {
+    const fetchConfig = async () => {
       try {
-        // Try new storefront-config first
         const res = await fetch(`${BACKEND_URL}/store/storefront-config`, {
           headers: { "x-publishable-api-key": PUB_KEY },
         })
-        if (res.ok) {
-          const data = await res.json()
-          const ann = data.config?.announcement
-          if (ann) {
-            // Check schedule
-            const now = new Date()
-            let scheduleValid = true
-            if (ann.schedule?.startDate) {
-              scheduleValid = scheduleValid && now >= new Date(ann.schedule.startDate)
-            }
-            if (ann.schedule?.endDate) {
-              scheduleValid = scheduleValid && now <= new Date(ann.schedule.endDate + "T23:59:59")
-            }
+        if (!res.ok) return
+        const data = await res.json()
+        const config = data.config
+        if (!config) return
 
-            if (ann.isActive && scheduleValid && ann.message) {
-              setText(ann.message)
-              setLink(ann.linkUrl || null)
-              setLinkText(ann.linkText || null)
-              setBgColor(ann.bgColor || "#013f47")
-              setTextColor(ann.textColor || "#ffffff")
-              setServerActive(true)
-              return
-            }
+        // Announcement
+        const ann = config.announcement
+        if (ann?.isActive && ann.message) {
+          const now = new Date()
+          let scheduleValid = true
+          if (ann.schedule?.startDate) scheduleValid = scheduleValid && now >= new Date(ann.schedule.startDate)
+          if (ann.schedule?.endDate) scheduleValid = scheduleValid && now <= new Date(ann.schedule.endDate + "T23:59:59")
+          if (scheduleValid) {
+            setText(ann.message)
+            setLink(ann.linkUrl || null)
+            setLinkText(ann.linkText || null)
+            setBgColor(ann.bgColor || "#013f47")
+            setTextColor(ann.textColor || "#ffffff")
+            setServerActive(true)
           }
         }
+
+        // Branding
+        if (config.branding) {
+          setBranding({ ...DEFAULT_BRANDING, ...config.branding })
+        }
+
+        // Footer
+        if (config.footerConfig) {
+          setFooter({
+            columns: config.footerConfig.columns?.length
+              ? config.footerConfig.columns
+              : DEFAULT_FOOTER.columns,
+            copyrightText: config.footerConfig.copyrightText || DEFAULT_FOOTER.copyrightText,
+            showSocialLinks: config.footerConfig.showSocialLinks ?? true,
+          })
+        }
       } catch {
-        // Storefront config unavailable — no announcement to show
+        // Config unavailable — use defaults silently
       }
     }
 
-    fetchAnnouncement()
+    fetchConfig()
   }, [])
 
   const dismiss = () => {
@@ -90,7 +174,7 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AnnouncementContext.Provider
+    <StorefrontContext.Provider
       value={{
         text,
         link,
@@ -100,16 +184,31 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
         isActive: serverActive && !!text && !isDismissed,
         isDismissed,
         dismiss,
+        branding,
+        footer,
       }}
     >
       {children}
-    </AnnouncementContext.Provider>
+    </StorefrontContext.Provider>
   )
 }
 
+// ─── Hooks ────────────────────────────────────────────────────────────────────
+
 export function useAnnouncement() {
-  const ctx = useContext(AnnouncementContext)
-  if (!ctx)
-    throw new Error("useAnnouncement must be used within AnnouncementProvider")
+  const ctx = useContext(StorefrontContext)
+  if (!ctx) throw new Error("useAnnouncement must be used within AnnouncementProvider")
   return ctx
+}
+
+export function useBranding(): BrandingValue {
+  const ctx = useContext(StorefrontContext)
+  if (!ctx) throw new Error("useBranding must be used within AnnouncementProvider")
+  return ctx.branding
+}
+
+export function useStorefrontFooter(): FooterValue {
+  const ctx = useContext(StorefrontContext)
+  if (!ctx) throw new Error("useStorefrontFooter must be used within AnnouncementProvider")
+  return ctx.footer
 }
