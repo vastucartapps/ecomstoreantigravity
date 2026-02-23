@@ -22,7 +22,7 @@ export type PaymentMethod =
 export type PaymentStatus = "paid" | "pending" | "failed" | "refunded"
 
 /** Date range preset */
-export type DatePreset = "today" | "7days" | "30days" | "custom"
+export type DatePreset = "all" | "today" | "7days" | "30days" | "custom"
 
 /** Sort field */
 export type OrderSortField = "date" | "total" | "status" | "customer"

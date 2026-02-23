@@ -28,8 +28,9 @@ function getInitialDateRange() {
 const DEFAULT_FILTERS: OrderFilters = {
   search: "",
   status: "all",
-  datePreset: "30days",
-  ...getInitialDateRange(),
+  datePreset: "all",
+  dateFrom: "",
+  dateTo: "",
   sortField: "date",
   sortDirection: "desc",
 }

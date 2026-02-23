@@ -328,7 +328,7 @@ export function useAdminOrders() {
       // Over-fetch when using client-side display_status filtering
       const needsClientFilter = filters.status !== "all" && CUSTOM_DISPLAY_STATUSES.includes(filters.status as OrderStatus)
       params.set("limit", String(needsClientFilter ? perPage * 5 : perPage))
-      params.set("offset", String(offset))
+      params.set("offset", String(needsClientFilter ? 0 : offset))
       params.set(
         "fields",
         "id,display_id,status,payment_status,total,currency_code,created_at,email,metadata,*customer,*items,*payment_collections"
@@ -338,11 +338,11 @@ export function useAdminOrders() {
         params.set("q", filters.search)
       }
 
+      // Server-side date range filtering (Medusa v2 supports created_at[gte]/[lte])
       if (filters.dateFrom) {
         params.set("created_at[gte]", new Date(filters.dateFrom).toISOString())
       }
       if (filters.dateTo) {
-        // Add 1 day to include the full end date
         const end = new Date(filters.dateTo)
         end.setDate(end.getDate() + 1)
         params.set("created_at[lte]", end.toISOString())
@@ -354,14 +354,14 @@ export function useAdminOrders() {
         nativeStatuses.forEach((s) => params.append("status[]", s))
       }
 
-      // Sorting (server-side for date and total)
-      if (filters.sortField === "date") {
-        params.set("order[created_at]", filters.sortDirection.toUpperCase())
-      } else if (filters.sortField === "total") {
-        params.set("order[total]", filters.sortDirection.toUpperCase())
+      // Medusa v2 sort format: "order=-field" for desc, "order=field" for asc.
+      // Sorting by total is not supported (returns 500) — fall back to date.
+      const sortPrefix = filters.sortDirection === "desc" ? "-" : ""
+      if (filters.sortField === "date" || filters.sortField === "total") {
+        params.set("order", `${sortPrefix}created_at`)
       } else {
         // Default server sort by date desc
-        params.set("order[created_at]", "DESC")
+        params.set("order", "-created_at")
       }
 
       const res = await adminFetch<{ orders: any[]; count: number }>(
@@ -384,7 +384,7 @@ export function useAdminOrders() {
 
       // Paginate the filtered result
       const totalCount = needsClientFilter ? rows.length : (res.count || rows.length)
-      const paginatedRows = rows.slice(0, perPage)
+      const paginatedRows = needsClientFilter ? rows.slice((page - 1) * perPage, page * perPage) : rows.slice(0, perPage)
 
       return { rows: paginatedRows, totalCount }
     },

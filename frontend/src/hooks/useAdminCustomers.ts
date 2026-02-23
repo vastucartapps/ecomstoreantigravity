@@ -142,7 +142,7 @@ export function useAdminCustomers() {
       params.set("limit", String(perPage))
       params.set("offset", String(offset))
       params.set("fields", "id,first_name,last_name,email,phone,metadata,created_at")
-      params.set("order[created_at]", "DESC")
+      params.set("order", "-created_at")
       if (search) {
         params.set("q", search)
       }
@@ -152,7 +152,7 @@ export function useAdminCustomers() {
           `/admin/customers?${params.toString()}`
         ),
         adminFetch<{ orders: any[]; count: number }>(
-          `/admin/orders?fields=id,total,created_at,status,metadata,customer_id&limit=500&order[created_at]=DESC`
+          `/admin/orders?fields=id,total,created_at,status,metadata,customer_id&limit=500&order=-created_at`
         ),
       ])
 
@@ -211,7 +211,7 @@ export function useAdminCustomers() {
             `/admin/customers/${id}?fields=id,first_name,last_name,email,phone,metadata,created_at,*addresses`
           ),
           adminFetch<{ orders: any[]; count: number }>(
-            `/admin/orders?customer_id=${id}&fields=id,display_id,total,created_at,status,metadata,*items&order[created_at]=desc&limit=5`
+            `/admin/orders?customer_id=${id}&fields=id,display_id,total,created_at,status,metadata,*items&order=-created_at&limit=5`
           ),
           adminFetch<{ points: number }>(
             `/admin/customers/${id}/loyalty`
