@@ -38,6 +38,7 @@ interface CheckoutContextValue {
   // Payment
   paymentMethod: string
   setPaymentMethod: (method: string) => void
+  razorpayKeyId: string | null
   initPayment: () => Promise<void>
   completeCheckout: () => Promise<{ orderId: string }>
   // State
@@ -62,6 +63,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
   const [selectedShippingId, setSelectedShippingId] = useState<string | null>(null)
   const [codEnabled, setCodEnabled] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("system")
+  const [razorpayKeyId, setRazorpayKeyId] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -208,6 +210,17 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
   const initPayment = useCallback(async () => {
     if (!cart) return
 
+    // Fetch Razorpay public key from admin panel settings (single source of truth)
+    try {
+      const cfgRes = await fetch(`${BACKEND_URL}/store/payment-config`, {
+        headers: { "x-publishable-api-key": PUB_KEY },
+      })
+      if (cfgRes.ok) {
+        const cfg = await cfgRes.json()
+        setRazorpayKeyId(cfg.razorpay_key_id || null)
+      }
+    } catch {}
+
     // Guard: skip if a valid (non-cancelled) payment session already exists
     const existingSessions = (cart as any)?.payment_collection?.payment_sessions
     if (existingSessions?.some((s: any) => s.status !== "canceled")) return
@@ -268,7 +281,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         savedAddresses, loadSavedAddresses, setAddresses, selectedAddressId, setSelectedAddressId,
         shippingOptions, selectedShippingId, loadShippingOptions, applyShippingMethod, selectShippingMethod,
         codEnabled, toggleCod,
-        paymentMethod, setPaymentMethod, initPayment, completeCheckout,
+        paymentMethod, setPaymentMethod, razorpayKeyId, initPayment, completeCheckout,
         isProcessing, error, setError,
       }}
     >

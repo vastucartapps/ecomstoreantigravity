@@ -8,7 +8,6 @@ import { useCheckout } from "@/providers/checkout-provider"
 import { primary, earth, bg, fonts } from "@/lib/theme"
 import { normalizeImageUrl } from "@/lib/image-url"
 
-const RAZORPAY_KEY = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || ""
 
 /** Dynamically load the Razorpay checkout.js script (idempotent). */
 function loadRazorpayScript(): Promise<boolean> {
@@ -30,6 +29,7 @@ export function PaymentStep() {
     contactEmail,
     paymentMethod,
     setPaymentMethod,
+    razorpayKeyId,
     codEnabled,
     shippingOptions,
     selectedShippingId,
@@ -40,6 +40,8 @@ export function PaymentStep() {
     error,
     setError,
   } = useCheckout()
+
+  const RAZORPAY_KEY = razorpayKeyId || ""
 
   const [localError, setLocalError] = useState<string | null>(null)
   const [rzpLoading, setRzpLoading] = useState(false)
