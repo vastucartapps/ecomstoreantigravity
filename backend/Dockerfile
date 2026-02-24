@@ -11,10 +11,26 @@ RUN --mount=type=cache,target=/root/.npm \
 # Copy source
 COPY . .
 
+# Supply dummy env vars so validateEnv() passes during `medusa build`.
+# esbuild keeps process.env.* as dynamic references (not inlined literals),
+# so Coolify's real runtime env vars take full effect when the container starts.
+ARG DATABASE_URL=postgresql://postgres:postgres@localhost:5432/medusa
+ARG REDIS_URL=redis://localhost:6379
+ARG JWT_SECRET=build-time-dummy-jwt-secret-not-used-at-runtime-placeholder
+ARG COOKIE_SECRET=build-time-dummy-cookie-secret-not-used-at-runtime-ok
+ARG STORE_CORS=http://localhost:3000
+ARG ADMIN_CORS=http://localhost:3000
+ARG AUTH_CORS=http://localhost:3000
+ENV DATABASE_URL=$DATABASE_URL \
+    REDIS_URL=$REDIS_URL \
+    JWT_SECRET=$JWT_SECRET \
+    COOKIE_SECRET=$COOKIE_SECRET \
+    STORE_CORS=$STORE_CORS \
+    ADMIN_CORS=$ADMIN_CORS \
+    AUTH_CORS=$AUTH_CORS
+
 # Build Medusa
-# MEDUSA_BUILD=true tells medusa-config.ts to skip validateEnv() — env vars
-# are not available at Docker build time (only at container runtime).
-RUN MEDUSA_BUILD=true npm run build
+RUN npm run build
 
 # Note: Cannot use npm prune --production here because Medusa v2 loads
 # medusa-config.ts at runtime, requiring TypeScript in node_modules

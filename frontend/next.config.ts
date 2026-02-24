@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.vastucart.in" },
       { protocol: "http", hostname: "minio", port: "9000" },
       { protocol: "http", hostname: "localhost", port: "9002" },
+      // Allow any HTTPS host — imported products may use Amazon CDN, etc.
+      { protocol: "https", hostname: "**" },
     ],
   },
   // API routing handled by src/middleware.ts — NOT rewrites.
