@@ -826,11 +826,6 @@ export default async function importCSVProducts({ container }: ExecArgs) {
         const verifiedThreshold = rating >= 5 ? 0.8 : rating >= 4 ? 0.6 : 0.4
         const isVerified = rand() < verifiedThreshold
 
-        // Generate a plausible past date (1-18 months ago)
-        const daysAgo = 30 + Math.floor(rand() * 540)
-        const reviewDate = new Date()
-        reviewDate.setDate(reviewDate.getDate() - daysAgo)
-
         promises.push(
           reviewService.createProductReviews({
             product_id: product.id,
@@ -843,7 +838,6 @@ export default async function importCSVProducts({ container }: ExecArgs) {
             variant: product.variantCount > 1 ? `Variant ${Math.floor(rand() * product.variantCount) + 1}` : "Default",
             is_verified_purchase: isVerified,
             status: "approved",
-            created_at: reviewDate,
           }).catch((err: any) => {
             // Silently continue on individual review failures
           })
