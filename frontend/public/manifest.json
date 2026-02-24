@@ -1,0 +1,23 @@
+{
+  "name": "VastuCart — Authentic Spiritual Products",
+  "short_name": "VastuCart",
+  "description": "Your trusted destination for authentic spiritual products, crystals, yantras, and Vastu Shastra tools.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fffbf5",
+  "theme_color": "#013f47",
+  "orientation": "portrait-primary",
+  "lang": "en-IN",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["shopping", "lifestyle"],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

@@ -6,7 +6,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const qaService = req.scope.resolve(PRODUCT_QA_MODULE)
   const productModule = req.scope.resolve(Modules.PRODUCT)
 
-  const { status, search, limit = "100", offset = "0" } = req.query as Record<string, string>
+  const { status, search, limit = "50", offset = "0" } = req.query as Record<string, string>
+
+  const safeLimit = Math.min(parseInt(limit) || 50, 500)
+  const safeOffset = Math.max(0, parseInt(offset) || 0)
 
   const filter: Record<string, any> = {}
   if (status && status !== "all") {
@@ -20,8 +23,8 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
   const [questions, count] = await qaService.listAndCountProductQuestions(filter, {
     order: { created_at: "DESC" },
-    take: Number(limit),
-    skip: Number(offset),
+    take: safeLimit,
+    skip: safeOffset,
   })
 
   // Collect unique product IDs for join

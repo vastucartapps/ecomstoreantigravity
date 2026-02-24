@@ -67,6 +67,10 @@ export const metadata: Metadata = {
     follow: true,
     googleBot: { index: true, follow: true },
   },
+  manifest: "/manifest.json",
+  other: {
+    "theme-color": "#013f47",
+  },
 }
 
 export default function RootLayout({

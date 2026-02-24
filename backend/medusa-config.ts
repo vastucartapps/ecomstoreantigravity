@@ -1,6 +1,10 @@
 import { loadEnv, defineConfig, Modules } from '@medusajs/framework/utils'
+import { validateEnv } from './src/lib/env-validation'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
+
+// Fail fast if required env vars are missing or insecure
+validateEnv()
 
 // ─── Conditional payment providers ────────────────────────
 const paymentProviders: any[] = []
