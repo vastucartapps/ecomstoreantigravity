@@ -39,6 +39,9 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
+  const [collectionsOpen, setCollectionsOpen] = useState(false)
+  const collectionsRef = useRef<HTMLDivElement>(null)
+  const collectionsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
   const [notifCount, setNotifCount] = useState(0)
@@ -464,34 +467,130 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                 />
               )}
 
-              {/* Dynamic categories */}
-              {categories.map((cat) => {
-                const isActive = pathname === `/category/${cat.handle}`
-                return (
-                  <Link
-                    key={cat.handle}
-                    href={`/category/${cat.handle}`}
-                    className="flex-shrink-0 px-4 py-3 text-sm font-medium transition-colors relative group"
+              {/* Collections mega-dropdown trigger */}
+              {categories.length > 0 && (
+                <div
+                  ref={collectionsRef}
+                  className="relative flex-shrink-0"
+                  onMouseEnter={() => {
+                    if (collectionsTimerRef.current) clearTimeout(collectionsTimerRef.current)
+                    setCollectionsOpen(true)
+                  }}
+                  onMouseLeave={() => {
+                    collectionsTimerRef.current = setTimeout(() => setCollectionsOpen(false), 120)
+                  }}
+                >
+                  <button
+                    className="flex items-center gap-1 px-4 py-3 text-sm font-semibold transition-colors relative group"
                     style={{
-                      color: isActive ? secondary[500] : earth[600],
+                      color: collectionsOpen ? secondary[500] : primary[500],
                       fontFamily: fonts.body,
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
                     }}
                   >
-                    {cat.name}
+                    Collections
+                    <svg
+                      width="12" height="12" viewBox="0 0 12 12" fill="none"
+                      style={{
+                        transition: "transform 0.2s",
+                        transform: collectionsOpen ? "rotate(180deg)" : "rotate(0deg)",
+                        opacity: 0.6,
+                      }}
+                    >
+                      <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                     <span
                       className="absolute bottom-0 left-0 right-0 h-0.5 transition-transform origin-left"
                       style={{
                         background: gradients.accentBorder,
-                        transform: isActive ? "scaleX(1)" : "scaleX(0)",
+                        transform: collectionsOpen ? "scaleX(1)" : "scaleX(0)",
                       }}
                     />
-                    <span
-                      className="absolute bottom-0 left-0 right-0 h-0.5 transition-transform origin-left group-hover:scale-x-100 scale-x-0"
-                      style={{ background: gradients.accentBorder }}
-                    />
-                  </Link>
-                )
-              })}
+                  </button>
+
+                  {/* Mega dropdown panel */}
+                  {collectionsOpen && (
+                    <div
+                      className="fixed left-0 right-0 z-50 shadow-2xl border-t"
+                      style={{
+                        top: collectionsRef.current
+                          ? collectionsRef.current.closest("nav")!.getBoundingClientRect().bottom + "px"
+                          : "auto",
+                        backgroundColor: "#ffffff",
+                        borderColor: "#e8ddd4",
+                      }}
+                      onMouseEnter={() => {
+                        if (collectionsTimerRef.current) clearTimeout(collectionsTimerRef.current)
+                        setCollectionsOpen(true)
+                      }}
+                      onMouseLeave={() => {
+                        collectionsTimerRef.current = setTimeout(() => setCollectionsOpen(false), 120)
+                      }}
+                    >
+                      <div className="max-w-7xl mx-auto px-6 py-8">
+                        <p
+                          className="text-xs font-semibold uppercase tracking-widest mb-5"
+                          style={{ color: earth[400], fontFamily: fonts.body }}
+                        >
+                          Shop by Collection
+                        </p>
+                        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
+                          {categories.map((cat) => {
+                            const isActive = pathname === `/category/${cat.handle}`
+                            return (
+                              <Link
+                                key={cat.handle}
+                                href={`/category/${cat.handle}`}
+                                onClick={() => setCollectionsOpen(false)}
+                                className="group flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
+                                style={{
+                                  background: isActive ? `linear-gradient(135deg, rgba(1,63,71,0.08), rgba(1,63,71,0.04))` : "transparent",
+                                  border: `1px solid ${isActive ? "rgba(1,63,71,0.15)" : "transparent"}`,
+                                  fontFamily: fonts.body,
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!isActive) (e.currentTarget as HTMLElement).style.background = "rgba(1,63,71,0.05)"
+                                  ;(e.currentTarget as HTMLElement).style.borderColor = "rgba(1,63,71,0.12)"
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!isActive) (e.currentTarget as HTMLElement).style.background = "transparent"
+                                  ;(e.currentTarget as HTMLElement).style.borderColor = "transparent"
+                                }}
+                              >
+                                <div
+                                  className="w-2 h-2 rounded-full flex-shrink-0 transition-transform group-hover:scale-125"
+                                  style={{ background: isActive ? secondary[500] : gradients.accentBorder, backgroundImage: gradients.accentBorder }}
+                                />
+                                <span
+                                  className="text-sm font-medium leading-snug"
+                                  style={{ color: isActive ? secondary[500] : primary[500] }}
+                                >
+                                  {cat.name}
+                                </span>
+                              </Link>
+                            )
+                          })}
+                        </div>
+                        <div className="mt-6 pt-5 border-t flex items-center justify-between" style={{ borderColor: "#e8ddd4" }}>
+                          <Link
+                            href="/search"
+                            onClick={() => setCollectionsOpen(false)}
+                            className="inline-flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-75"
+                            style={{ color: secondary[500], fontFamily: fonts.body }}
+                          >
+                            Browse all products
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                              <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </nav>

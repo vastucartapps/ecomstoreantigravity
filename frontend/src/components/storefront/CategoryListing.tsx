@@ -321,19 +321,20 @@ export function CategoryListing({
           </h1>
           {categoryHero.description && (
             <p
-              className="mt-3 text-sm sm:text-base max-w-2xl leading-relaxed"
+              className="mt-3 text-sm sm:text-base max-w-lg leading-relaxed line-clamp-3"
               style={{
-                color: "rgba(255,255,255,0.75)",
+                color: "rgba(255,255,255,0.88)",
                 fontFamily: fonts.body,
+                textShadow: "0 1px 3px rgba(0,0,0,0.4)",
               }}
             >
               {categoryHero.description}
             </p>
           )}
           <p
-            className="mt-2 text-xs font-medium tracking-wide uppercase"
+            className="mt-3 text-xs font-semibold tracking-widest uppercase"
             style={{
-              color: "rgba(255,255,255,0.45)",
+              color: "rgba(255,255,255,0.55)",
               fontFamily: fonts.body,
             }}
           >
