@@ -37,7 +37,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     if (body.creatives !== undefined)
       updates.creatives_json = JSON.stringify(body.creatives)
 
-    await adsService.updateEcosystemBanners(req.params.id, updates)
+    await adsService.updateEcosystemBanners({ id: req.params.id, ...updates })
     const banner = await adsService.getBannerParsed(req.params.id)
     res.json({ banner })
   } catch (err: any) {
@@ -56,9 +56,7 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse) {
       { take: 500 }
     )
     for (const slot of slots) {
-      await adsService.updateEcosystemSlots(slot.id, {
-        current_banner_id: null,
-      })
+      await adsService.updateEcosystemSlots({ id: slot.id, current_banner_id: null })
     }
 
     await adsService.deleteEcosystemBanners(bannerId)

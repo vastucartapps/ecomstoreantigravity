@@ -11,7 +11,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     if (body.display_name !== undefined) updates.display_name = body.display_name
     if (body.is_active !== undefined) updates.is_active = body.is_active
 
-    await adsService.updateEcosystemSites(req.params.id, updates)
+    await adsService.updateEcosystemSites({ id: req.params.id, ...updates })
     res.json({ success: true })
   } catch (err: any) {
     res.status(500).json({ message: err.message || "Failed to update site" })

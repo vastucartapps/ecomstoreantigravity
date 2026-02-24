@@ -10,9 +10,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       return
     }
 
-    await adsService.updateEcosystemBanners(req.params.id, {
-      is_active: !banner.is_active,
-    })
+    await adsService.updateEcosystemBanners({ id: req.params.id, is_active: !banner.is_active })
 
     res.json({ is_active: !banner.is_active })
   } catch (err: any) {
