@@ -11,13 +11,19 @@ import type {
   CustomerAddress,
   AdminNote,
 } from "@/types/admin-customer"
+import type {
+  MedusaAdminUser,
+  MedusaOrder,
+  MedusaCustomer,
+  MedusaCustomerAddress,
+} from "@/types/medusa-api"
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatOrderNumber(order: any): string {
-  const date = new Date(order.created_at)
+function formatOrderNumber(order: MedusaOrder): string {
+  const date = new Date(order.created_at || 0)
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, "0")
   const day = String(date.getDate()).padStart(2, "0")
@@ -25,8 +31,8 @@ function formatOrderNumber(order: any): string {
   return `VC-${year}-${month}${day}-${id}`
 }
 
-function mapOrderStatus(order: any): string {
-  const meta = order.metadata?.display_status
+function mapOrderStatus(order: MedusaOrder): string {
+  const meta = order.metadata?.display_status as string | undefined
   if (meta) return meta
   const status = order.status
   if (status === "cancelled") return "cancelled"
@@ -43,7 +49,7 @@ interface OrderStats {
 }
 
 function computeSegments(
-  customer: any,
+  customer: MedusaCustomer,
   stats: OrderStats,
   isHighValue: boolean
 ): CustomerSegment[] {
@@ -52,7 +58,7 @@ function computeSegments(
   const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000
   const ninetyDaysAgo = now - 90 * 24 * 60 * 60 * 1000
 
-  if (new Date(customer.created_at).getTime() > thirtyDaysAgo) {
+  if (new Date(customer.created_at || 0).getTime() > thirtyDaysAgo) {
     segments.push("new")
   }
   if (stats.orderCount >= 2) {
@@ -68,7 +74,7 @@ function computeSegments(
 }
 
 function mapMedusaCustomerRow(
-  c: any,
+  c: MedusaCustomer,
   stats: OrderStats,
   isHighValue: boolean
 ): CustomerRow {
@@ -77,44 +83,44 @@ function mapMedusaCustomerRow(
     name: [c.first_name, c.last_name].filter(Boolean).join(" ") || c.email || "Unknown",
     email: c.email || "",
     phone: c.phone || "",
-    avatarUrl: c.metadata?.avatar_url || "",
+    avatarUrl: (c.metadata?.avatar_url as string | undefined) || "",
     totalOrders: stats.orderCount,
     lifetimeValue: stats.lifetimeValue,
-    currency: (c.metadata?.currency || "INR") as "INR" | "USD",
+    currency: ((c.metadata?.currency as string | undefined) || "INR") as "INR" | "USD",
     segments: computeSegments(c, stats, isHighValue),
-    joinedAt: c.created_at,
+    joinedAt: c.created_at || "",
   }
 }
 
-function mapMedusaOrderToCustomerOrder(o: any): CustomerOrder {
+function mapMedusaOrderToCustomerOrder(o: MedusaOrder): CustomerOrder {
   return {
     id: o.id,
     orderNumber: formatOrderNumber(o),
     total: Math.round((o.total || 0) / 100),
     currency: (o.currency_code?.toUpperCase() || "INR") as "INR" | "USD",
     status: mapOrderStatus(o),
-    date: o.created_at,
+    date: o.created_at || "",
     itemCount: (o.items || []).length,
   }
 }
 
-function mapMedusaAddress(addr: any): CustomerAddress {
-  const label = addr.metadata?.label || "Home"
+function mapMedusaAddress(addr: MedusaCustomerAddress): CustomerAddress {
+  const label = (addr.metadata?.label as string | undefined) || "Home"
   return {
     id: addr.id,
-    label: ["Home", "Office", "Other"].includes(label) ? label : "Other",
+    label: (["Home", "Office", "Other"].includes(label) ? label : "Other") as "Home" | "Office" | "Other",
     street: [addr.address_1, addr.address_2].filter(Boolean).join(", "),
     city: addr.city || "",
     state: addr.province || "",
     pincode: addr.postal_code || "",
     country: addr.country_code?.toUpperCase() || "",
-    isDefault: !!addr.metadata?.is_default,
+    isDefault: !!(addr.metadata?.is_default),
   }
 }
 
 async function getAdminAuthor(): Promise<string> {
   try {
-    const res = await adminFetch<{ user: any }>("/admin/users/me")
+    const res = await adminFetch<{ user: MedusaAdminUser | null }>("/admin/users/me")
     return (
       [res.user?.first_name, res.user?.last_name].filter(Boolean).join(" ") ||
       res.user?.email ||
@@ -148,10 +154,10 @@ export function useAdminCustomers() {
       }
 
       const [customerRes, ordersRes] = await Promise.all([
-        adminFetch<{ customers: any[]; count: number }>(
+        adminFetch<{ customers: MedusaCustomer[]; count: number }>(
           `/admin/customers?${params.toString()}`
         ),
-        adminFetch<{ orders: any[]; count: number }>(
+        adminFetch<{ orders: MedusaOrder[]; count: number }>(
           `/admin/orders?fields=id,total,created_at,status,metadata,customer_id&limit=500&order=-created_at`
         ),
       ])
@@ -172,22 +178,22 @@ export function useAdminCustomers() {
         }
         existing.orderCount++
         existing.lifetimeValue += Math.round((order.total || 0) / 100)
-        const orderDate = new Date(order.created_at).getTime()
+        const orderDate = new Date(order.created_at || 0).getTime()
         if (!existing.lastOrderDate || orderDate > existing.lastOrderDate) {
           existing.lastOrderDate = orderDate
-          existing.lastOrderAt = order.created_at
+          existing.lastOrderAt = order.created_at || null
         }
         ordersByCustomer.set(cid, existing)
       }
 
       // Compute high_value threshold (top 10%)
       const allValues = customers
-        .map((c: any) => ordersByCustomer.get(c.id)?.lifetimeValue || 0)
+        .map((c) => ordersByCustomer.get(c.id)?.lifetimeValue || 0)
         .sort((a: number, b: number) => b - a)
       const top10Idx = Math.floor(allValues.length * 0.1)
       const highValueThreshold = allValues[top10Idx] || 1
 
-      const rows: CustomerRow[] = customers.map((c: any) => {
+      const rows: CustomerRow[] = customers.map((c) => {
         const stats = ordersByCustomer.get(c.id) || {
           orderCount: 0,
           lifetimeValue: 0,
@@ -207,10 +213,10 @@ export function useAdminCustomers() {
     async (id: string): Promise<CustomerDetail | null> => {
       try {
         const [customerRes, ordersRes, loyaltyRes] = await Promise.all([
-          adminFetch<{ customer: any }>(
+          adminFetch<{ customer: MedusaCustomer }>(
             `/admin/customers/${id}?fields=id,first_name,last_name,email,phone,metadata,created_at,*addresses`
           ),
-          adminFetch<{ orders: any[]; count: number }>(
+          adminFetch<{ orders: MedusaOrder[]; count: number }>(
             `/admin/orders?customer_id=${id}&fields=id,display_id,total,created_at,status,metadata,*items&order=-created_at&limit=5`
           ),
           adminFetch<{ points: number }>(
@@ -243,7 +249,7 @@ export function useAdminCustomers() {
         const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000
         const ninetyDaysAgo = now - 90 * 24 * 60 * 60 * 1000
         const segments: CustomerSegment[] = []
-        if (new Date(c.created_at).getTime() > thirtyDaysAgo) segments.push("new")
+        if (new Date(c.created_at || 0).getTime() > thirtyDaysAgo) segments.push("new")
         if (totalOrders >= 2) segments.push("repeat")
         if (!lastOrderAt || new Date(lastOrderAt).getTime() < ninetyDaysAgo) segments.push("inactive")
 
@@ -253,13 +259,13 @@ export function useAdminCustomers() {
           email: c.email || "",
           emailVerified: !!c.metadata?.email_verified,
           phone: c.phone || "",
-          avatarUrl: c.metadata?.avatar_url || "",
-          joinedAt: c.created_at,
+          avatarUrl: (c.metadata?.avatar_url as string | undefined) || "",
+          joinedAt: c.created_at || "",
           lastOrderAt,
           totalOrders,
           lifetimeValue,
           averageOrderValue: avgOrderValue,
-          currency: (c.metadata?.currency || "INR") as "INR" | "USD",
+          currency: ((c.metadata?.currency as string | undefined) || "INR") as "INR" | "USD",
           loyaltyPoints,
           segments,
           recentOrders,
@@ -279,7 +285,7 @@ export function useAdminCustomers() {
       try {
         const author = await getAdminAuthor()
 
-        const currentRes = await adminFetch<{ customer: any }>(
+        const currentRes = await adminFetch<{ customer: MedusaCustomer }>(
           `/admin/customers/${customerId}?fields=id,metadata`
         )
         const existingMeta = currentRes.customer?.metadata || {}

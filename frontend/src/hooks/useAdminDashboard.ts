@@ -11,6 +11,12 @@ import type {
   Alert,
   OrderStatus,
 } from "@/types/admin-dashboard"
+import type {
+  MedusaOrder,
+  MedusaCustomer,
+  MedusaProduct,
+  MedusaReturn,
+} from "@/types/medusa-api"
 
 // ---------------------------------------------------------------------------
 // Date range helpers
@@ -82,7 +88,7 @@ function dayLabel(d: Date, period: TimePeriod) {
 
 async function fetchOrders(startISO: string, endISO: string) {
   try {
-    const res = await adminFetch<{ orders: any[]; count: number }>(
+    const res = await adminFetch<{ orders: MedusaOrder[]; count: number }>(
       `/admin/orders?limit=500&created_at[$gte]=${encodeURIComponent(startISO)}&created_at[$lte]=${encodeURIComponent(endISO)}&fields=id,display_id,status,payment_status,total,currency_code,email,created_at,*customer,items.id,metadata`
     )
     return res.orders || []
@@ -93,7 +99,7 @@ async function fetchOrders(startISO: string, endISO: string) {
 
 async function fetchCustomers(startISO: string, endISO: string) {
   try {
-    const res = await adminFetch<{ customers: any[]; count: number }>(
+    const res = await adminFetch<{ customers: MedusaCustomer[]; count: number }>(
       `/admin/customers?limit=500&created_at[$gte]=${encodeURIComponent(startISO)}&created_at[$lte]=${encodeURIComponent(endISO)}&fields=id,created_at`
     )
     return res.customers || []
@@ -104,14 +110,14 @@ async function fetchCustomers(startISO: string, endISO: string) {
 
 async function fetchLowStockProducts() {
   try {
-    const res = await adminFetch<{ products: any[] }>(
+    const res = await adminFetch<{ products: MedusaProduct[] }>(
       `/admin/products?limit=500&fields=id,title,variants.inventory_quantity,variants.title,variants.id`
     )
     const products = res.products || []
     // Filter products that have any variant with inventory_quantity < 2
-    return products.filter((p: any) =>
+    return products.filter((p) =>
       (p.variants || []).some(
-        (v: any) => typeof v.inventory_quantity === "number" && v.inventory_quantity < 2
+        (v) => typeof v.inventory_quantity === "number" && v.inventory_quantity < 2
       )
     )
   } catch {
@@ -121,7 +127,7 @@ async function fetchLowStockProducts() {
 
 async function fetchPendingReturns() {
   try {
-    const res = await adminFetch<{ returns: any[]; count: number }>(
+    const res = await adminFetch<{ returns: MedusaReturn[]; count: number }>(
       `/admin/returns?limit=50&status=requested`
     )
     return (res.returns || []).length
@@ -132,7 +138,7 @@ async function fetchPendingReturns() {
 
 async function fetchPendingReviews() {
   try {
-    const res = await adminFetch<{ product_reviews: any[]; count: number }>(
+    const res = await adminFetch<{ product_reviews: Record<string, unknown>[]; count: number }>(
       `/admin/product-reviews?status=pending&limit=1`
     )
     return res.count || (res.product_reviews || []).length
@@ -146,10 +152,10 @@ async function fetchPendingReviews() {
 // Mapping helpers
 // ---------------------------------------------------------------------------
 
-function mapOrderStatus(order: any): OrderStatus {
+function mapOrderStatus(order: MedusaOrder): OrderStatus {
   // Check metadata override first (set by inline status updates)
-  const meta = order.metadata?.display_status
-  if (meta) return meta as OrderStatus
+  const meta = order.metadata?.display_status as OrderStatus | undefined
+  if (meta) return meta
 
   const status = order.status
   const payStatus = order.payment_status
@@ -162,8 +168,8 @@ function mapOrderStatus(order: any): OrderStatus {
   return "processing"
 }
 
-function formatOrderNumber(order: any): string {
-  const date = new Date(order.created_at)
+function formatOrderNumber(order: MedusaOrder): string {
+  const date = new Date(order.created_at || 0)
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, "0")
   const day = String(date.getDate()).padStart(2, "0")
@@ -172,10 +178,10 @@ function formatOrderNumber(order: any): string {
 }
 
 function buildStats(
-  currentOrders: any[],
-  prevOrders: any[],
-  currentCustomers: any[],
-  prevCustomers: any[],
+  currentOrders: MedusaOrder[],
+  prevOrders: MedusaOrder[],
+  currentCustomers: MedusaCustomer[],
+  prevCustomers: MedusaCustomer[],
   lowStockProducts: any[],
   reviewCount: number
 ): DashboardStat[] {
@@ -184,11 +190,11 @@ function buildStats(
 
   const capturedStatuses = ["captured", "partially_captured"]
   const revenue = currentOrders
-    .filter((o) => capturedStatuses.includes(o.payment_status))
-    .reduce((sum: number, o: any) => sum + (o.total || 0), 0) / 100
+    .filter((o) => capturedStatuses.includes(o.payment_status || ""))
+    .reduce((sum: number, o) => sum + (o.total || 0), 0) / 100
   const prevRevenue = prevOrders
-    .filter((o) => capturedStatuses.includes(o.payment_status))
-    .reduce((sum: number, o: any) => sum + (o.total || 0), 0) / 100
+    .filter((o) => capturedStatuses.includes(o.payment_status || ""))
+    .reduce((sum: number, o) => sum + (o.total || 0), 0) / 100
 
   const pendingOrders = currentOrders.filter(
     (o) => o.status === "pending" || o.payment_status === "awaiting"
@@ -454,7 +460,7 @@ export function useAdminDashboard(timePeriod: TimePeriod): AdminDashboardData {
 
       // Sort current orders by date desc (most recent first)
       const sortedOrders = [...currentOrders].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
       )
 
       setStats(

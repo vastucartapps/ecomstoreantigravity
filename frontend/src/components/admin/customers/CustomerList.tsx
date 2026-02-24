@@ -33,7 +33,7 @@ function SortIcon({ field, sortField, sortDirection }: {
   )
 }
 
-export function CustomerList({ customers, filters, totalCount, onChangeFilters, onViewCustomer }: CustomerListProps) {
+export function CustomerList({ customers, filters, totalCount, isLoading, onChangeFilters, onViewCustomer }: CustomerListProps) {
 
   const segmentCounts = useMemo(() => {
     const counts = {
@@ -372,7 +372,39 @@ export function CustomerList({ customers, filters, totalCount, onChangeFilters, 
               </tr>
             </thead>
             <tbody>
-              {filteredAndSortedCustomers.map(customer => (
+              {isLoading && customers.length === 0
+                ? Array.from({ length: 8 }).map((_, i) => (
+                    <tr key={`skel-${i}`} style={{ borderTop: `1px solid ${c.subtle}` }}>
+                      <td style={{ padding: "16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div className="animate-pulse" style={{ width: 48, height: 48, borderRadius: "50%", background: c.subtle, flexShrink: 0 }} />
+                          <div>
+                            <div className="animate-pulse" style={{ height: 15, width: 130, background: c.subtle, borderRadius: 4, marginBottom: 4 }} />
+                            <div className="animate-pulse" style={{ height: 13, width: 170, background: c.subtle, borderRadius: 4 }} />
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <div className="animate-pulse" style={{ height: 14, width: 90, background: c.subtle, borderRadius: 4 }} />
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <div className="animate-pulse" style={{ height: 14, width: 30, background: c.subtle, borderRadius: 4 }} />
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <div className="animate-pulse" style={{ height: 14, width: 80, background: c.subtle, borderRadius: 4 }} />
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <div className="animate-pulse" style={{ height: 24, width: 60, background: c.subtle, borderRadius: 12 }} />
+                      </td>
+                      <td style={{ padding: "16px" }}>
+                        <div className="animate-pulse" style={{ height: 14, width: 80, background: c.subtle, borderRadius: 4 }} />
+                      </td>
+                      <td style={{ padding: "16px", textAlign: "right" }}>
+                        <div className="animate-pulse" style={{ height: 36, width: 70, background: c.subtle, borderRadius: 6, display: "inline-block" }} />
+                      </td>
+                    </tr>
+                  ))
+                : filteredAndSortedCustomers.map(customer => (
                 <tr
                   key={customer.id}
                   onClick={() => onViewCustomer?.(customer.id)}

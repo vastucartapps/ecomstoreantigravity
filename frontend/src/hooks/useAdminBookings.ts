@@ -10,6 +10,7 @@ import type {
   ConsultationType,
   SlotDuration,
 } from "@/types/admin-booking"
+import type { MedusaBooking, MedusaCustomer } from "@/types/medusa-api"
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -41,12 +42,13 @@ function addMinutes(time: string, minutes: number): string {
   return `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`
 }
 
-function mapBookingToRow(booking: any, customer: any): BookingRow {
+function mapBookingToRow(booking: MedusaBooking, customer: MedusaCustomer | null): BookingRow {
   const startTime = booking.time || "10:00"
-  const customerName = customer
+  const customerName: string = customer
     ? `${customer.first_name || ""} ${customer.last_name || ""}`.trim() ||
       customer.email ||
-      booking.customer_id
+      booking.customer_id ||
+      "Unknown"
     : booking.customer_id || "Unknown"
 
   return {
@@ -54,7 +56,7 @@ function mapBookingToRow(booking: any, customer: any): BookingRow {
     customerName,
     customerEmail: customer?.email || "",
     customerPhone: customer?.phone || "",
-    consultationType: getConsultationType(booking.title),
+    consultationType: getConsultationType(booking.title || ""),
     date: booking.date || "",
     startTime,
     endTime: addMinutes(startTime, 45),
@@ -89,20 +91,20 @@ export function useAdminBookings() {
   const fetchBookings = useCallback(async (status?: string): Promise<BookingRow[]> => {
     try {
       const params = status ? `?status=${status}` : ""
-      const res = await adminFetch<{ bookings: any[] }>(`/admin/bookings${params}`)
-      const bookings: any[] = res.bookings || []
+      const res = await adminFetch<{ bookings: MedusaBooking[] }>(`/admin/bookings${params}`)
+      const bookings = res.bookings || []
 
       // Batch-fetch unique customers in parallel
       const customerIds = [
         ...new Set(
-          bookings.map((b: any) => b.customer_id).filter(Boolean)
+          bookings.map((b) => b.customer_id).filter(Boolean) as string[]
         ),
       ]
-      const customerMap: Record<string, any> = {}
+      const customerMap: Record<string, MedusaCustomer> = {}
       await Promise.all(
         customerIds.map(async (id) => {
           try {
-            const cRes = await adminFetch<{ customer: any }>(
+            const cRes = await adminFetch<{ customer: MedusaCustomer }>(
               `/admin/customers/${id}?fields=id,first_name,last_name,email,phone`
             )
             if (cRes.customer) customerMap[id] = cRes.customer
@@ -112,8 +114,8 @@ export function useAdminBookings() {
         })
       )
 
-      return bookings.map((b: any) =>
-        mapBookingToRow(b, customerMap[b.customer_id])
+      return bookings.map((b) =>
+        mapBookingToRow(b, customerMap[b.customer_id ?? ""] ?? null)
       )
     } catch {
       return []

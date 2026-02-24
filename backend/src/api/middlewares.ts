@@ -33,8 +33,26 @@ const trackingLimit = rateLimit({
   skip: (req) => process.env.NODE_ENV === "test",
 })
 
+// ─── X-API-Version header middleware ─────────────────────────────────────────
+// Documents the Medusa API version this backend targets. Used by API clients
+// to detect version mismatches without parsing /health endpoints.
+function setApiVersion(
+  _req: import("express").Request,
+  res: import("express").Response,
+  next: import("express").NextFunction
+) {
+  res.setHeader("X-API-Version", "2025-01-01")
+  next()
+}
+
 export default defineMiddlewares({
   routes: [
+    // ─── API version header on all routes ────────────────────────────────────
+    {
+      matcher: "/**",
+      middlewares: [setApiVersion],
+    },
+
     // ─── Admin authentication guard ──────────────────────────────────────────
     // Applies to ALL custom /admin/* routes. Medusa built-in admin routes
     // are already protected by the framework; this ensures our custom routes

@@ -91,6 +91,7 @@ export interface CustomerListProps {
   customers: CustomerRow[]
   filters: CustomerFilters
   totalCount: number
+  isLoading?: boolean
   onChangeFilters?: (filters: Partial<CustomerFilters>) => void
   onViewCustomer?: (customerId: string) => void
 }

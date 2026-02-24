@@ -126,6 +126,7 @@ export function OrdersTable({
   orders,
   filters,
   pagination,
+  isLoading,
   onChangeFilters,
   onChangePage,
   onChangePerPage,
@@ -437,7 +438,7 @@ export function OrdersTable({
           backgroundClip: "padding-box, border-box",
         }}
       >
-        {orders.length === 0 ? (
+        {orders.length === 0 && !isLoading ? (
           <div style={{ padding: "64px 24px", textAlign: "center" }}>
             <p style={{ fontSize: "16px", color: c.earth400, fontWeight: "500" }}>
               No orders found
@@ -593,7 +594,38 @@ export function OrdersTable({
                   </tr>
                 </thead>
                 <tbody>
-                  {orders.map((order) => {
+                  {isLoading && orders.length === 0
+                    ? Array.from({ length: 8 }).map((_, i) => (
+                        <tr key={`skel-${i}`} style={{ borderBottom: `1px solid ${c.earth300}` }}>
+                          <td style={{ padding: "16px" }}>
+                            <div className="animate-pulse" style={{ height: 14, width: 130, background: c.subtle, borderRadius: 4 }} />
+                          </td>
+                          <td style={{ padding: "16px" }}>
+                            <div className="animate-pulse" style={{ height: 14, width: 140, background: c.subtle, borderRadius: 4, marginBottom: 4 }} />
+                            <div className="animate-pulse" style={{ height: 12, width: 100, background: c.subtle, borderRadius: 4 }} />
+                          </td>
+                          <td style={{ padding: "16px" }}>
+                            <div className="animate-pulse" style={{ height: 28, width: 28, background: c.subtle, borderRadius: 14 }} />
+                          </td>
+                          <td style={{ padding: "16px" }}>
+                            <div className="animate-pulse" style={{ height: 14, width: 80, background: c.subtle, borderRadius: 4 }} />
+                          </td>
+                          <td style={{ padding: "16px" }}>
+                            <div className="animate-pulse" style={{ height: 24, width: 90, background: c.subtle, borderRadius: 12 }} />
+                          </td>
+                          <td style={{ padding: "16px" }}>
+                            <div className="animate-pulse" style={{ height: 14, width: 100, background: c.subtle, borderRadius: 4, marginBottom: 4 }} />
+                            <div className="animate-pulse" style={{ height: 12, width: 60, background: c.subtle, borderRadius: 4 }} />
+                          </td>
+                          <td style={{ padding: "16px" }}>
+                            <div className="animate-pulse" style={{ height: 14, width: 120, background: c.subtle, borderRadius: 4 }} />
+                          </td>
+                          <td style={{ padding: "16px", textAlign: "right" }}>
+                            <div className="animate-pulse" style={{ height: 34, width: 34, background: c.subtle, borderRadius: 6, display: "inline-block" }} />
+                          </td>
+                        </tr>
+                      ))
+                    : orders.map((order) => {
                     const PaymentIcon = paymentMethodConfig[order.paymentMethod].Icon
                     return (
                       <tr

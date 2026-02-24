@@ -22,6 +22,12 @@ import {
   type InvoiceData,
   type InvoiceItem,
 } from "@/lib/invoice-generator"
+import type {
+  MedusaAdminUser,
+  MedusaOrder,
+  MedusaOrderItem,
+  MedusaPaymentCollection,
+} from "@/types/medusa-api"
 
 // ---------------------------------------------------------------------------
 // Timeline step definitions
@@ -48,8 +54,8 @@ const RETURNED_STEPS: Array<{ status: OrderStatus; label: string }> = [
 // Mapping helpers
 // ---------------------------------------------------------------------------
 
-function formatOrderNumber(order: any): string {
-  const date = new Date(order.created_at)
+function formatOrderNumber(order: MedusaOrder): string {
+  const date = new Date(order.created_at || 0)
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, "0")
   const day = String(date.getDate()).padStart(2, "0")
@@ -57,9 +63,9 @@ function formatOrderNumber(order: any): string {
   return `VC-${year}-${month}${day}-${id}`
 }
 
-function mapOrderStatus(order: any): OrderStatus {
-  const meta = order.metadata?.display_status
-  if (meta) return meta as OrderStatus
+function mapOrderStatus(order: MedusaOrder): OrderStatus {
+  const meta = order.metadata?.display_status as OrderStatus | undefined
+  if (meta) return meta
   const status = order.status
   const payStatus = order.payment_status
   if (status === "cancelled") return "cancelled"
@@ -83,7 +89,7 @@ function mapPaymentMethod(providerId?: string): PaymentMethod {
   return "razorpay"
 }
 
-function mapPaymentStatus(collection?: any): PaymentStatus {
+function mapPaymentStatus(collection?: MedusaPaymentCollection): PaymentStatus {
   if (!collection) return "pending"
   const status = collection.status
   if (status === "captured" || status === "partially_captured") return "paid"
@@ -92,7 +98,7 @@ function mapPaymentStatus(collection?: any): PaymentStatus {
   return "pending"
 }
 
-function mapMedusaOrderRow(o: any): OrderRow {
+function mapMedusaOrderRow(o: MedusaOrder): OrderRow {
   const collection = (o.payment_collections || [])[0]
   const payment = (collection?.payments || [])[0]
   return {
@@ -110,11 +116,11 @@ function mapMedusaOrderRow(o: any): OrderRow {
     status: mapOrderStatus(o),
     paymentMethod: mapPaymentMethod(payment?.provider_id),
     paymentStatus: mapPaymentStatus(collection),
-    date: o.created_at,
+    date: o.created_at || "",
   }
 }
 
-function buildTimeline(order: any, displayStatus: OrderStatus): TimelineEvent[] {
+function buildTimeline(order: MedusaOrder, displayStatus: OrderStatus): TimelineEvent[] {
   if (displayStatus === "cancelled") {
     return [
       {
@@ -149,11 +155,11 @@ function buildTimeline(order: any, displayStatus: OrderStatus): TimelineEvent[] 
   // Timestamps per step
   const timestamps: Partial<Record<OrderStatus, string | null>> = {
     processing: order.created_at || null,
-    accepted: order.metadata?.accepted_at || null,
-    shipped: fulfillment?.created_at || order.metadata?.shipped_at || null,
-    in_transit: order.metadata?.in_transit_at || null,
-    out_for_delivery: order.metadata?.out_for_delivery_at || null,
-    delivered: order.metadata?.delivered_at || (order.status === "completed" ? order.updated_at : null),
+    accepted: (order.metadata?.accepted_at as string | undefined) || null,
+    shipped: fulfillment?.created_at || (order.metadata?.shipped_at as string | undefined) || null,
+    in_transit: (order.metadata?.in_transit_at as string | undefined) || null,
+    out_for_delivery: (order.metadata?.out_for_delivery_at as string | undefined) || null,
+    delivered: (order.metadata?.delivered_at as string | undefined) || (order.status === "completed" ? order.updated_at : null),
   }
 
   return TIMELINE_STEPS.map((step, idx) => ({
@@ -167,7 +173,7 @@ function buildTimeline(order: any, displayStatus: OrderStatus): TimelineEvent[] 
   }))
 }
 
-function mapMedusaOrderDetail(o: any, customerOrderCount: number): OrderDetail {
+function mapMedusaOrderDetail(o: MedusaOrder, customerOrderCount: number): OrderDetail {
   const collection = (o.payment_collections || [])[0]
   const payment = (collection?.payments || [])[0]
   const displayStatus = mapOrderStatus(o)
@@ -198,13 +204,13 @@ function mapMedusaOrderDetail(o: any, customerOrderCount: number): OrderDetail {
   const paymentDetails: PaymentDetails = {
     method: mapPaymentMethod(payment?.provider_id),
     status: mapPaymentStatus(collection),
-    transactionId: payment?.data?.id || payment?.data?.razorpay_payment_id || payment?.id || "",
+    transactionId: (payment?.data?.id as string | undefined) || (payment?.data?.razorpay_payment_id as string | undefined) || payment?.id || "",
     amount: Math.round((payment?.amount || o.total || 0) / 100),
     currency: (o.currency_code?.toUpperCase() || "INR") as "INR" | "USD",
     paidAt: payment?.captured_at || null,
   }
 
-  const items: OrderItem[] = (o.items || []).map((item: any) => ({
+  const items: OrderItem[] = (o.items || []).map((item: MedusaOrderItem) => ({
     id: item.id,
     productName: item.title || item.product_title || "",
     variantLabel: item.variant_title || item.subtitle || "",
@@ -216,16 +222,16 @@ function mapMedusaOrderDetail(o: any, customerOrderCount: number): OrderDetail {
   }))
 
   const fulfillment = (o.fulfillments || [])[0]
-  const trackingNumber =
-    o.metadata?.tracking_number ||
+  const trackingNumber: string | null =
+    (o.metadata?.tracking_number as string | undefined) ||
     (fulfillment?.tracking_numbers || [])[0] ||
     null
-  const trackingUrl =
-    o.metadata?.tracking_url ||
+  const trackingUrl: string | null =
+    (o.metadata?.tracking_url as string | undefined) ||
     (fulfillment?.tracking_urls || [])[0] ||
     null
 
-  const notes: OrderNote[] = Array.isArray(o.metadata?.notes) ? o.metadata.notes : []
+  const notes: OrderNote[] = Array.isArray(o.metadata?.notes) ? (o.metadata.notes as OrderNote[]) : []
 
   return {
     id: o.id,
@@ -245,9 +251,9 @@ function mapMedusaOrderDetail(o: any, customerOrderCount: number): OrderDetail {
     currency: (o.currency_code?.toUpperCase() || "INR") as "INR" | "USD",
     trackingNumber,
     trackingUrl,
-    carrier: o.metadata?.carrier || null,
-    createdAt: o.created_at,
-    updatedAt: o.updated_at,
+    carrier: (o.metadata?.carrier as string | undefined) || null,
+    createdAt: o.created_at || "",
+    updatedAt: o.updated_at || "",
   }
 }
 
@@ -299,7 +305,7 @@ function applySortClientSide(rows: OrderRow[], sortField: string, sortDirection:
 
 async function getAdminAuthor(): Promise<string> {
   try {
-    const res = await adminFetch<{ user: any }>("/admin/users/me")
+    const res = await adminFetch<{ user: MedusaAdminUser | null }>("/admin/users/me")
     return (
       [res.user?.first_name, res.user?.last_name].filter(Boolean).join(" ") ||
       res.user?.email ||
@@ -364,7 +370,7 @@ export function useAdminOrders() {
         params.set("order", "-created_at")
       }
 
-      const res = await adminFetch<{ orders: any[]; count: number }>(
+      const res = await adminFetch<{ orders: MedusaOrder[]; count: number }>(
         `/admin/orders?${params.toString()}`
       )
 
@@ -393,7 +399,7 @@ export function useAdminOrders() {
 
   const fetchOrderDetail = useCallback(async (id: string): Promise<OrderDetail | null> => {
     try {
-      const res = await adminFetch<{ order: any }>(
+      const res = await adminFetch<{ order: MedusaOrder }>(
         `/admin/orders/${id}?fields=id,display_id,status,payment_status,total,subtotal,discount_total,shipping_total,tax_total,currency_code,email,created_at,updated_at,metadata,*customer,*items,*shipping_address,*fulfillments,*payment_collections`
       )
       const order = res.order
@@ -427,7 +433,7 @@ export function useAdminOrders() {
     ): Promise<boolean> => {
       try {
         // Build metadata update
-        const metadataUpdate: Record<string, any> = {
+        const metadataUpdate: Record<string, unknown> = {
           display_status: status,
         }
 
@@ -456,7 +462,7 @@ export function useAdminOrders() {
         const author = await getAdminAuthor()
 
         // Fetch current metadata
-        const currentRes = await adminFetch<{ order: any }>(
+        const currentRes = await adminFetch<{ order: MedusaOrder }>(
           `/admin/orders/${orderId}?fields=id,metadata`
         )
         const existingMeta = currentRes.order?.metadata || {}

@@ -154,6 +154,7 @@ export interface OrdersTableProps {
   orders: OrderRow[]
   filters: OrderFilters
   pagination: Pagination
+  isLoading?: boolean
   onChangeFilters?: (filters: Partial<OrderFilters>) => void
   onChangePage?: (page: number) => void
   onChangePerPage?: (perPage: number) => void

@@ -13,6 +13,11 @@ import type {
   DiscountType,
   GiftCardStatus,
 } from "@/types/admin-coupon"
+import type {
+  MedusaPromotion,
+  MedusaPromotionRule,
+  MedusaGiftCard,
+} from "@/types/medusa-api"
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -32,25 +37,31 @@ function generateGiftCardCode(): string {
 // Mapping: Medusa promotion → CouponRow
 // ---------------------------------------------------------------------------
 
-function mapPromotionToRow(p: any): CouponRow {
+function mapPromotionToRow(p: MedusaPromotion): CouponRow {
   const app = p.application_method || {}
   const meta = p.metadata || {}
   const currency = (app.currency_code?.toUpperCase() || "INR") as "INR" | "USD"
+
+  // Cast metadata values — stored as unknown in Record<string, unknown>
+  const metaEndDate = meta.end_date as string | undefined
+  const metaStartDate = meta.start_date as string | undefined
+  const metaMinOrder = meta.min_order_value as number | undefined
+  const metaMaxDiscount = meta.max_discount as number | null | undefined
 
   // Status
   let status: CouponStatus = "active"
   if (p.status === "inactive") status = "disabled"
   else if (p.status === "expired") status = "expired"
-  else if (meta.end_date && new Date(meta.end_date) < new Date()) status = "expired"
+  else if (metaEndDate && new Date(metaEndDate) < new Date()) status = "expired"
 
   // Min order from native rules
   const minOrderRule = (p.rules || []).find(
-    (r: any) => r.attribute === "total" && r.operator === "gte"
+    (r: MedusaPromotionRule) => r.attribute === "total" && r.operator === "gte"
   )
   const minOrder: number | null = minOrderRule
     ? parseInt(minOrderRule.values?.[0] || "0") / 100
-    : meta.min_order_value
-    ? meta.min_order_value / 100
+    : metaMinOrder
+    ? metaMinOrder / 100
     : null
 
   // Discount type and value
@@ -66,33 +77,33 @@ function mapPromotionToRow(p: any): CouponRow {
     discountType,
     discountValue,
     minOrder,
-    maxDiscount: meta.max_discount ?? null,
+    maxDiscount: metaMaxDiscount ?? null,
     currency,
     startDate:
-      meta.start_date || (p.created_at ? p.created_at.split("T")[0] : ""),
-    endDate: meta.end_date || "",
-    usageLimit: meta.usage_limit ?? null,
-    usageLimitPerCustomer: meta.usage_limit_per_customer ?? 1,
+      metaStartDate || (p.created_at ? p.created_at.split("T")[0] : ""),
+    endDate: metaEndDate || "",
+    usageLimit: (meta.usage_limit as number | null | undefined) ?? null,
+    usageLimitPerCustomer: (meta.usage_limit_per_customer as number | undefined) ?? 1,
     usedCount: p.usage_count || 0,
     status,
-    targetType: meta.target_type || "all",
-    targetNames: meta.target_names || [],
-    customerEligibility: (meta.customer_eligibility || "all") as CustomerEligibility,
+    targetType: ((meta.target_type as string | undefined) || "all") as "all" | "products" | "categories",
+    targetNames: (meta.target_names as string[] | undefined) || [],
+    customerEligibility: ((meta.customer_eligibility as string | undefined) || "all") as CustomerEligibility,
   }
 }
 
-function mapPromotionToDetail(p: any): CouponDetail {
+function mapPromotionToDetail(p: MedusaPromotion): CouponDetail {
   const row = mapPromotionToRow(p)
   const meta = p.metadata || {}
   return {
     ...row,
-    description: meta.description || "",
-    currencyValues: meta.currency_values || {
+    description: (meta.description as string | undefined) || "",
+    currencyValues: (meta.currency_values as { INR: number; USD: number } | undefined) || {
       INR: row.discountValue,
       USD: row.discountValue,
     },
-    targetProductIds: meta.target_product_ids || [],
-    targetCategoryIds: meta.target_category_ids || [],
+    targetProductIds: (meta.target_product_ids as string[] | undefined) || [],
+    targetCategoryIds: (meta.target_category_ids as string[] | undefined) || [],
     createdAt: p.created_at || "",
     updatedAt: p.updated_at || "",
   }
@@ -102,7 +113,7 @@ function mapPromotionToDetail(p: any): CouponDetail {
 // Mapping: Medusa gift card → GiftCardRow / GiftCardDetail
 // ---------------------------------------------------------------------------
 
-function mapGiftCardToRow(gc: any): GiftCardRow {
+function mapGiftCardToRow(gc: MedusaGiftCard): GiftCardRow {
   const meta = gc.metadata || {}
   const currency = (gc.currency_code?.toUpperCase() || "INR") as "INR" | "USD"
 
@@ -114,7 +125,7 @@ function mapGiftCardToRow(gc: any): GiftCardRow {
   return {
     id: gc.id,
     code: gc.code || "",
-    initialBalance: Math.round(meta.initial_value || gc.value || 0) / 100,
+    initialBalance: Math.round(((meta.initial_value as number | undefined) || gc.value || 0)) / 100,
     currentBalance: Math.round(gc.balance || 0) / 100,
     currency,
     status,
@@ -123,12 +134,12 @@ function mapGiftCardToRow(gc: any): GiftCardRow {
   }
 }
 
-function mapGiftCardToDetail(gc: any): GiftCardDetail {
+function mapGiftCardToDetail(gc: MedusaGiftCard): GiftCardDetail {
   const row = mapGiftCardToRow(gc)
   const meta = gc.metadata || {}
   return {
     ...row,
-    transactions: (meta.transactions || []) as GiftCardTransaction[],
+    transactions: ((meta.transactions as GiftCardTransaction[] | undefined) || []),
     customerName: null,
     customerEmail: null,
   }
@@ -249,8 +260,8 @@ export function useAdminCoupons() {
       // Medusa's default promotion fields do not include metadata; without this
       // the mapPromotionToRow mapper would see p.metadata as undefined.
       params.set("fields", "+metadata")
-      const res = await adminFetch<{ promotions: any[]; count?: number }>(`/admin/promotions?${params}`)
-      const promotions: any[] = res.promotions || []
+      const res = await adminFetch<{ promotions: MedusaPromotion[]; count?: number }>(`/admin/promotions?${params}`)
+      const promotions = res.promotions || []
       return {
         coupons: promotions.map(mapPromotionToRow),
         count: res.count || promotions.length,
@@ -264,7 +275,7 @@ export function useAdminCoupons() {
     async (id: string): Promise<CouponDetail | null> => {
       try {
         // +metadata — same reason as fetchCoupons above
-        const res = await adminFetch<{ promotion: any }>(`/admin/promotions/${id}?fields=+metadata`)
+        const res = await adminFetch<{ promotion: MedusaPromotion }>(`/admin/promotions/${id}?fields=+metadata`)
         return mapPromotionToDetail(res.promotion)
       } catch {
         return null
@@ -332,8 +343,8 @@ export function useAdminCoupons() {
     try {
       const params = new URLSearchParams({ limit: "100" })
       if (search) params.set("q", search)
-      const res = await adminFetch<{ gift_cards: any[]; count?: number }>(`/admin/gift-cards?${params}`)
-      const gcs: any[] = res.gift_cards || []
+      const res = await adminFetch<{ gift_cards: MedusaGiftCard[]; count?: number }>(`/admin/gift-cards?${params}`)
+      const gcs = res.gift_cards || []
       return {
         giftCards: gcs.map(mapGiftCardToRow),
         count: res.count || gcs.length,
@@ -346,7 +357,7 @@ export function useAdminCoupons() {
   const fetchGiftCardDetail = useCallback(
     async (id: string): Promise<GiftCardDetail | null> => {
       try {
-        const res = await adminFetch<{ gift_card: any }>(`/admin/gift-cards/${id}`)
+        const res = await adminFetch<{ gift_card: MedusaGiftCard }>(`/admin/gift-cards/${id}`)
         return mapGiftCardToDetail(res.gift_card)
       } catch {
         return null
