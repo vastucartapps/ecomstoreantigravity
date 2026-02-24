@@ -500,7 +500,7 @@ export default async function importCSVProducts({ container }: ExecArgs) {
   logger.log("═══════════════════════════════════════════════════\n")
 
   // ── 1. Read pre-parsed JSON (converted from CSV via Python for reliable parsing) ──
-  const jsonPath = path.join(__dirname, "../../products_import.json")
+  const jsonPath = path.join(__dirname, "products_import.json")
   if (!fs.existsSync(jsonPath)) {
     throw new Error(`products_import.json not found at ${jsonPath}. Convert CSV to JSON first using: python3 -c "import csv,json; rows=list(csv.DictReader(open('products_import.csv'))); groups={}; [groups.setdefault(r['item_group_id'],[]).append(r) for r in rows]; json.dump(groups,open('products_import.json','w'),indent=2)"`)
   }
