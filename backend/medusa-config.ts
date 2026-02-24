@@ -3,8 +3,11 @@ import { validateEnv } from './src/lib/env-validation'
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
-// Fail fast if required env vars are missing or insecure
-validateEnv()
+// Fail fast if required env vars are missing or insecure.
+// Skip during Docker build (MEDUSA_BUILD=true) — env vars only exist at runtime.
+if (process.env.MEDUSA_BUILD !== 'true') {
+  validateEnv()
+}
 
 // ─── Conditional payment providers ────────────────────────
 const paymentProviders: any[] = []
@@ -300,8 +303,8 @@ module.exports = defineConfig({
       storeCors: process.env.STORE_CORS!,
       adminCors: process.env.ADMIN_CORS!,
       authCors: process.env.AUTH_CORS!,
-      jwtSecret: process.env.JWT_SECRET || (() => { throw new Error("JWT_SECRET environment variable is required") })(),
-      cookieSecret: process.env.COOKIE_SECRET || (() => { throw new Error("COOKIE_SECRET environment variable is required") })(),
+      jwtSecret: process.env.JWT_SECRET || (process.env.MEDUSA_BUILD === 'true' ? 'build-placeholder' : (() => { throw new Error("JWT_SECRET environment variable is required") })()),
+      cookieSecret: process.env.COOKIE_SECRET || (process.env.MEDUSA_BUILD === 'true' ? 'build-placeholder' : (() => { throw new Error("COOKIE_SECRET environment variable is required") })()),
     },
   },
   modules,

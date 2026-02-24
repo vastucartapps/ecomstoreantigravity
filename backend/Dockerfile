@@ -12,7 +12,9 @@ RUN --mount=type=cache,target=/root/.npm \
 COPY . .
 
 # Build Medusa
-RUN npm run build
+# MEDUSA_BUILD=true tells medusa-config.ts to skip validateEnv() — env vars
+# are not available at Docker build time (only at container runtime).
+RUN MEDUSA_BUILD=true npm run build
 
 # Note: Cannot use npm prune --production here because Medusa v2 loads
 # medusa-config.ts at runtime, requiring TypeScript in node_modules
