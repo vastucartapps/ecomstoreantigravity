@@ -1,13 +1,14 @@
 /**
  * VastuCart — International (USD) Region Setup
  *
- * Creates shipping options and enables the Stripe payment provider for the
- * International (USD) region.
+ * Finds or creates the International (USD) region, then creates shipping
+ * options and enables the Stripe payment provider for it.
  *
- * Usage (run inside the backend container after deploying):
+ * Usage (run inside the backend container):
  *   npx medusa exec src/scripts/seed-international.ts
  *
  * Safe to run multiple times — skips steps that are already complete.
+ * Works in any environment (local dev, staging, production).
  */
 
 import { ExecArgs } from "@medusajs/framework/types"
@@ -16,23 +17,21 @@ import {
   Modules,
 } from "@medusajs/framework/utils"
 import {
+  createRegionsWorkflow,
   createShippingOptionsWorkflow,
   updateRegionsWorkflow,
 } from "@medusajs/medusa/core-flows"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const INTERNATIONAL_REGION_ID = "reg_01KHTS4D79SRHK6SSJY1Q47R6P"
-
 // Stripe payment provider ID = pp_{identifier}_{module-id}
 // service.ts: static identifier = "stripe-db"
 // medusa-config.ts: id: "stripe"
 const STRIPE_PROVIDER_ID = "pp_stripe-db_stripe"
 
-// Major international countries to cover (excludes IN — handled by India region)
-// This list can be expanded — Medusa will route carts by region, not by this list
+// Major international countries (excludes IN — handled by the India region)
 const INTERNATIONAL_COUNTRIES = [
-  "us", "gb", "ca", "au", "nz", "sg", "ae", "us", "de", "fr", "nl",
+  "us", "gb", "ca", "au", "nz", "sg", "ae", "de", "fr", "nl",
   "se", "no", "dk", "fi", "ch", "at", "be", "pt", "es", "it", "gr",
   "pl", "cz", "sk", "hu", "ro", "bg", "hr", "rs", "jp", "kr", "my",
   "th", "ph", "id", "vn", "bd", "pk", "lk", "np", "za", "ke", "ng",
@@ -46,43 +45,62 @@ export default async function seedInternational({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   const fulfillmentModuleService = container.resolve(Modules.FULFILLMENT)
   const regionModuleService = container.resolve(Modules.REGION)
+  const stockLocationService = container.resolve(Modules.STOCK_LOCATION)
+  const link = container.resolve(ContainerRegistrationKeys.LINK)
 
   logger.info("=== VastuCart: International (USD) region setup ===")
 
-  // ── 1. Verify International region exists ──────────────────────────────────
-  logger.info(`Looking up International region (${INTERNATIONAL_REGION_ID})...`)
-  let intlRegion: any
-  try {
-    const regions = await regionModuleService.listRegions({
-      id: INTERNATIONAL_REGION_ID,
+  // ── 1. Find or create the International (USD) region ──────────────────────
+  logger.info("Looking up International (USD) region...")
+  const allRegions = await regionModuleService.listRegions(
+    {},
+    { relations: ["payment_providers"] }
+  )
+  let intlRegion = allRegions.find(
+    (r: any) => r.currency_code === "usd"
+  )
+
+  if (intlRegion) {
+    logger.info(`Found existing region: "${intlRegion.name}" (${intlRegion.id})`)
+  } else {
+    logger.info("No USD region found — creating International region...")
+    const { result } = await createRegionsWorkflow(container).run({
+      input: {
+        regions: [
+          {
+            name: "International",
+            currency_code: "usd",
+            // No countries list — region is selected via the vc-region cookie at cart
+            // creation time, not by Medusa's country geo-zone matching. Omitting this
+            // avoids conflicts when dev seed data has already claimed some country codes.
+            payment_providers: [STRIPE_PROVIDER_ID],
+          },
+        ],
+      },
     })
-    intlRegion = regions?.[0]
-  } catch {}
-
-  if (!intlRegion) {
-    logger.error(`International region ${INTERNATIONAL_REGION_ID} not found. Aborting.`)
-    return
+    intlRegion = result[0]
+    logger.info(`✓ Created region: "${intlRegion.name}" (${intlRegion.id})`)
+    logger.info(`  Stripe provider already added at creation — skip step 2.`)
   }
-  logger.info(`Found region: "${intlRegion.name}" (${intlRegion.currency_code.toUpperCase()})`)
 
-  // ── 2. Add Stripe payment provider to the International region ─────────────
-  logger.info(`Adding ${STRIPE_PROVIDER_ID} to the International region...`)
-  const existingProviders: string[] = (intlRegion.payment_providers || []).map(
+  // ── 2. Add Stripe payment provider to the region (if not already present) ─
+  const existingProviders: string[] = ((intlRegion as any).payment_providers || []).map(
     (p: any) => p.id || p
   )
 
   if (existingProviders.includes(STRIPE_PROVIDER_ID)) {
-    logger.info(`${STRIPE_PROVIDER_ID} already enabled for International region. Skipping.`)
+    logger.info(`${STRIPE_PROVIDER_ID} already enabled. Skipping.`)
   } else {
+    logger.info(`Adding ${STRIPE_PROVIDER_ID} to International region...`)
     await updateRegionsWorkflow(container).run({
       input: {
-        selector: { id: INTERNATIONAL_REGION_ID },
+        selector: { id: intlRegion.id },
         update: {
           payment_providers: [...existingProviders, STRIPE_PROVIDER_ID],
         },
       },
     })
-    logger.info(`✓ ${STRIPE_PROVIDER_ID} added to International region.`)
+    logger.info(`✓ ${STRIPE_PROVIDER_ID} added.`)
   }
 
   // ── 3. Get default shipping profile ───────────────────────────────────────
@@ -92,16 +110,17 @@ export default async function seedInternational({ container }: ExecArgs) {
   })
   const shippingProfile = shippingProfiles?.[0]
   if (!shippingProfile) {
-    logger.error("No default shipping profile found. Please create one first.")
+    logger.error("No default shipping profile found. Please run the base seed first.")
     return
   }
   logger.info(`Found shipping profile: "${shippingProfile.name}"`)
 
   // ── 4. Create or reuse Global fulfillment set ──────────────────────────────
   logger.info("Looking for existing Global International fulfillment set...")
-  const existingFulfillmentSets = await fulfillmentModuleService.listFulfillmentSets({
-    name: "Global International Delivery",
-  })
+  const existingFulfillmentSets = await fulfillmentModuleService.listFulfillmentSets(
+    { name: "Global International Delivery" },
+    { relations: ["service_zones"] }
+  )
 
   let fulfillmentSet: any
   let serviceZoneId: string
@@ -109,10 +128,9 @@ export default async function seedInternational({ container }: ExecArgs) {
   if (existingFulfillmentSets.length > 0) {
     fulfillmentSet = existingFulfillmentSets[0]
     serviceZoneId = fulfillmentSet.service_zones?.[0]?.id
-    logger.info(`Reusing existing fulfillment set: "${fulfillmentSet.name}" (service_zone: ${serviceZoneId})`)
+    logger.info(`Reusing existing fulfillment set (service_zone: ${serviceZoneId})`)
   } else {
     logger.info("Creating Global International fulfillment set...")
-    // Deduplicate the country list
     const uniqueCountries = [...new Set(INTERNATIONAL_COUNTRIES)]
     fulfillmentSet = await fulfillmentModuleService.createFulfillmentSets({
       name: "Global International Delivery",
@@ -128,23 +146,46 @@ export default async function seedInternational({ container }: ExecArgs) {
       ],
     })
     serviceZoneId = fulfillmentSet.service_zones?.[0]?.id
-    logger.info(`✓ Created fulfillment set with service zone: ${serviceZoneId}`)
+    logger.info(`✓ Created fulfillment set (service_zone: ${serviceZoneId})`)
   }
 
   if (!serviceZoneId) {
-    logger.error("Could not obtain a service zone ID. Aborting shipping options creation.")
+    logger.error("Could not obtain a service zone ID. Aborting.")
     return
   }
 
-  // ── 5. Check for existing International shipping options ───────────────────
-  logger.info("Checking for existing International shipping options...")
+  // ── 4.5. Link stock location → International fulfillment set ───────────────
+  // Required so that manual_manual is recognised as an enabled provider for
+  // this fulfillment set (same pattern as seed.ts for the EU set).
+  logger.info("Linking stock location to International fulfillment set...")
+  const stockLocations = await stockLocationService.listStockLocations({})
+  const stockLocation = stockLocations?.[0]
+
+  if (!stockLocation) {
+    logger.error("No stock location found. Please run the base seed first.")
+    return
+  }
+
+  try {
+    await link.create({
+      [Modules.STOCK_LOCATION]: { stock_location_id: stockLocation.id },
+      [Modules.FULFILLMENT]: { fulfillment_set_id: fulfillmentSet.id },
+    })
+    logger.info(`✓ Linked stock location "${stockLocation.name}" to International fulfillment set.`)
+  } catch (e: any) {
+    // Link may already exist (idempotent re-runs) — that's fine
+    logger.info(`Stock location link already exists or skipped: ${e?.message}`)
+  }
+
+  // ── 5. Check for existing shipping options ─────────────────────────────────
+  logger.info("Checking for existing shipping options in this zone...")
   const existingOptions = await fulfillmentModuleService.listShippingOptions({
-    fulfillment_set_id: fulfillmentSet.id,
+    service_zone: { id: serviceZoneId },
   })
   const existingNames = existingOptions.map((o: any) => o.name)
-  logger.info(`Existing options in this zone: [${existingNames.join(", ") || "none"}]`)
+  logger.info(`Existing: [${existingNames.join(", ") || "none"}]`)
 
-  // ── 6. Create International shipping options ───────────────────────────────
+  // ── 6. Create shipping options ─────────────────────────────────────────────
   const optionsToCreate: any[] = []
 
   if (!existingNames.includes("International Standard Shipping")) {
@@ -160,14 +201,8 @@ export default async function seedInternational({ container }: ExecArgs) {
         code: "standard-international",
       },
       prices: [
-        {
-          currency_code: "usd",
-          amount: 15,  // $15.00 — adjust in Admin → Shipping after setup
-        },
-        {
-          region_id: INTERNATIONAL_REGION_ID,
-          amount: 15,
-        },
+        { currency_code: "usd", amount: 15 },
+        { region_id: intlRegion.id, amount: 15 },
       ],
       rules: [
         { attribute: "enabled_in_store", value: "true", operator: "eq" },
@@ -189,14 +224,8 @@ export default async function seedInternational({ container }: ExecArgs) {
         code: "express-international",
       },
       prices: [
-        {
-          currency_code: "usd",
-          amount: 35,  // $35.00 — adjust in Admin → Shipping after setup
-        },
-        {
-          region_id: INTERNATIONAL_REGION_ID,
-          amount: 35,
-        },
+        { currency_code: "usd", amount: 35 },
+        { region_id: intlRegion.id, amount: 35 },
       ],
       rules: [
         { attribute: "enabled_in_store", value: "true", operator: "eq" },
@@ -206,21 +235,19 @@ export default async function seedInternational({ container }: ExecArgs) {
   }
 
   if (optionsToCreate.length === 0) {
-    logger.info("All shipping options already exist. Skipping creation.")
+    logger.info("All shipping options already exist. Nothing to create.")
   } else {
-    logger.info(`Creating ${optionsToCreate.length} shipping option(s): ${optionsToCreate.map((o) => o.name).join(", ")}`)
+    logger.info(`Creating: ${optionsToCreate.map((o) => o.name).join(", ")}`)
     await createShippingOptionsWorkflow(container).run({
       input: optionsToCreate,
     })
-    logger.info(`✓ Shipping options created.`)
+    logger.info("✓ Shipping options created.")
   }
 
   // ── 7. Summary ─────────────────────────────────────────────────────────────
   logger.info("")
   logger.info("=== Setup complete ===")
-  logger.info(`Region:    International (USD) — ${INTERNATIONAL_REGION_ID}`)
+  logger.info(`Region:   "${intlRegion.name}" (${intlRegion.id})`)
   logger.info(`Stripe:    ${STRIPE_PROVIDER_ID} enabled`)
-  logger.info(`Shipping:  International Standard Shipping ($15) + International Express Shipping ($35)`)
-  logger.info("Tip: Adjust shipping prices in Admin → Shipping if needed.")
-  logger.info("Tip: The fulfillment set uses 'manual_manual' — mark shipments manually in Admin → Orders.")
+  logger.info(`Shipping:  Standard ($15) + Express ($35) — adjust in Admin → Shipping`)
 }
