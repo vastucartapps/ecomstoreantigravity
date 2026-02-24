@@ -1,9 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { ChevronDown } from "lucide-react"
 import type { VariantAttribute, SwatchValue } from "@/types/product-experience"
-import { primary, secondary, earth, bg, fonts } from "@/lib/theme"
+import { primary, earth, fonts } from "@/lib/theme"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 
 interface VariantSelectorProps {
   attributes: VariantAttribute[]
@@ -37,6 +36,7 @@ export function VariantSelector({ attributes, selectedValues, onSelect }: Varian
                 return (
                   <button
                     key={sv.value}
+                    type="button"
                     onClick={() => onSelect(attr.name, sv.value)}
                     className="relative w-10 h-10 rounded-xl transition-all duration-200"
                     style={{
@@ -58,10 +58,14 @@ export function VariantSelector({ attributes, selectedValues, onSelect }: Varian
               })}
             </div>
           ) : (
-            <DropdownSelect
-              options={attr.type === "swatch" && isSwatchValues(attr.values) ? attr.values.map((v) => v.value) : (attr.values as string[])}
-              selected={selectedValues[attr.name] || ""}
-              onSelect={(val) => onSelect(attr.name, val)}
+            <ThemeSelect
+              value={selectedValues[attr.name] || ""}
+              onChange={(val) => onSelect(attr.name, val)}
+              options={(attr.type === "swatch" && isSwatchValues(attr.values)
+                ? attr.values.map((v) => v.value)
+                : (attr.values as string[])
+              ).map((v) => ({ value: v, label: v }))}
+              placeholder="Select..."
             />
           )}
         </div>
@@ -70,68 +74,3 @@ export function VariantSelector({ attributes, selectedValues, onSelect }: Varian
   )
 }
 
-function DropdownSelect({
-  options,
-  selected,
-  onSelect,
-}: {
-  options: string[]
-  selected: string
-  onSelect: (val: string) => void
-}) {
-  const [open, setOpen] = useState(false)
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm transition-all"
-        style={{
-          border: `1.5px solid ${open ? primary[400] : "#e8e0d8"}`,
-          color: earth[700],
-          background: bg.card,
-          fontFamily: fonts.body,
-          boxShadow: open ? `0 0 0 3px ${primary[500]}10` : "none",
-        }}
-      >
-        <span>{selected || "Select..."}</span>
-        <ChevronDown
-          className="w-4 h-4 transition-transform duration-200"
-          style={{
-            color: earth[300],
-            transform: open ? "rotate(180deg)" : "rotate(0deg)",
-          }}
-        />
-      </button>
-
-      {open && (
-        <div
-          className="absolute z-50 mt-1.5 w-full rounded-xl py-1"
-          style={{
-            background: bg.card,
-            border: "1px solid #f0ebe4",
-            boxShadow: "0 8px 24px rgba(67,59,53,0.12)",
-          }}
-        >
-          {options.map((opt) => (
-            <button
-              key={opt}
-              onClick={() => { onSelect(opt); setOpen(false) }}
-              className="w-full px-4 py-2.5 text-sm text-left transition-colors"
-              style={{
-                background: opt === selected ? primary[50] : "transparent",
-                color: opt === selected ? primary[500] : earth[600],
-                fontWeight: opt === selected ? 600 : 400,
-                fontFamily: fonts.body,
-              }}
-              onMouseEnter={(e) => { if (opt !== selected) e.currentTarget.style.background = bg.primary }}
-              onMouseLeave={(e) => { if (opt !== selected) e.currentTarget.style.background = "transparent" }}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}

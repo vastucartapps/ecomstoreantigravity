@@ -1,9 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Star, CheckCircle, ChevronDown, Camera } from "lucide-react"
+import { Star, CheckCircle, Camera } from "lucide-react"
 import type { ProductReview, RatingBreakdown } from "@/types/product-experience"
 import { primary, secondary, earth, bg, fonts, gradients } from "@/lib/theme"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 
 interface ReviewsSectionProps {
   reviews: ProductReview[]
@@ -36,7 +37,6 @@ function formatDate(iso: string) {
 
 export function ReviewsSection({ reviews, ratingBreakdown }: ReviewsSectionProps) {
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "highest" | "lowest">("newest")
-  const [sortOpen, setSortOpen] = useState(false)
 
   const sorted = [...reviews].sort((a, b) => {
     switch (sortBy) {
@@ -123,43 +123,13 @@ export function ReviewsSection({ reviews, ratingBreakdown }: ReviewsSectionProps
         <p className="text-sm font-medium" style={{ color: earth[400], fontFamily: fonts.body }}>
           Showing {sorted.length} of {ratingBreakdown.total} reviews
         </p>
-        <div className="relative">
-          <button
-            onClick={() => setSortOpen(!sortOpen)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
-            style={{ border: "1.5px solid #e8e0d8", color: earth[600], background: bg.card, fontFamily: fonts.body }}
-          >
-            {sortLabels[sortBy]}
-            <ChevronDown
-              className="w-3.5 h-3.5 transition-transform duration-200"
-              style={{ color: earth[300], transform: sortOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-            />
-          </button>
-          {sortOpen && (
-            <div
-              className="absolute right-0 z-50 mt-1.5 w-44 rounded-xl overflow-hidden py-1"
-              style={{ background: bg.card, border: "1px solid #f0ebe4", boxShadow: "0 8px 24px rgba(67,59,53,0.12)" }}
-            >
-              {Object.entries(sortLabels).map(([key, label]) => (
-                <button
-                  key={key}
-                  onClick={() => { setSortBy(key as typeof sortBy); setSortOpen(false) }}
-                  className="w-full px-4 py-2.5 text-sm text-left transition-colors"
-                  style={{
-                    background: key === sortBy ? primary[50] : "transparent",
-                    color: key === sortBy ? primary[500] : earth[600],
-                    fontWeight: key === sortBy ? 600 : 400,
-                    fontFamily: fonts.body,
-                  }}
-                  onMouseEnter={(e) => { if (key !== sortBy) e.currentTarget.style.background = bg.primary }}
-                  onMouseLeave={(e) => { if (key !== sortBy) e.currentTarget.style.background = "transparent" }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <ThemeSelect
+          value={sortBy}
+          onChange={(val) => setSortBy(val as typeof sortBy)}
+          options={Object.entries(sortLabels).map(([value, label]) => ({ value, label }))}
+          size="sm"
+          style={{ width: 160 }}
+        />
       </div>
 
       {/* Reviews list */}

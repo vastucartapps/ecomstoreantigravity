@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import { medusa } from "@/lib/medusa"
+import { medusa, adminFetch } from "@/lib/medusa"
 import { normalizeImageUrl } from "@/lib/image-url"
 import type {
   ReturnCard,
@@ -202,32 +202,9 @@ function mapMedusaReturnDetail(r: any): ReturnDetail {
 }
 
 // ---------------------------------------------------------------------------
-// Admin auth helper (reads JWT from cookie for raw fetch)
 // ---------------------------------------------------------------------------
-
-function getAdminJwt(): string {
-  if (typeof window === "undefined") return ""
-  return localStorage.getItem("vastucart_admin_token") || localStorage.getItem("medusa_auth_token") || ""
-}
-
-async function adminFetch(path: string, options: RequestInit = {}): Promise<any> {
-  const jwt = getAdminJwt()
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
-    ...(options.headers as Record<string, string> || {}),
-  }
-  const res = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""}${path}`, {
-    ...options,
-    headers,
-    credentials: "include",
-  })
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`Admin API error ${res.status}: ${text}`)
-  }
-  return res.json()
-}
+// Author helper
+// ---------------------------------------------------------------------------
 
 async function getAdminAuthor(): Promise<string> {
   try {
@@ -289,9 +266,7 @@ export function useAdminReturns() {
     try {
       await adminFetch(`/admin/returns/${id}`, {
         method: "POST",
-        body: JSON.stringify({
-          metadata: { display_status: newStatus },
-        }),
+        body: { metadata: { display_status: newStatus } },
       })
       return true
     } catch {
@@ -322,14 +297,14 @@ export function useAdminReturns() {
 
         await adminFetch(`/admin/returns/${id}`, {
           method: "POST",
-          body: JSON.stringify({
+          body: {
             metadata: {
               ...existingMeta,
               display_status: "approved",
               admin_notes: notes,
               timeline: [...existingTimeline, newEvent],
             },
-          }),
+          },
         })
         return true
       } catch {
@@ -359,7 +334,7 @@ export function useAdminReturns() {
 
         await adminFetch(`/admin/returns/${id}`, {
           method: "POST",
-          body: JSON.stringify({
+          body: {
             metadata: {
               ...existingMeta,
               display_status: "rejected",
@@ -367,7 +342,7 @@ export function useAdminReturns() {
               resolved_at: new Date().toISOString(),
               timeline: [...existingTimeline, newEvent],
             },
-          }),
+          },
         })
         return true
       } catch {
@@ -401,16 +376,13 @@ export function useAdminReturns() {
           }
           await adminFetch(`/admin/orders/${orderId}/refunds`, {
             method: "POST",
-            body: JSON.stringify(body),
+            body,
           })
         } else {
           // Store credit via gift card
           const gcData = await adminFetch("/admin/gift-cards", {
             method: "POST",
-            body: JSON.stringify({
-              value: amountInMinorUnits,
-              currency_code: "inr",
-            }),
+            body: { value: amountInMinorUnits, currency_code: "inr" },
           })
           giftCardCode = gcData.gift_card?.code
         }
@@ -433,7 +405,7 @@ export function useAdminReturns() {
 
         await adminFetch(`/admin/returns/${id}`, {
           method: "POST",
-          body: JSON.stringify({
+          body: {
             metadata: {
               ...existingMeta,
               display_status: "refunded",
@@ -442,7 +414,7 @@ export function useAdminReturns() {
               resolved_at: new Date().toISOString(),
               timeline: [...existingTimeline, newEvent],
             },
-          }),
+          },
         })
 
         return { success: true, giftCardCode }
@@ -458,10 +430,10 @@ export function useAdminReturns() {
       try {
         await adminFetch(`/admin/orders/${orderId}/exchanges`, {
           method: "POST",
-          body: JSON.stringify({
+          body: {
             return_items: returnItemIds.map((id) => ({ id })),
             new_items: [],
-          }),
+          },
         })
 
         // Add timeline event
@@ -482,12 +454,12 @@ export function useAdminReturns() {
 
         await adminFetch(`/admin/returns/${returnId}`, {
           method: "POST",
-          body: JSON.stringify({
+          body: {
             metadata: {
               ...existingMeta,
               timeline: [...existingTimeline, newEvent],
             },
-          }),
+          },
         })
 
         return true

@@ -140,6 +140,7 @@ function ReturnCardComponent({
         </div>
         <div className="relative">
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation()
               setShowMoveMenu(!showMoveMenu)
@@ -177,6 +178,7 @@ function ReturnCardComponent({
             >
               {availableStatuses.map((status) => (
                 <button
+                  type="button"
                   key={status}
                   onClick={(e) => {
                     e.stopPropagation()
