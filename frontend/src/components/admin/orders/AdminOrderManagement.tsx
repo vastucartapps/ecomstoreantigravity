@@ -25,7 +25,6 @@ export function AdminOrderManagement(props: AdminOrderManagementProps) {
     props.onBackToList?.()
   }
 
-  // Loading state while detail is being fetched
   if (view === "detail" && props.isDetailLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -56,29 +55,17 @@ export function AdminOrderManagement(props: AdminOrderManagementProps) {
   }
 
   return (
-    <>
-      {/* Loading overlay */}
-      {props.isLoading && (
-        <div className="flex items-center justify-center h-16 mb-2">
-          <div
-            className="animate-spin h-6 w-6 border-2 border-t-transparent rounded-full"
-            style={{ borderColor: c.primary500, borderTopColor: "transparent" }}
-          />
-          <span className="ml-2 text-sm" style={{ color: c.earth400, fontFamily: fonts.body }}>
-            Loading orders…
-          </span>
-        </div>
-      )}
-      <OrdersTable
-        orders={props.orders}
-        filters={props.filters}
-        pagination={props.pagination}
-        onChangeFilters={props.onChangeFilters}
-        onChangePage={props.onChangePage}
-        onChangePerPage={props.onChangePerPage}
-        onViewOrder={handleViewOrder}
-        onDownloadInvoice={props.onDownloadInvoice}
-      />
-    </>
+    <OrdersTable
+      orders={props.orders}
+      filters={props.filters}
+      cursorPag={props.cursorPag}
+      isLoading={props.isLoading}
+      onChangeFilters={props.onChangeFilters}
+      onNextPage={props.onNextPage}
+      onPrevPage={props.onPrevPage}
+      onChangeLimit={props.onChangeLimit}
+      onViewOrder={handleViewOrder}
+      onDownloadInvoice={props.onDownloadInvoice}
+    />
   )
 }

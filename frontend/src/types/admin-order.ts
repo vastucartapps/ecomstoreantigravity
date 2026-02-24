@@ -149,15 +149,27 @@ export interface Pagination {
   totalPages: number
 }
 
+/** Keyset cursor pagination state */
+export interface CursorPagination {
+  limit: number                      // rows per page
+  cursor: string | null              // created_at[lt] param for current page (null = page 1)
+  prevCursors: Array<string | null>  // stack of previous page cursors for back navigation
+  nextCursor: string | null          // cursor for next page (null if no more pages)
+  hasMore: boolean                   // true if a next page exists
+  pageNum: number                    // 1-based display number
+  totalCount: number                 // cached from initial count query
+}
+
 /** Props for the Orders Table */
 export interface OrdersTableProps {
   orders: OrderRow[]
   filters: OrderFilters
-  pagination: Pagination
+  cursorPag: CursorPagination
   isLoading?: boolean
   onChangeFilters?: (filters: Partial<OrderFilters>) => void
-  onChangePage?: (page: number) => void
-  onChangePerPage?: (perPage: number) => void
+  onNextPage?: () => void
+  onPrevPage?: () => void
+  onChangeLimit?: (limit: number) => void
   onViewOrder?: (orderId: string) => void
   onDownloadInvoice?: (orderId: string) => void
 }
@@ -182,12 +194,13 @@ export interface AdminOrderManagementProps {
   orders: OrderRow[]
   orderDetail: OrderDetail | null
   filters: OrderFilters
-  pagination: Pagination
+  cursorPag: CursorPagination
   isLoading?: boolean
   isDetailLoading?: boolean
   onChangeFilters?: (filters: Partial<OrderFilters>) => void
-  onChangePage?: (page: number) => void
-  onChangePerPage?: (perPage: number) => void
+  onNextPage?: () => void
+  onPrevPage?: () => void
+  onChangeLimit?: (limit: number) => void
   onViewOrder?: (orderId: string) => void
   onUpdateStatus?: (
     orderId: string,

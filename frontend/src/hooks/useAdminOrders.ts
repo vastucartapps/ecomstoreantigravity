@@ -324,27 +324,28 @@ export function useAdminOrders() {
   const fetchOrders = useCallback(
     async (
       filters: OrderFilters,
-      page: number,
-      perPage: number
-    ): Promise<{ rows: OrderRow[]; totalCount: number }> => {
-      const offset = (page - 1) * perPage
+      cursor: string | null,
+      limit: number
+    ): Promise<{ rows: OrderRow[]; nextCursor: string | null; hasMore: boolean; totalCount: number }> => {
+      const needsClientFilter =
+        filters.status !== "all" &&
+        CUSTOM_DISPLAY_STATUSES.includes(filters.status as OrderStatus)
 
-      // Build query string
+      // Over-fetch for hasMore detection; extra over-fetch for client-side filtered statuses
+      const fetchLimit = needsClientFilter ? limit * 5 : limit + 1
+
       const params = new URLSearchParams()
-      // Over-fetch when using client-side display_status filtering
-      const needsClientFilter = filters.status !== "all" && CUSTOM_DISPLAY_STATUSES.includes(filters.status as OrderStatus)
-      params.set("limit", String(needsClientFilter ? perPage * 5 : perPage))
-      params.set("offset", String(needsClientFilter ? 0 : offset))
+      params.set("limit", String(fetchLimit))
       params.set(
         "fields",
         "id,display_id,status,payment_status,total,currency_code,created_at,email,metadata,*customer,*items,*payment_collections"
       )
 
-      if (filters.search) {
-        params.set("q", filters.search)
-      }
+      // Keyset cursor: fetch records older than cursor
+      if (cursor) params.set("created_at[lt]", cursor)
 
-      // Server-side date range filtering (Medusa v2 supports created_at[gte]/[lte])
+      if (filters.search) params.set("q", filters.search)
+
       if (filters.dateFrom) {
         params.set("created_at[gte]", new Date(filters.dateFrom).toISOString())
       }
@@ -354,21 +355,13 @@ export function useAdminOrders() {
         params.set("created_at[lte]", end.toISOString())
       }
 
-      // Server-side native status filter
       const nativeStatuses = getNativeMedusaStatuses(filters.status)
       if (nativeStatuses) {
         nativeStatuses.forEach((s) => params.append("status[]", s))
       }
 
-      // Medusa v2 sort format: "order=-field" for desc, "order=field" for asc.
-      // Sorting by total is not supported (returns 500) — fall back to date.
-      const sortPrefix = filters.sortDirection === "desc" ? "-" : ""
-      if (filters.sortField === "date" || filters.sortField === "total") {
-        params.set("order", `${sortPrefix}created_at`)
-      } else {
-        // Default server sort by date desc
-        params.set("order", "-created_at")
-      }
+      // Always sort by created_at desc — required for keyset to work correctly
+      params.set("order", "-created_at")
 
       const res = await adminFetch<{ orders: MedusaOrder[]; count: number }>(
         `/admin/orders?${params.toString()}`
@@ -376,23 +369,33 @@ export function useAdminOrders() {
 
       let rows = (res.orders || []).map(mapMedusaOrderRow)
 
-      // Client-side display_status filter
-      if (filters.status !== "all" && CUSTOM_DISPLAY_STATUSES.includes(filters.status as OrderStatus)) {
+      // Client-side display_status filter for custom statuses stored in metadata
+      if (needsClientFilter) {
         rows = rows.filter((r) => r.status === filters.status)
       } else if (filters.status === "processing") {
         rows = rows.filter((r) => r.status === "processing")
       }
 
-      // Client-side sort for customer/status fields
+      // Client-side sort for fields not sortable server-side
       if (filters.sortField === "customer" || filters.sortField === "status") {
         rows = applySortClientSide(rows, filters.sortField, filters.sortDirection)
       }
 
-      // Paginate the filtered result
-      const totalCount = needsClientFilter ? rows.length : (res.count || rows.length)
-      const paginatedRows = needsClientFilter ? rows.slice((page - 1) * perPage, page * perPage) : rows.slice(0, perPage)
+      const hasMore = needsClientFilter
+        ? rows.length >= limit
+        : (res.orders || []).length > limit
 
-      return { rows: paginatedRows, totalCount }
+      const paginatedRows = rows.slice(0, limit)
+
+      // nextCursor = created_at of the last shown row (used as created_at[lt] for next page)
+      const lastRow = paginatedRows[paginatedRows.length - 1]
+      const nextCursor = hasMore && lastRow ? lastRow.date : null
+
+      // totalCount from API — only meaningful on first page (cursor === null);
+      // caller caches it for display across subsequent pages.
+      const totalCount = cursor === null ? (res.count ?? paginatedRows.length) : 0
+
+      return { rows: paginatedRows, nextCursor, hasMore, totalCount }
     },
     []
   )

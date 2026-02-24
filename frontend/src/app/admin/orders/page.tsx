@@ -8,22 +8,12 @@ import type {
   OrderDetail,
   OrderFilters,
   OrderStatus,
-  Pagination,
+  CursorPagination,
 } from "@/types/admin-order"
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Defaults
 // ---------------------------------------------------------------------------
-
-function getInitialDateRange() {
-  const today = new Date()
-  const thirtyDaysAgo = new Date(today)
-  thirtyDaysAgo.setDate(today.getDate() - 30)
-  return {
-    dateFrom: thirtyDaysAgo.toISOString().split("T")[0],
-    dateTo: today.toISOString().split("T")[0],
-  }
-}
 
 const DEFAULT_FILTERS: OrderFilters = {
   search: "",
@@ -35,18 +25,23 @@ const DEFAULT_FILTERS: OrderFilters = {
   sortDirection: "desc",
 }
 
-const DEFAULT_PAGINATION: Pagination = {
-  page: 1,
-  perPage: 25,
-  totalItems: 0,
-  totalPages: 0,
+const DEFAULT_LIMIT = 25
+
+const DEFAULT_CURSOR_PAG: CursorPagination = {
+  limit: DEFAULT_LIMIT,
+  cursor: null,
+  prevCursors: [],
+  nextCursor: null,
+  hasMore: false,
+  pageNum: 1,
+  totalCount: 0,
 }
 
 export default function OrderManagementPage() {
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [orderDetail, setOrderDetail] = useState<OrderDetail | null>(null)
   const [filters, setFilters] = useState<OrderFilters>(DEFAULT_FILTERS)
-  const [pagination, setPagination] = useState<Pagination>(DEFAULT_PAGINATION)
+  const [cursorPag, setCursorPag] = useState<CursorPagination>(DEFAULT_CURSOR_PAG)
   const [isLoading, setIsLoading] = useState(true)
   const [isDetailLoading, setIsDetailLoading] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -60,37 +55,50 @@ export default function OrderManagementPage() {
     emailCustomer,
   } = useAdminOrders()
 
-  // Keep latest filters/pagination in refs for callbacks
+  // Keep latest values in refs for use inside callbacks
   const filtersRef = useRef(filters)
-  const paginationRef = useRef(pagination)
+  const cursorPagRef = useRef(cursorPag)
   filtersRef.current = filters
-  paginationRef.current = pagination
+  cursorPagRef.current = cursorPag
 
   const showToast = useCallback((message: string) => {
     setToast(message)
     setTimeout(() => setToast(null), 2500)
   }, [])
 
+  // ---------------------------------------------------------------------------
+  // Core fetch
+  // ---------------------------------------------------------------------------
+
   const loadOrders = useCallback(
     async (
       newFilters?: OrderFilters,
-      newPage?: number,
-      newPerPage?: number
+      cursor?: string | null,
+      limit?: number,
+      pageNum?: number,
+      prevCursors?: Array<string | null>,
+      cachedTotal?: number
     ) => {
       const f = newFilters ?? filtersRef.current
-      const page = newPage ?? paginationRef.current.page
-      const perPage = newPerPage ?? paginationRef.current.perPage
+      const cur = cursor !== undefined ? cursor : cursorPagRef.current.cursor
+      const lim = limit ?? cursorPagRef.current.limit
+      const pn = pageNum ?? cursorPagRef.current.pageNum
+      const prev = prevCursors ?? cursorPagRef.current.prevCursors
 
       setIsLoading(true)
       try {
-        const { rows, totalCount } = await fetchOrders(f, page, perPage)
+        const { rows, nextCursor, hasMore, totalCount } = await fetchOrders(f, cur, lim)
         setOrders(rows)
-        setPagination({
-          page,
-          perPage,
-          totalItems: totalCount,
-          totalPages: Math.max(1, Math.ceil(totalCount / perPage)),
-        })
+        setCursorPag((current) => ({
+          limit: lim,
+          cursor: cur,
+          prevCursors: prev,
+          nextCursor,
+          hasMore,
+          pageNum: pn,
+          // Keep cached totalCount across pages; update only when fetching page 1
+          totalCount: cur === null && totalCount > 0 ? totalCount : (cachedTotal ?? current.totalCount),
+        }))
       } catch {
         showToast("Failed to load orders")
       } finally {
@@ -102,42 +110,66 @@ export default function OrderManagementPage() {
 
   // Initial load
   useEffect(() => {
-    loadOrders()
+    loadOrders(DEFAULT_FILTERS, null, DEFAULT_LIMIT, 1, [], 0)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // -------------------------------------------------------------------------
-  // Filter / pagination handlers
-  // -------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Filter handler — always resets to page 1
+  // ---------------------------------------------------------------------------
 
   const handleChangeFilters = useCallback(
     (partial: Partial<OrderFilters>) => {
       const newFilters = { ...filtersRef.current, ...partial }
       setFilters(newFilters)
-      // Reset to page 1 on filter change
-      loadOrders(newFilters, 1, paginationRef.current.perPage)
+      loadOrders(newFilters, null, cursorPagRef.current.limit, 1, [], 0)
     },
     [loadOrders]
   )
 
-  const handleChangePage = useCallback(
-    (page: number) => {
-      if (page < 1 || page > paginationRef.current.totalPages) return
-      loadOrders(filtersRef.current, page, paginationRef.current.perPage)
+  // ---------------------------------------------------------------------------
+  // Pagination handlers
+  // ---------------------------------------------------------------------------
+
+  const handleNextPage = useCallback(() => {
+    const pag = cursorPagRef.current
+    if (!pag.hasMore || !pag.nextCursor) return
+    const newPrevCursors = [...pag.prevCursors, pag.cursor]
+    loadOrders(
+      filtersRef.current,
+      pag.nextCursor,
+      pag.limit,
+      pag.pageNum + 1,
+      newPrevCursors,
+      pag.totalCount
+    )
+  }, [loadOrders])
+
+  const handlePrevPage = useCallback(() => {
+    const pag = cursorPagRef.current
+    if (pag.prevCursors.length === 0) return
+    const newPrev = [...pag.prevCursors]
+    const prevCursor = newPrev.pop() ?? null
+    loadOrders(
+      filtersRef.current,
+      prevCursor,
+      pag.limit,
+      pag.pageNum - 1,
+      newPrev,
+      pag.totalCount
+    )
+  }, [loadOrders])
+
+  const handleChangeLimit = useCallback(
+    (limit: number) => {
+      loadOrders(filtersRef.current, null, limit, 1, [], 0)
     },
     [loadOrders]
   )
 
-  const handleChangePerPage = useCallback(
-    (perPage: number) => {
-      loadOrders(filtersRef.current, 1, perPage)
-    },
-    [loadOrders]
-  )
-
-  // -------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // Order detail handlers
-  // -------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
 
   const handleViewOrder = useCallback(
     async (orderId: string) => {
@@ -167,7 +199,6 @@ export default function OrderManagementPage() {
     ) => {
       const ok = await updateOrderStatus(orderId, status, trackingNumber, carrier)
       if (ok) {
-        // Refresh the detail
         const detail = await fetchOrderDetail(orderId)
         if (detail) setOrderDetail(detail)
         showToast("Order status updated")
@@ -182,7 +213,6 @@ export default function OrderManagementPage() {
     async (orderId: string, message: string) => {
       const note = await addOrderNote(orderId, message)
       if (note) {
-        // Refresh detail to pick up the new note
         const detail = await fetchOrderDetail(orderId)
         if (detail) setOrderDetail(detail)
         showToast("Note added")
@@ -209,7 +239,6 @@ export default function OrderManagementPage() {
   const handleEmailCustomer = useCallback(
     async (orderId: string) => {
       if (!orderDetail || orderDetail.id !== orderId) {
-        // Fetch if not already loaded
         const detail = await fetchOrderDetail(orderId)
         if (detail) emailCustomer(detail)
       } else {
@@ -221,13 +250,11 @@ export default function OrderManagementPage() {
 
   const handleBackToList = useCallback(() => {
     setOrderDetail(null)
-    // Refresh list when going back
     loadOrders()
   }, [loadOrders])
 
   return (
     <>
-      {/* Toast notification */}
       {toast && (
         <div
           className="fixed top-4 right-4 z-50 px-4 py-2.5 rounded-lg shadow-lg text-sm font-medium text-white"
@@ -241,12 +268,13 @@ export default function OrderManagementPage() {
         orders={orders}
         orderDetail={orderDetail}
         filters={filters}
-        pagination={pagination}
+        cursorPag={cursorPag}
         isLoading={isLoading}
         isDetailLoading={isDetailLoading}
         onChangeFilters={handleChangeFilters}
-        onChangePage={handleChangePage}
-        onChangePerPage={handleChangePerPage}
+        onNextPage={handleNextPage}
+        onPrevPage={handlePrevPage}
+        onChangeLimit={handleChangeLimit}
         onViewOrder={handleViewOrder}
         onUpdateStatus={handleUpdateStatus}
         onAddNote={handleAddNote}

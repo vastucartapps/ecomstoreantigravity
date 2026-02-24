@@ -125,20 +125,21 @@ function formatCurrency(amount: number, currency: "INR" | "USD"): string {
 export function OrdersTable({
   orders,
   filters,
-  pagination,
+  cursorPag,
   isLoading,
   onChangeFilters,
-  onChangePage,
-  onChangePerPage,
+  onNextPage,
+  onPrevPage,
+  onChangeLimit,
   onViewOrder,
   onDownloadInvoice,
 }: OrdersTableProps) {
   const [localSearch, setLocalSearch] = useState(filters.search)
 
-  // Calculate counts per status
+  // Calculate counts per status from current page data
   const statusCounts = useMemo(() => {
     const counts: Record<OrderStatus | "all", number> = {
-      all: pagination.totalItems,
+      all: cursorPag.totalCount,
       processing: 0,
       accepted: 0,
       shipped: 0,
@@ -152,7 +153,7 @@ export function OrdersTable({
       counts[order.status]++
     })
     return counts
-  }, [orders, pagination.totalItems])
+  }, [orders, cursorPag.totalCount])
 
   const handleSearchChange = (value: string) => {
     setLocalSearch(value)
@@ -203,30 +204,8 @@ export function OrdersTable({
     )
   }
 
-  const startItem = (pagination.page - 1) * pagination.perPage + 1
-  const endItem = Math.min(pagination.page * pagination.perPage, pagination.totalItems)
-
-  const pageNumbers = useMemo(() => {
-    const pages: (number | string)[] = []
-    const maxPages = 7
-
-    if (pagination.totalPages <= maxPages) {
-      for (let i = 1; i <= pagination.totalPages; i++) pages.push(i)
-    } else {
-      pages.push(1)
-      let startPage = Math.max(2, pagination.page - 1)
-      let endPage = Math.min(pagination.totalPages - 1, pagination.page + 1)
-
-      if (pagination.page <= 3) endPage = 5
-      else if (pagination.page >= pagination.totalPages - 2) startPage = pagination.totalPages - 4
-
-      if (startPage > 2) pages.push("...")
-      for (let i = startPage; i <= endPage; i++) pages.push(i)
-      if (endPage < pagination.totalPages - 1) pages.push("...")
-      pages.push(pagination.totalPages)
-    }
-    return pages
-  }, [pagination.page, pagination.totalPages])
+  const startItem = (cursorPag.pageNum - 1) * cursorPag.limit + 1
+  const endItem = startItem + orders.length - 1
 
   return (
     <div style={{ fontFamily: fonts.body }}>
@@ -244,7 +223,7 @@ export function OrdersTable({
           Orders
         </h1>
         <p style={{ fontSize: "14px", color: c.earth400 }}>
-          {pagination.totalItems.toLocaleString()} total orders
+          {cursorPag.totalCount > 0 ? `${cursorPag.totalCount.toLocaleString()} total orders` : ""}
         </p>
       </div>
 
@@ -309,7 +288,7 @@ export function OrdersTable({
             transition: "all 0.2s",
           }}
         >
-          All ({pagination.totalItems})
+          All ({cursorPag.totalCount})
         </button>
         {(Object.keys(statusConfig) as OrderStatus[]).map((status) => (
           <button
@@ -795,15 +774,17 @@ export function OrdersTable({
               }}
             >
               <div style={{ fontSize: "14px", color: c.earth600 }}>
-                Showing {startItem}–{endItem} of {pagination.totalItems.toLocaleString()} orders
+                {cursorPag.totalCount > 0
+                  ? `Showing ${startItem}–${endItem} of ${cursorPag.totalCount.toLocaleString()} orders`
+                  : `Showing ${orders.length} order${orders.length !== 1 ? "s" : ""}`}
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <span style={{ fontSize: "14px", color: c.earth600 }}>Rows per page:</span>
                   <ThemeSelect
-                    value={String(pagination.perPage)}
-                    onChange={(v) => onChangePerPage?.(Number(v))}
+                    value={String(cursorPag.limit)}
+                    onChange={(v) => onChangeLimit?.(Number(v))}
                     options={[
                       { value: "10", label: "10" },
                       { value: "25", label: "25" },
@@ -815,75 +796,56 @@ export function OrdersTable({
 
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <button
-                    onClick={() => onChangePage?.(pagination.page - 1)}
-                    disabled={pagination.page === 1}
+                    onClick={onPrevPage}
+                    disabled={cursorPag.prevCursors.length === 0 || isLoading}
                     style={{
                       padding: "6px 12px",
-                      fontSize: "14px",
-                      fontWeight: "500",
                       border: `1px solid ${c.earth300}`,
                       borderRadius: "6px",
                       backgroundColor: c.card,
-                      color: c.earth700,
-                      cursor: pagination.page === 1 ? "not-allowed" : "pointer",
-                      opacity: pagination.page === 1 ? 0.5 : 1,
+                      color: cursorPag.prevCursors.length === 0 ? c.earth300 : c.earth700,
+                      fontSize: "14px",
+                      cursor: cursorPag.prevCursors.length === 0 ? "not-allowed" : "pointer",
                       display: "flex",
                       alignItems: "center",
                       gap: "4px",
+                      transition: "all 0.2s",
                     }}
                   >
                     <ChevronLeft size={16} />
-                    Previous
+                    Prev
                   </button>
 
-                  {pageNumbers.map((page, index) =>
-                    page === "..." ? (
-                      <span
-                        key={`ellipsis-${index}`}
-                        style={{ padding: "6px 12px", fontSize: "14px", color: c.earth400 }}
-                      >
-                        ...
-                      </span>
-                    ) : (
-                      <button
-                        key={page}
-                        onClick={() => onChangePage?.(page as number)}
-                        style={{
-                          minWidth: "36px",
-                          padding: "6px 12px",
-                          fontSize: "14px",
-                          fontWeight: "500",
-                          border:
-                            pagination.page === page
-                              ? `1px solid ${c.primary500}`
-                              : `1px solid ${c.earth300}`,
-                          borderRadius: "6px",
-                          backgroundColor: pagination.page === page ? c.primary50 : c.card,
-                          color: pagination.page === page ? c.primary500 : c.earth700,
-                          cursor: "pointer",
-                        }}
-                      >
-                        {page}
-                      </button>
-                    )
-                  )}
-
-                  <button
-                    onClick={() => onChangePage?.(pagination.page + 1)}
-                    disabled={pagination.page === pagination.totalPages}
+                  <span
                     style={{
                       padding: "6px 12px",
                       fontSize: "14px",
-                      fontWeight: "500",
+                      fontWeight: "600",
+                      color: c.primary500,
+                      backgroundColor: c.primary50,
+                      borderRadius: "6px",
+                      minWidth: "36px",
+                      textAlign: "center",
+                    }}
+                  >
+                    {cursorPag.pageNum}
+                  </span>
+
+                  <button
+                    onClick={onNextPage}
+                    disabled={!cursorPag.hasMore || isLoading}
+                    style={{
+                      padding: "6px 12px",
                       border: `1px solid ${c.earth300}`,
                       borderRadius: "6px",
                       backgroundColor: c.card,
-                      color: c.earth700,
-                      cursor: pagination.page === pagination.totalPages ? "not-allowed" : "pointer",
-                      opacity: pagination.page === pagination.totalPages ? 0.5 : 1,
+                      color: !cursorPag.hasMore ? c.earth300 : c.earth700,
+                      fontSize: "14px",
+                      cursor: !cursorPag.hasMore ? "not-allowed" : "pointer",
                       display: "flex",
                       alignItems: "center",
                       gap: "4px",
+                      transition: "all 0.2s",
                     }}
                   >
                     Next
