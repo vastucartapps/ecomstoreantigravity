@@ -12,6 +12,7 @@ import {
   GripVertical,
 } from "lucide-react"
 import type { ProductDetail, CategoryOption, ProductWizardProps } from "@/types/admin-product"
+import { normalizeImageUrl } from "@/lib/image-url"
 
 const c = {
   primary500: "#013f47",
@@ -202,7 +203,10 @@ export function ProductWizard({
   const [previewCollapsed, setPreviewCollapsed] = useState(false)
   const [completedSteps, setCompletedSteps] = useState<Set<WizardStep>>(new Set())
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [uploadingRcImage, setUploadingRcImage] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const rcFileInputRef = useRef<HTMLInputElement>(null)
+  const rcUploadTargetIdx = useRef<number>(-1)
 
   const currentStepIndex = STEPS.findIndex((s) => s.id === currentStep)
   const currentStepData = STEPS[currentStepIndex]
@@ -243,7 +247,8 @@ export function ProductWizard({
     setUploadingImage(true)
     try {
       for (const file of Array.from(files)) {
-        const url = await onUploadFile(file)
+        const rawUrl = await onUploadFile(file)
+        const url = normalizeImageUrl(rawUrl) || rawUrl
         if (url) {
           updateField("images", [
             ...(formData.images || []),
@@ -259,6 +264,24 @@ export function ProductWizard({
       }
     } finally {
       setUploadingImage(false)
+    }
+  }
+
+  const handleRcImageUpload = async (files: FileList | null, blockIdx: number) => {
+    const file = files?.[0]
+    if (!file || !onUploadFile) return
+    const blockId = formData.richContent?.[blockIdx]?.id || ""
+    setUploadingRcImage(blockId)
+    try {
+      const rawUrl = await onUploadFile(file)
+      const url = normalizeImageUrl(rawUrl) || rawUrl
+      if (url) {
+        const updated = [...(formData.richContent || [])]
+        updated[blockIdx] = { ...updated[blockIdx], imageUrl: url }
+        updateField("richContent", updated)
+      }
+    } finally {
+      setUploadingRcImage(null)
     }
   }
 
@@ -581,7 +604,7 @@ export function ProductWizard({
                   <div key={idx} className="relative border rounded-lg overflow-hidden" style={{ borderColor: c.earth300 }}>
                     <div className="aspect-square bg-gray-100 flex items-center justify-center">
                       {img.url ? (
-                        <img src={img.url} alt={img.alt} className="w-full h-full object-cover" />
+                        <img src={normalizeImageUrl(img.url) || img.url} alt={img.alt} className="w-full h-full object-cover" />
                       ) : (
                         <span style={{ color: c.earth400 }}>No Image</span>
                       )}
@@ -730,17 +753,78 @@ export function ProductWizard({
                     )}
 
                     {(block.type === "image" || block.type === "image_text" || block.type === "banner") && (
-                      <InputField
-                        label="Image URL"
-                        value={block.imageUrl || ""}
-                        onChange={(v) => {
-                          const updated = [...(formData.richContent || [])]
-                          updated[idx] = { ...updated[idx], imageUrl: v }
-                          updateField("richContent", updated)
-                        }}
-                        placeholder="https://example.com/image.jpg"
-                        help="Paste the URL of an uploaded image"
-                      />
+                      <div className="mt-3">
+                        <label className="block text-xs font-medium mb-1.5" style={{ color: c.earth600, fontFamily: fonts.body }}>
+                          Block Image
+                        </label>
+                        {block.imageUrl ? (
+                          <div className="relative inline-block">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={block.imageUrl}
+                              alt={block.title || "Block image"}
+                              className="w-full max-w-sm aspect-video object-cover rounded-lg border"
+                              style={{ borderColor: c.earth300 }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = [...(formData.richContent || [])]
+                                updated[idx] = { ...updated[idx], imageUrl: "" }
+                                updateField("richContent", updated)
+                              }}
+                              className="absolute top-2 right-2 p-1.5 rounded-full shadow"
+                              style={{ background: c.card, color: c.error }}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            className="flex flex-col items-center justify-center w-full max-w-sm aspect-video rounded-lg cursor-pointer transition-colors"
+                            style={{
+                              border: `2px dashed ${c.primary200}`,
+                              backgroundColor: uploadingRcImage === block.id ? c.primary100 : c.primary50,
+                            }}
+                            onClick={() => {
+                              rcUploadTargetIdx.current = idx
+                              rcFileInputRef.current?.click()
+                            }}
+                          >
+                            {uploadingRcImage === block.id ? (
+                              <div className="flex flex-col items-center gap-2">
+                                <div
+                                  className="h-6 w-6 rounded-full border-2 animate-spin"
+                                  style={{ borderColor: c.primary400, borderTopColor: "transparent" }}
+                                />
+                                <p className="text-xs" style={{ color: c.primary500, fontFamily: fonts.body }}>Uploading...</p>
+                              </div>
+                            ) : (
+                              <>
+                                <Upload size={24} style={{ color: c.primary400 }} className="mb-1" />
+                                <p className="text-xs font-medium" style={{ color: c.primary500, fontFamily: fonts.body }}>
+                                  Click to upload image
+                                </p>
+                                <p className="text-[10px] mt-0.5" style={{ color: c.earth400, fontFamily: fonts.body }}>
+                                  PNG, JPG, WebP — up to 5MB
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        )}
+                        <input
+                          type="text"
+                          value={block.imageUrl || ""}
+                          onChange={(v) => {
+                            const updated = [...(formData.richContent || [])]
+                            updated[idx] = { ...updated[idx], imageUrl: v.target.value }
+                            updateField("richContent", updated)
+                          }}
+                          placeholder="Or paste image URL here"
+                          className="w-full max-w-sm mt-2 px-3 py-1.5 text-xs border rounded-lg"
+                          style={{ borderColor: c.earth300, fontFamily: fonts.body, color: c.earth700 }}
+                        />
+                      </div>
                     )}
                   </div>
                 ))}
@@ -1176,6 +1260,17 @@ export function ProductWizard({
 
   return (
     <div style={{ background: c.bg, fontFamily: fonts.body }} className="min-h-screen">
+      {/* Hidden file input for rich content image uploads */}
+      <input
+        ref={rcFileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          handleRcImageUpload(e.target.files, rcUploadTargetIdx.current)
+          e.target.value = ""
+        }}
+      />
       {/* Header */}
       <div className="border-b sticky top-0 z-10" style={{ borderColor: c.earth300, background: c.card }}>
         <div className="px-4 sm:px-6 lg:px-8 py-4">

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { ArrowLeft, Upload, X, ExternalLink } from "lucide-react"
 import type { Category, CategoryFormProps, CategoryGoogleMerchant } from "@/types/admin-category"
+import { normalizeImageUrl } from "@/lib/image-url"
 
 const c = {
   primary500: "#013f47",
@@ -104,7 +105,7 @@ export function CategoryForm({
           ? { ...EMPTY_MERCHANT, ...category.googleMerchant }
           : { ...EMPTY_MERCHANT },
       })
-      setImagePreview(category.imageUrl || null)
+      setImagePreview(normalizeImageUrl(category.imageUrl) || category.imageUrl || null)
       setSlugEdited(true) // Don't auto-generate slug for existing categories
     }
   }, [category])
@@ -128,7 +129,8 @@ export function CategoryForm({
     setIsUploading(true)
     try {
       if (onImageUpload) {
-        const url = await onImageUpload(file)
+        const rawUrl = await onImageUpload(file)
+        const url = normalizeImageUrl(rawUrl) || rawUrl
         setFormData((prev) => ({ ...prev, imageUrl: url }))
         setImagePreview(url)
       } else {

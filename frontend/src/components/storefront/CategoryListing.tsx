@@ -301,8 +301,7 @@ export function CategoryListing({
         <div
           className="absolute inset-0"
           style={{
-            background:
-              "linear-gradient(90deg, rgba(1,63,71,0.92) 0%, rgba(1,63,71,0.7) 50%, rgba(1,63,71,0.45) 100%)",
+            background: "rgba(1,63,71,0.78)",
           }}
         />
         <div
@@ -321,7 +320,7 @@ export function CategoryListing({
           </h1>
           {categoryHero.description && (
             <p
-              className="mt-3 text-sm sm:text-base max-w-lg leading-relaxed line-clamp-3"
+              className="mt-3 text-sm sm:text-base leading-relaxed line-clamp-3 text-justify"
               style={{
                 color: "rgba(255,255,255,0.88)",
                 fontFamily: fonts.body,

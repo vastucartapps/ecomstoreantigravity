@@ -647,7 +647,7 @@ export function Homepage({
       {/* TRUST BADGES — always shown, between new arrivals and bestsellers */}
       {trustBadges.length > 0 && (
         <section
-          className="py-10 border-y"
+          className="py-6 sm:py-10 border-y"
           style={{ borderColor: "#f0ebe4", order: getSectionCssOrder("trust") }}
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -655,9 +655,9 @@ export function Homepage({
               {trustBadges.map((badge) => {
                 const Icon = trustIcons[badge.icon] || Shield
                 return (
-                  <div key={badge.id} className="flex items-center gap-3.5">
+                  <div key={badge.id} className="flex flex-col items-center text-center gap-2 sm:flex-row sm:text-left sm:gap-3.5">
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                      className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                       style={{ background: primary[500] }}
                     >
                       <Icon
@@ -667,13 +667,13 @@ export function Homepage({
                     </div>
                     <div>
                       <p
-                        className="text-sm font-semibold"
+                        className="text-xs sm:text-sm font-semibold"
                         style={{ color: earth[700], fontFamily: fonts.body }}
                       >
                         {badge.label}
                       </p>
                       <p
-                        className="text-xs"
+                        className="text-[10px] sm:text-xs"
                         style={{ color: earth[300], fontFamily: fonts.body }}
                       >
                         {badge.sublabel}

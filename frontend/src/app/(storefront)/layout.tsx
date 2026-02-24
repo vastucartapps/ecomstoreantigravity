@@ -1,5 +1,6 @@
 import { StorefrontShellWrapper } from "./shell-wrapper"
 import { TrackingScripts } from "@/components/storefront/TrackingScripts"
+import { normalizeImageUrl } from "@/lib/image-url"
 
 const BACKEND_URL =
   process.env.MEDUSA_INTERNAL_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -36,7 +37,7 @@ export default async function StorefrontLayout({
     categories = (data.product_categories || []).map((c: any) => ({
       name: c.name,
       handle: c.handle,
-      image_url: c.metadata?.hero_image || undefined,
+      image_url: normalizeImageUrl(c.metadata?.image_url || c.metadata?.hero_image) || undefined,
     }))
   }
 
