@@ -12,7 +12,7 @@ export default async function StorefrontLayout({
   // Fetch categories and tracking config in parallel
   const [categoriesRes, trackingRes] = await Promise.allSettled([
     fetch(
-      `${BACKEND_URL}/store/product-categories?limit=20&parent_category_id=null&fields=id,name,handle`,
+      `${BACKEND_URL}/store/product-categories?limit=20&parent_category_id=null&fields=id,name,handle,metadata`,
       {
         headers: {
           "x-publishable-api-key":
@@ -30,12 +30,13 @@ export default async function StorefrontLayout({
     }),
   ])
 
-  let categories: { name: string; handle: string }[] = []
+  let categories: { name: string; handle: string; image_url?: string }[] = []
   if (categoriesRes.status === "fulfilled" && categoriesRes.value.ok) {
     const data = await categoriesRes.value.json()
     categories = (data.product_categories || []).map((c: any) => ({
       name: c.name,
       handle: c.handle,
+      image_url: c.metadata?.hero_image || undefined,
     }))
   }
 

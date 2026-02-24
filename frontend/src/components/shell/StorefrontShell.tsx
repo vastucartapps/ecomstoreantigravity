@@ -16,7 +16,7 @@ const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
 interface StorefrontShellProps {
   children: React.ReactNode
-  categories?: { name: string; handle: string }[]
+  categories?: { name: string; handle: string; image_url?: string }[]
 }
 
 export default function StorefrontShell({ children, categories = [] }: StorefrontShellProps) {
@@ -40,8 +40,10 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [collectionsOpen, setCollectionsOpen] = useState(false)
+  const [hoveredCat, setHoveredCat] = useState<{ name: string; handle: string; image_url?: string } | null>(null)
   const collectionsRef = useRef<HTMLDivElement>(null)
   const collectionsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const FALLBACK_HERO = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1400&h=500&fit=crop"
   const [searchQuery, setSearchQuery] = useState("")
   const [cartDrawerOpen, setCartDrawerOpen] = useState(false)
   const [notifCount, setNotifCount] = useState(0)
@@ -510,7 +512,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                     />
                   </button>
 
-                  {/* Mega dropdown panel */}
+                  {/* Mega dropdown panel — two-column */}
                   {collectionsOpen && (
                     <div
                       className="fixed left-0 right-0 z-50 shadow-2xl border-t"
@@ -526,66 +528,119 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                         setCollectionsOpen(true)
                       }}
                       onMouseLeave={() => {
-                        collectionsTimerRef.current = setTimeout(() => setCollectionsOpen(false), 120)
+                        collectionsTimerRef.current = setTimeout(() => {
+                          setCollectionsOpen(false)
+                          setHoveredCat(null)
+                        }, 120)
                       }}
                     >
-                      <div className="max-w-7xl mx-auto px-6 py-8">
-                        <p
-                          className="text-xs font-semibold uppercase tracking-widest mb-5"
-                          style={{ color: earth[400], fontFamily: fonts.body }}
-                        >
-                          Shop by Collection
-                        </p>
-                        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))" }}>
-                          {categories.map((cat) => {
-                            const isActive = pathname === `/category/${cat.handle}`
-                            return (
-                              <Link
-                                key={cat.handle}
-                                href={`/category/${cat.handle}`}
-                                onClick={() => setCollectionsOpen(false)}
-                                className="group flex items-center gap-3 px-4 py-3 rounded-xl transition-all"
-                                style={{
-                                  background: isActive ? `linear-gradient(135deg, rgba(1,63,71,0.08), rgba(1,63,71,0.04))` : "transparent",
-                                  border: `1px solid ${isActive ? "rgba(1,63,71,0.15)" : "transparent"}`,
-                                  fontFamily: fonts.body,
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (!isActive) (e.currentTarget as HTMLElement).style.background = "rgba(1,63,71,0.05)"
-                                  ;(e.currentTarget as HTMLElement).style.borderColor = "rgba(1,63,71,0.12)"
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (!isActive) (e.currentTarget as HTMLElement).style.background = "transparent"
-                                  ;(e.currentTarget as HTMLElement).style.borderColor = "transparent"
-                                }}
-                              >
-                                <div
-                                  className="w-2 h-2 rounded-full flex-shrink-0 transition-transform group-hover:scale-125"
-                                  style={{ background: isActive ? secondary[500] : gradients.accentBorder, backgroundImage: gradients.accentBorder }}
-                                />
-                                <span
-                                  className="text-sm font-medium leading-snug"
-                                  style={{ color: isActive ? secondary[500] : primary[500] }}
-                                >
-                                  {cat.name}
-                                </span>
-                              </Link>
-                            )
-                          })}
-                        </div>
-                        <div className="mt-6 pt-5 border-t flex items-center justify-between" style={{ borderColor: "#e8ddd4" }}>
-                          <Link
-                            href="/search"
-                            onClick={() => setCollectionsOpen(false)}
-                            className="inline-flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-75"
-                            style={{ color: secondary[500], fontFamily: fonts.body }}
+                      <div className="max-w-7xl mx-auto flex" style={{ minHeight: 340 }}>
+
+                        {/* Left — category list */}
+                        <div className="flex-1 px-8 py-8 overflow-y-auto" style={{ maxHeight: 420 }}>
+                          <p
+                            className="text-xs font-semibold uppercase tracking-widest mb-5"
+                            style={{ color: earth[300], fontFamily: fonts.body }}
                           >
-                            Browse all products
-                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                              <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          </Link>
+                            Shop by Collection
+                          </p>
+                          <ul className="space-y-0.5">
+                            {categories.map((cat) => {
+                              const isActive = pathname === `/category/${cat.handle}`
+                              const isHovered = hoveredCat?.handle === cat.handle
+                              return (
+                                <li key={cat.handle}>
+                                  <Link
+                                    href={`/category/${cat.handle}`}
+                                    onClick={() => { setCollectionsOpen(false); setHoveredCat(null) }}
+                                    onMouseEnter={() => setHoveredCat(cat)}
+                                    onMouseLeave={() => setHoveredCat(null)}
+                                    className="flex items-center justify-between gap-4 px-4 py-2.5 rounded-lg transition-all group"
+                                    style={{
+                                      background: isHovered || isActive ? "rgba(1,63,71,0.06)" : "transparent",
+                                      fontFamily: fonts.body,
+                                    }}
+                                  >
+                                    <span
+                                      className="text-sm font-medium truncate"
+                                      style={{ color: isActive ? secondary[500] : primary[500] }}
+                                    >
+                                      {cat.name}
+                                    </span>
+                                    <svg
+                                      width="14" height="14" viewBox="0 0 14 14" fill="none"
+                                      className="flex-shrink-0 transition-transform group-hover:translate-x-0.5"
+                                      style={{ opacity: isHovered || isActive ? 1 : 0, color: isActive ? secondary[500] : primary[400] }}
+                                    >
+                                      <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  </Link>
+                                </li>
+                              )
+                            })}
+                          </ul>
+                          <div className="mt-5 pt-4 border-t" style={{ borderColor: "#e8ddd4" }}>
+                            <Link
+                              href="/search"
+                              onClick={() => { setCollectionsOpen(false); setHoveredCat(null) }}
+                              className="inline-flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-70"
+                              style={{ color: secondary[500], fontFamily: fonts.body }}
+                            >
+                              Browse all products
+                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M3 7h8M7 3l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </Link>
+                          </div>
                         </div>
+
+                        {/* Right — category image panel */}
+                        <div
+                          className="relative w-80 flex-shrink-0 overflow-hidden"
+                          style={{ minHeight: 340 }}
+                        >
+                          {/* Background image */}
+                          <div
+                            className="absolute inset-0 bg-cover bg-center transition-all duration-300"
+                            style={{
+                              backgroundImage: `url(${hoveredCat?.image_url || categories[0]?.image_url || FALLBACK_HERO})`,
+                            }}
+                          />
+                          {/* Dark gradient overlay */}
+                          <div
+                            className="absolute inset-0"
+                            style={{
+                              background: "linear-gradient(160deg, rgba(1,63,71,0.55) 0%, rgba(1,63,71,0.82) 100%)",
+                            }}
+                          />
+                          {/* Content */}
+                          <div className="relative h-full flex flex-col justify-end p-7">
+                            <p
+                              className="text-xs font-semibold uppercase tracking-widest mb-2"
+                              style={{ color: "rgba(255,255,255,0.55)", fontFamily: fonts.body }}
+                            >
+                              {hoveredCat ? "Collection" : "Featured"}
+                            </p>
+                            <h3
+                              className="text-lg font-bold text-white leading-snug mb-3 line-clamp-2"
+                              style={{ fontFamily: fonts.heading }}
+                            >
+                              {hoveredCat?.name || "Our Collections"}
+                            </h3>
+                            <Link
+                              href={hoveredCat ? `/category/${hoveredCat.handle}` : "/search"}
+                              onClick={() => { setCollectionsOpen(false); setHoveredCat(null) }}
+                              className="inline-flex items-center gap-2 text-sm font-semibold transition-opacity hover:opacity-80"
+                              style={{ color: "rgba(255,255,255,0.9)", fontFamily: fonts.body }}
+                            >
+                              Explore
+                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M3 7h8M7 3l4 4-4 4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </Link>
+                          </div>
+                        </div>
+
                       </div>
                     </div>
                   )}

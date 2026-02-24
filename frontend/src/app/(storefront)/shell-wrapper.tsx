@@ -7,7 +7,7 @@ export function StorefrontShellWrapper({
   categories,
 }: {
   children: React.ReactNode
-  categories: { name: string; handle: string }[]
+  categories: { name: string; handle: string; image_url?: string }[]
 }) {
   return (
     <InAppAnnouncementsProvider>
