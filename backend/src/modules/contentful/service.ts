@@ -53,7 +53,9 @@ export default class ContentfulModuleService {
         entryId: product.id,
       })
       return existingEntry
-    } catch (_e) {}
+    } catch (_e) {
+      // 404 expected — entry does not exist yet, continue to create it
+    }
 
     const productEntry = await mc.entry.createWithId(
       { contentTypeId: "product", entryId: product.id },
@@ -181,16 +183,29 @@ export default class ContentfulModuleService {
       })
       if (!productEntry) return
 
-      try { await mc.entry.unpublish({ environmentId: this.options.environment, entryId: productId }) } catch (_e) {}
+      try {
+        await mc.entry.unpublish({ environmentId: this.options.environment, entryId: productId })
+      } catch (_e) {
+        // Entry may already be unpublished — safe to proceed with deletion
+        console.warn("[Contentful] Unpublish skipped for product", productId, "—", _e instanceof Error ? _e.message : _e)
+      }
       await mc.entry.delete({ environmentId: this.options.environment, entryId: productId })
 
       for (const variant of productEntry.fields.productVariants?.[this.options.default_locale!] || []) {
-        try { await mc.entry.unpublish({ environmentId: this.options.environment, entryId: variant.sys.id }) } catch (_e) {}
+        try {
+          await mc.entry.unpublish({ environmentId: this.options.environment, entryId: variant.sys.id })
+        } catch (_e) {
+          console.warn("[Contentful] Unpublish skipped for variant", variant.sys.id, "—", _e instanceof Error ? _e.message : _e)
+        }
         await mc.entry.delete({ environmentId: this.options.environment, entryId: variant.sys.id })
       }
 
       for (const option of productEntry.fields.productOptions?.[this.options.default_locale!] || []) {
-        try { await mc.entry.unpublish({ environmentId: this.options.environment, entryId: option.sys.id }) } catch (_e) {}
+        try {
+          await mc.entry.unpublish({ environmentId: this.options.environment, entryId: option.sys.id })
+        } catch (_e) {
+          console.warn("[Contentful] Unpublish skipped for option", option.sys.id, "—", _e instanceof Error ? _e.message : _e)
+        }
         await mc.entry.delete({ environmentId: this.options.environment, entryId: option.sys.id })
       }
     } catch (error: any) {

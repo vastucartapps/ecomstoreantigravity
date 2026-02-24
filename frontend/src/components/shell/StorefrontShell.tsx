@@ -228,7 +228,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                 className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-colors"
                 style={{ color: primary[500] }}
                 onClick={() => setMobileSearchOpen((v) => !v)}
-                aria-label="Toggle search"
+                aria-label="Search"
               >
                 <Search size={20} />
               </button>
@@ -237,7 +237,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
               <Link
                 href="/wishlist"
                 className="relative flex items-center justify-center w-9 h-9 rounded-lg transition-opacity hover:opacity-70"
-                aria-label={`Wishlist (${wishlistCount} items)`}
+                aria-label="Wishlist"
               >
                 <Heart size={20} style={{ color: primary[500] }} />
                 {wishlistCount > 0 && (
@@ -324,7 +324,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
               <button
                 onClick={() => setCartDrawerOpen(true)}
                 className="relative flex items-center justify-center w-9 h-9 rounded-lg transition-opacity hover:opacity-70"
-                aria-label={`Cart (${cartCount} items)`}
+                aria-label="Shopping cart"
               >
                 <ShoppingBag size={20} style={{ color: primary[500] }} />
                 {cartCount > 0 && (
@@ -342,7 +342,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                 <Link
                   href="/account"
                   className="flex items-center gap-2 ml-1 rounded-lg px-2 py-1 transition-opacity hover:opacity-70"
-                  aria-label="My account"
+                  aria-label="Account"
                 >
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"

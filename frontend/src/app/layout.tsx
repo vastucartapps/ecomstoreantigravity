@@ -34,8 +34,38 @@ export const metadata: Metadata = {
   },
   description:
     "Your trusted destination for authentic spiritual products, crystals, yantras, and Vastu Shastra tools.",
+  metadataBase: new URL("https://store.vastucart.in"),
   icons: {
     icon: "/favicon.png",
+  },
+  openGraph: {
+    siteName: "VastuCart",
+    title: "VastuCart — Authentic Spiritual Products",
+    description:
+      "Your trusted destination for authentic spiritual products, crystals, yantras, and Vastu Shastra tools.",
+    url: "https://store.vastucart.in",
+    type: "website",
+    locale: "en_IN",
+    images: [
+      {
+        url: "/og-default.jpg",
+        width: 1200,
+        height: 630,
+        alt: "VastuCart — Authentic Spiritual Products",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "VastuCart — Authentic Spiritual Products",
+    description:
+      "Your trusted destination for authentic spiritual products, crystals, yantras, and Vastu Shastra tools.",
+    images: ["/og-default.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
   },
 }
 

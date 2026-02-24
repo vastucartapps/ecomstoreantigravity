@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback } from "react"
+import Image from "next/image"
 import { ChevronLeft, ChevronRight, X, ZoomIn } from "lucide-react"
 import type { ProductImage } from "@/types/product-experience"
 import { primary, earth, bg, fonts, gradients } from "@/lib/theme"
@@ -50,10 +51,13 @@ export function ImageGallery({ images }: ImageGalleryProps) {
           style={{ border: "1px solid #f0ebe4" }}
           onClick={() => setLightboxOpen(true)}
         >
-          <img
+          <Image
             src={active.url}
             alt={active.alt || "Product image"}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            priority
           />
           {/* Zoom hint */}
           <div
@@ -107,7 +111,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                   opacity: idx === activeIdx ? 1 : 0.65,
                 }}
               >
-                <img src={img.url} alt={img.alt || ""} className="w-full h-full object-cover" />
+                <Image src={img.url} alt={img.alt || ""} width={72} height={72} className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
@@ -137,12 +141,19 @@ export function ImageGallery({ images }: ImageGalleryProps) {
             <ChevronLeft className="w-6 h-6 text-white" />
           </button>
 
-          <img
-            src={active.url}
-            alt={active.alt || ""}
-            className="max-h-[85vh] max-w-[90vw] object-contain rounded-lg"
+          <div
+            className="relative rounded-lg overflow-hidden"
+            style={{ maxHeight: "85vh", maxWidth: "90vw", width: "70vw", height: "70vh" }}
             onClick={(e) => e.stopPropagation()}
-          />
+          >
+            <Image
+              src={active.url}
+              alt={active.alt || ""}
+              fill
+              sizes="90vw"
+              className="object-contain"
+            />
+          </div>
 
           <button
             onClick={(e) => { e.stopPropagation(); go("next") }}
@@ -164,7 +175,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                   opacity: idx === activeIdx ? 1 : 0.5,
                 }}
               >
-                <img src={img.url} alt="" className="w-full h-full object-cover" />
+                <Image src={img.url} alt="" width={56} height={56} className="w-full h-full object-cover" />
               </button>
             ))}
           </div>

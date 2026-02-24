@@ -80,7 +80,7 @@ const plugins: any[] = [
   { resolve: "@alpha-solutions/medusa-image-alt", options: {} },
   {
     resolve: "@rsc-labs/medusa-wishlist",
-    options: { jwtSecret: process.env.JWT_SECRET || "supersecret" },
+    options: { jwtSecret: process.env.JWT_SECRET },
   },
 ]
 
@@ -296,8 +296,8 @@ module.exports = defineConfig({
       storeCors: process.env.STORE_CORS!,
       adminCors: process.env.ADMIN_CORS!,
       authCors: process.env.AUTH_CORS!,
-      jwtSecret: process.env.JWT_SECRET || "supersecret",
-      cookieSecret: process.env.COOKIE_SECRET || "supersecret",
+      jwtSecret: process.env.JWT_SECRET || (() => { throw new Error("JWT_SECRET environment variable is required") })(),
+      cookieSecret: process.env.COOKIE_SECRET || (() => { throw new Error("COOKIE_SECRET environment variable is required") })(),
     },
   },
   modules,

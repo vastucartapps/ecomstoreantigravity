@@ -64,29 +64,44 @@ class LoyaltyModuleService extends MedusaService({ LoyaltyTransaction }) {
     totalPointsExpired: number
     activeMembers: number
   }> {
-    // Get all transactions
-    const allTransactions = await this.listLoyaltyTransactions(
-      {},
-      { take: 100000 }
-    )
+    // Run four typed queries in parallel instead of one massive unbounded fetch.
+    // Each query is scoped to a single transaction type, capped at 10K records.
+    const [
+      [earnedTx],
+      [redeemedTx],
+      [expiredTx],
+      [adjustedTx],
+    ] = await Promise.all([
+      this.listAndCountLoyaltyTransactions({ type: "earned" }, { take: 10000 }),
+      this.listAndCountLoyaltyTransactions({ type: "redeemed" }, { take: 10000 }),
+      this.listAndCountLoyaltyTransactions({ type: "expired" }, { take: 10000 }),
+      this.listAndCountLoyaltyTransactions({ type: "adjusted" }, { take: 10000 }),
+    ])
 
-    let totalIssued = 0
-    let totalRedeemed = 0
-    let totalExpired = 0
     const customerIds = new Set<string>()
 
-    for (const tx of allTransactions) {
+    let totalIssued = 0
+    for (const tx of earnedTx) {
       customerIds.add(tx.customer_id)
-      if (tx.type === "earned") {
-        totalIssued += tx.points
-      } else if (tx.type === "redeemed") {
-        totalRedeemed += Math.abs(tx.points)
-      } else if (tx.type === "expired") {
-        totalExpired += Math.abs(tx.points)
-      } else if (tx.type === "adjusted") {
-        if (tx.points > 0) totalIssued += tx.points
-        else totalRedeemed += Math.abs(tx.points)
-      }
+      totalIssued += tx.points
+    }
+
+    let totalRedeemed = 0
+    for (const tx of redeemedTx) {
+      customerIds.add(tx.customer_id)
+      totalRedeemed += Math.abs(tx.points)
+    }
+
+    let totalExpired = 0
+    for (const tx of expiredTx) {
+      customerIds.add(tx.customer_id)
+      totalExpired += Math.abs(tx.points)
+    }
+
+    for (const tx of adjustedTx) {
+      customerIds.add(tx.customer_id)
+      if (tx.points > 0) totalIssued += tx.points
+      else totalRedeemed += Math.abs(tx.points)
     }
 
     return {

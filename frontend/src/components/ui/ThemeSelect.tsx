@@ -54,10 +54,17 @@ export function ThemeSelect({
   const [open, setOpen] = useState(false)
   const [focusIdx, setFocusIdx] = useState(-1)
   const [portalReady, setPortalReady] = useState(false)
-  const [dropStyle, setDropStyle] = useState<React.CSSProperties>({})
+  // Start with position:fixed + visibility:hidden so the portal never causes
+  // a layout-shift scroll on the first render frame.
+  const [dropStyle, setDropStyle] = useState<React.CSSProperties>({
+    position: "fixed",
+    visibility: "hidden",
+  })
 
   const triggerRef = useRef<HTMLButtonElement>(null)
   const dropRef = useRef<HTMLDivElement>(null)
+  // Track whether focusIdx changed due to keyboard navigation (not initial open)
+  const isKeyNav = useRef(false)
 
   const selectedLabel = useMemo(
     () => options.find((o) => o.value === value)?.label || placeholder,
@@ -67,16 +74,13 @@ export function ThemeSelect({
   /* ── Portal readiness (SSR safe) ── */
   useEffect(() => setPortalReady(true), [])
 
-  /* ── Position the dropdown relative to trigger ── */
-  const reposition = useCallback(() => {
-    if (!triggerRef.current) return
-    const rect = triggerRef.current.getBoundingClientRect()
+  /* ── Calculate dropdown position from trigger rect ── */
+  const calcPosition = useCallback((rect: DOMRect): React.CSSProperties => {
     const spaceBelow = window.innerHeight - rect.bottom
     const spaceAbove = rect.top
     const maxH = 260
     const openAbove = spaceBelow < maxH && spaceAbove > spaceBelow
-
-    setDropStyle({
+    return {
       position: "fixed",
       left: rect.left,
       width: rect.width,
@@ -84,8 +88,13 @@ export function ThemeSelect({
       ...(openAbove
         ? { bottom: window.innerHeight - rect.top + 4 }
         : { top: rect.bottom + 4 }),
-    })
+    }
   }, [])
+
+  const reposition = useCallback(() => {
+    if (!triggerRef.current) return
+    setDropStyle(calcPosition(triggerRef.current.getBoundingClientRect()))
+  }, [calcPosition])
 
   /* ── Open/close side effects ── */
   useEffect(() => {
@@ -118,9 +127,9 @@ export function ThemeSelect({
     return () => document.removeEventListener("mousedown", handler)
   }, [open])
 
-  /* ── Scroll focused item into view ── */
+  /* ── Scroll focused item into view (keyboard navigation only) ── */
   useEffect(() => {
-    if (focusIdx < 0 || !dropRef.current) return
+    if (focusIdx < 0 || !dropRef.current || !isKeyNav.current) return
     const items = dropRef.current.querySelectorAll("[data-opt]")
     items[focusIdx]?.scrollIntoView({ block: "nearest" })
   }, [focusIdx])
@@ -138,10 +147,12 @@ export function ThemeSelect({
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault()
+        isKeyNav.current = true
         setFocusIdx((p) => Math.min(p + 1, options.length - 1))
         break
       case "ArrowUp":
         e.preventDefault()
+        isKeyNav.current = true
         setFocusIdx((p) => Math.max(p - 1, 0))
         break
       case "Enter":
@@ -151,21 +162,29 @@ export function ThemeSelect({
           onChange(options[focusIdx].value)
           setOpen(false)
           setFocusIdx(-1)
+          isKeyNav.current = false
         }
         break
       case "Escape":
       case "Tab":
         setOpen(false)
         setFocusIdx(-1)
+        isKeyNav.current = false
         break
     }
   }
 
-  const openDropdown = () => {
+  const openDropdown = useCallback(() => {
+    if (!triggerRef.current) return
+    // Calculate position SYNCHRONOUSLY before opening so the portal renders
+    // with the correct position on the first frame — prevents layout-shift jump.
+    const style = calcPosition(triggerRef.current.getBoundingClientRect())
+    isKeyNav.current = false
+    setDropStyle(style)
     setOpen(true)
     const idx = options.findIndex((o) => o.value === value)
     setFocusIdx(idx >= 0 ? idx : 0)
-  }
+  }, [calcPosition, options, value])
 
   /* ── Size tokens ── */
   const isSmall = size === "sm"
@@ -258,7 +277,7 @@ export function ThemeSelect({
         type="button"
         onClick={() => {
           if (disabled) return
-          if (open) { setOpen(false); setFocusIdx(-1) } else openDropdown()
+          if (open) { setOpen(false); setFocusIdx(-1); isKeyNav.current = false } else openDropdown()
         }}
         onKeyDown={handleKeyDown}
         disabled={disabled}

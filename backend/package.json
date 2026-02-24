@@ -39,6 +39,7 @@
     "algoliasearch": "^5.48.1",
     "contentful": "^11.10.3",
     "contentful-management": "^11.69.2",
+    "express-rate-limit": "^8.2.1",
     "medusa-variant-images": "^1.1.4",
     "nodemailer": "^8.0.1",
     "qs": "^6.15.0",

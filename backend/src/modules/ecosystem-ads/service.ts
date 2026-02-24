@@ -71,13 +71,15 @@ class EcosystemAdsService extends MedusaService({
       { order: { created_at: "DESC" }, take: 500 }
     )
 
-    // Get all slots to resolve placements
-    const slots = await this.listEcosystemSlots({}, { take: 5000 })
+    // Fetch slots and recent events in parallel.
+    // Events capped at 50K (most recent) — enough for meaningful stats without
+    // loading unbounded rows. Slots capped at 1K (generous for real usage).
+    const [slots, events] = await Promise.all([
+      this.listEcosystemSlots({}, { take: 1000 }),
+      this.listBannerEvents({}, { take: 50000, order: { created_at: "DESC" } }),
+    ])
 
-    // Get all events for stats
-    const events = await this.listBannerEvents({}, { take: 100000 })
-
-    // Group events by banner
+    // Group events by banner_id in a single pass
     const eventsByBanner = new Map<string, { impressions: number; clicks: number }>()
     for (const ev of events) {
       const entry = eventsByBanner.get(ev.banner_id) || { impressions: 0, clicks: 0 }
@@ -86,13 +88,18 @@ class EcosystemAdsService extends MedusaService({
       eventsByBanner.set(ev.banner_id, entry)
     }
 
+    // Build a slot index keyed by current_banner_id for O(1) lookup
+    const slotsByBanner = new Map<string, string[]>()
+    for (const s of slots as any[]) {
+      if (!s.current_banner_id) continue
+      const existing = slotsByBanner.get(s.current_banner_id) || []
+      existing.push(s.id)
+      slotsByBanner.set(s.current_banner_id, existing)
+    }
+
     return banners.map((raw: any) => {
       const parsed = this.parseBanner(raw)
-      // Resolve placements
-      parsed.placements = slots
-        .filter((s: any) => s.current_banner_id === raw.id)
-        .map((s: any) => s.id)
-      // Resolve stats
+      parsed.placements = slotsByBanner.get(raw.id) || []
       const stats = eventsByBanner.get(raw.id)
       if (stats) {
         parsed.impressions = stats.impressions

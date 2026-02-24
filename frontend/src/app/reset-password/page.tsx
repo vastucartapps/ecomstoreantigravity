@@ -25,6 +25,14 @@ function ResetPasswordContent() {
   const token = searchParams.get("token")
 
   useEffect(() => {
+    // Remove the token from the URL immediately to prevent it from
+    // being stored in browser history, server logs, or Referer headers.
+    if (token && typeof window !== "undefined") {
+      window.history.replaceState({}, "", "/reset-password")
+    }
+  }, [token])
+
+  useEffect(() => {
     const fetchSlides = async () => {
       try {
         const res = await medusa.client.fetch<{

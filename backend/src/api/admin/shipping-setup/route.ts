@@ -10,12 +10,12 @@ import {
 
 const FULFILLMENT_SET_NAME = "India Warehouse delivery"
 
-function serializeError(err: unknown): { error: string; detail?: string } {
-  if (err instanceof Error) return { error: err.message, detail: err.stack }
+function serializeError(err: unknown): { error: string } {
+  if (err instanceof Error) return { error: err.message }
   try {
     return { error: JSON.stringify(err) }
   } catch {
-    return { error: String(err) }
+    return { error: "An unexpected error occurred" }
   }
 }
 

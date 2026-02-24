@@ -3,6 +3,7 @@
  * Supports: # h1, ## h2, ### h3, **bold**, *italic*, - list items, paragraphs
  */
 
+import DOMPurify from "isomorphic-dompurify"
 import { primary, earth, fonts, bg } from "@/lib/theme"
 
 export function renderMarkdown(content: string) {
@@ -34,7 +35,7 @@ export function renderMarkdown(content: string) {
                 color: earth[600],
                 fontFamily: fonts.body,
               }}
-              dangerouslySetInnerHTML={{ __html: inlineFormat(item) }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(inlineFormat(item)) }}
             />
           ))}
         </ul>
@@ -119,7 +120,7 @@ export function renderMarkdown(content: string) {
             color: earth[600],
             fontFamily: fonts.body,
           }}
-          dangerouslySetInnerHTML={{ __html: inlineFormat(trimmed) }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(inlineFormat(trimmed)) }}
         />
       )
     }

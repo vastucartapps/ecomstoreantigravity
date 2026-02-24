@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Heart, Eye, ShoppingBag, Star } from "lucide-react"
 import type { StorefrontProduct } from "@/types/storefront"
 import { primary, secondary, earth, bg, shadows } from "@/lib/theme"
@@ -44,10 +45,12 @@ export function ProductCard({
         className="relative aspect-square overflow-hidden cursor-pointer"
         onClick={() => onProductClick?.(product.slug)}
       >
-        <img
+        <Image
           src={product.imageUrl}
           alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-500"
+          fill
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          className="object-cover transition-transform duration-500"
           style={{ transform: hovered ? "scale(1.08)" : "scale(1)" }}
         />
 
