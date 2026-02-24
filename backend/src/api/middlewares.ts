@@ -54,12 +54,11 @@ export default defineMiddlewares({
     },
 
     // ─── Admin authentication guard ──────────────────────────────────────────
-    // Applies to ALL custom /admin/* routes. Medusa built-in admin routes
-    // are already protected by the framework; this ensures our custom routes
-    // require a valid admin session or bearer token too.
+    // actor_type in Medusa v2 is "user" (not "admin") for admin panel users.
+    // Using "admin" here caused every admin JWT to be rejected with 401.
     {
       matcher: "/admin/*",
-      middlewares: [authenticate("admin", ["bearer", "session"])],
+      middlewares: [authenticate("user", ["bearer", "session", "api-key"])],
     },
 
     // ─── Rate limiting on public write endpoints ──────────────────────────────
