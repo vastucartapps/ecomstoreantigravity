@@ -66,7 +66,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
       typeof window !== "undefined" ? localStorage.getItem(CART_ID_KEY) : null
     if (existingId && cart) return existingId
 
-    const regionId = await getRegionId()
+    // Read geo-IP region cookie set by middleware (vc-region = "india" | "international").
+    // This cookie is set server-side from the Cloudflare CF-IPCountry header so it is
+    // available immediately on the first client-side render.
+    const vcRegion =
+      typeof window !== "undefined"
+        ? document.cookie.split("; ").find((c) => c.startsWith("vc-region="))?.split("=")[1]
+        : undefined
+    const preferInternational = vcRegion === "international"
+
+    const regionId = await getRegionId(preferInternational)
     const { cart: newCart } = await medusa.store.cart.create({ region_id: regionId })
     if (typeof window !== "undefined")
       localStorage.setItem(CART_ID_KEY, newCart.id)

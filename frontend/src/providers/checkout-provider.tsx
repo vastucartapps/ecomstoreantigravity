@@ -40,6 +40,7 @@ interface CheckoutContextValue {
   paymentMethod: string
   setPaymentMethod: (method: string) => void
   razorpayKeyId: string | null
+  stripePublishableKey: string | null
   initPayment: () => Promise<void>
   completeCheckout: () => Promise<{ orderId: string }>
   // Tracks when an order has been placed in this session so the empty-cart guard
@@ -70,6 +71,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
   const [codConfig, setCodConfig] = useState<{ fee: number; minOrder: number; maxOrder: number } | null>(null)
   const [paymentMethod, setPaymentMethod] = useState("system")
   const [razorpayKeyId, setRazorpayKeyId] = useState<string | null>(null)
+  const [stripePublishableKey, setStripePublishableKey] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [completedOrderId, setCompletedOrderId] = useState<string | null>(null)
@@ -151,13 +153,14 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         throw new Error(`Failed to load shipping options (${res.status})`)
       }
       const data = await res.json()
-      // Medusa v2 returns shipping amounts in minor units (paise). Keep as-is;
+      // Medusa v2 returns shipping amounts in minor units. Keep as-is;
       // display components divide by 100 at render time (ShippingStep.formatPrice).
+      const cartCurrency = (cart as any)?.currency_code || "inr"
       const options: ShippingOption[] = (data.shipping_options || []).map((o: any) => ({
         id: o.id,
         name: o.name,
         amount: o.amount || 0,
-        currency_code: "inr",
+        currency_code: o.amount_type === "flat" ? cartCurrency : (o.currency_code || cartCurrency),
         provider_id: o.provider_id || "",
       }))
 
@@ -220,25 +223,45 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     // including before the early-return guard, so the error is always wiped on re-entry.
     setError(null)
 
-    // Fetch Razorpay public key + COD config from admin panel settings (single source of truth)
+    // Detect currency from cart — determines which payment providers to use:
+    // "inr" → Razorpay + COD (India only)
+    // "usd" (or anything else) → Stripe → PayPal fallback (international)
+    const isInternational = (cart as any).currency_code !== "inr"
+
+    // Fetch payment keys + COD config from admin panel settings (single source of truth).
     let razorpayKey: string | null = null
+    let stripeKey: string | null = null
     try {
-      const [cfgRes, shippingRes] = await Promise.allSettled([
+      const fetches: Promise<Response>[] = [
         fetch(`${BACKEND_URL}/store/payment-config`, {
           headers: { "x-publishable-api-key": PUB_KEY },
         }),
-        fetch(`${BACKEND_URL}/store/shipping-config`, {
-          headers: { "x-publishable-api-key": PUB_KEY },
-        }),
-      ])
+      ]
+      // Only fetch COD config for INR carts (COD is India-only)
+      if (!isInternational) {
+        fetches.push(
+          fetch(`${BACKEND_URL}/store/shipping-config`, {
+            headers: { "x-publishable-api-key": PUB_KEY },
+          })
+        )
+      }
+
+      const results = await Promise.allSettled(fetches)
+      const [cfgRes, shippingRes] = results
 
       if (cfgRes.status === "fulfilled" && cfgRes.value.ok) {
         const cfg = await cfgRes.value.json()
         razorpayKey = cfg.razorpay_key_id || null
         setRazorpayKeyId(razorpayKey)
+        stripeKey = cfg.stripe_publishable_key || null
+        setStripePublishableKey(stripeKey)
       }
 
-      if (shippingRes.status === "fulfilled" && shippingRes.value.ok) {
+      // COD is strictly India-only; never shown or fetched for international carts
+      if (!isInternational) {
+        setCodEnabled(false)
+        setCodConfig(null)
+      } else if (shippingRes && shippingRes.status === "fulfilled" && shippingRes.value.ok) {
         const shData = await shippingRes.value.json()
         const cod = shData?.config?.cod
         if (cod?.enabled === true) {
@@ -252,18 +275,24 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
       }
     } catch {}
 
-    // Guard: skip only if we already have an active Razorpay session (avoids duplicate creation).
-    // Do NOT guard on pp_system_default — that session is always present and would block
-    // Razorpay session creation when the user first reaches the payment step.
+    // Guard: skip if we already have an active session for the right provider family.
+    // This prevents duplicate session creation on re-entry (e.g. React Strict Mode).
     const paymentCollection = (cart as any)?.payment_collection
     const existingSessions: any[] = paymentCollection?.payment_sessions || []
-    if (existingSessions.some((s: any) => s.provider_id?.includes("razorpay") && s.status !== "canceled")) return
+    if (isInternational) {
+      if (existingSessions.some((s: any) =>
+        (s.provider_id?.includes("stripe") || s.provider_id?.includes("paypal")) &&
+        s.status !== "canceled"
+      )) return
+    } else {
+      if (existingSessions.some((s: any) => s.provider_id?.includes("razorpay") && s.status !== "canceled")) return
+    }
 
     setIsProcessing(true)
     try {
-      // Fetch available payment providers for this cart
+      // Fetch available payment providers for this cart's region
       const res = await fetch(
-        `${BACKEND_URL}/store/payment-providers?region_id=${cart.region_id}`,
+        `${BACKEND_URL}/store/payment-providers?region_id=${(cart as any).region_id}`,
         { headers: { "x-publishable-api-key": PUB_KEY } }
       )
       const data = await res.json()
@@ -274,16 +303,32 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      // Use Razorpay only if admin has configured keys; otherwise use system default (for COD)
-      const razorpayProvider = providers.find((p) => p.id?.includes("razorpay"))
-      const systemProvider = providers.find((p) => p.id === "pp_system_default")
       let providerId: string
-      if (razorpayKey && razorpayProvider) {
-        providerId = razorpayProvider.id
-      } else if (systemProvider) {
-        providerId = systemProvider.id
+      if (isInternational) {
+        // International: prefer Stripe (admin-driven), fall back to PayPal, then system default
+        const stripeProvider = providers.find((p: any) => p.id?.includes("stripe"))
+        const paypalProvider = providers.find((p: any) => p.id?.includes("paypal"))
+        const systemProvider = providers.find((p: any) => p.id === "pp_system_default")
+        if (stripeKey && stripeProvider) {
+          providerId = stripeProvider.id
+        } else if (paypalProvider) {
+          providerId = paypalProvider.id
+        } else if (systemProvider) {
+          providerId = systemProvider.id
+        } else {
+          providerId = providers[0].id
+        }
       } else {
-        providerId = providers[0].id
+        // India: prefer Razorpay (admin-driven), fall back to system default (for COD)
+        const razorpayProvider = providers.find((p: any) => p.id?.includes("razorpay"))
+        const systemProvider = providers.find((p: any) => p.id === "pp_system_default")
+        if (razorpayKey && razorpayProvider) {
+          providerId = razorpayProvider.id
+        } else if (systemProvider) {
+          providerId = systemProvider.id
+        } else {
+          providerId = providers[0].id
+        }
       }
 
       // If collection already exists but has no active sessions, add session to existing collection
@@ -355,7 +400,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         savedAddresses, loadSavedAddresses, setAddresses, selectedAddressId, setSelectedAddressId,
         shippingOptions, selectedShippingId, loadShippingOptions, applyShippingMethod, selectShippingMethod,
         codEnabled, codConfig, toggleCod,
-        paymentMethod, setPaymentMethod, razorpayKeyId, initPayment, completeCheckout,
+        paymentMethod, setPaymentMethod, razorpayKeyId, stripePublishableKey, initPayment, completeCheckout,
         completedOrderId,
         isProcessing, error, setError,
       }}

@@ -5,23 +5,21 @@ loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 // ─── Conditional payment providers ────────────────────────
 const paymentProviders: any[] = []
 
-if (process.env.STRIPE_API_KEY) {
-  paymentProviders.push({
-    resolve: "@medusajs/medusa/payment-stripe",
-    id: "stripe",
-    options: {
-      apiKey: process.env.STRIPE_API_KEY,
-      webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
-    },
-  })
-}
-
 // Razorpay — always registered; reads key_id + key_secret from
 // store.metadata.payments_tax_config.gateways (Admin > Payments).
 // No Coolify env vars needed for payment keys.
 paymentProviders.push({
   resolve: "./src/modules/razorpay-db",
   id: "razorpay",
+  options: {},
+})
+
+// Stripe — always registered; reads publishable + secret keys from
+// store.metadata.payments_tax_config.gateways (Admin > Payments).
+// No Coolify env vars needed. Used for international (USD) customers.
+paymentProviders.push({
+  resolve: "./src/modules/stripe-db",
+  id: "stripe",
   options: {},
 })
 

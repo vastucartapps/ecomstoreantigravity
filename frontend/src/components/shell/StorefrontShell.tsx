@@ -110,7 +110,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
       {/* Announcement Ribbon */}
       {announcementActive && announcementText && (
         <div
-          className="relative flex items-center justify-center px-10 py-2 text-sm"
+          className="relative flex items-center justify-center px-8 py-2 text-sm sm:px-10"
           style={{
             background: announcementBgColor,
             color: announcementTextColor,
@@ -177,7 +177,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                   className="h-9 w-9 object-contain"
                 />
                 <span
-                  className="font-bold text-xl tracking-tight"
+                  className="hidden sm:inline font-bold text-xl tracking-tight"
                   style={{ fontFamily: fonts.heading, color: primary[500] }}
                 >
                   {branding.storeName}
@@ -267,7 +267,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                   {/* Dropdown */}
                   {notifOpen && (
                     <div
-                      className="absolute right-0 top-11 w-80 rounded-2xl shadow-xl overflow-hidden"
+                      className="absolute right-0 top-11 w-80 max-w-[calc(100vw-1.5rem)] rounded-2xl shadow-xl overflow-hidden"
                       style={{ background: "#fff", border: "1px solid #f0ebe4", zIndex: 90 }}
                     >
                       <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid #f0ebe4" }}>
@@ -509,7 +509,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
 
           {/* Drawer */}
           <div
-            className="fixed inset-y-0 left-0 z-50 w-72 flex flex-col shadow-2xl overflow-y-auto"
+            className="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] flex flex-col shadow-2xl overflow-y-auto"
             style={{ backgroundColor: "#ffffff" }}
           >
             {/* Gradient top border */}

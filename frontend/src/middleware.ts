@@ -3,7 +3,11 @@ import { NextRequest, NextResponse } from "next/server"
 const BACKEND_URL = process.env.MEDUSA_INTERNAL_URL || "http://backend:9000"
 
 /**
- * Next.js middleware that routes API calls to the Medusa backend.
+ * Next.js middleware that:
+ * 1. Routes API calls to the Medusa backend (proxy routing).
+ * 2. Sets a `vc-region` cookie based on Cloudflare geo-IP for storefront pages.
+ *    Cookie value: "india" (INR) or "international" (USD).
+ *    Cart creation reads this cookie to select the correct Medusa region.
  *
  * Problem: Next.js page routes at /admin/* intercept ALL requests including
  * API calls (POST /admin/products → 405, GET /admin/products with auth → HTML).
@@ -48,6 +52,24 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Storefront page navigation — set geo-IP region cookie if not already set.
+  // CF-IPCountry is a 2-letter ISO country code injected by Cloudflare on every
+  // production request. In development/staging without Cloudflare the header is
+  // absent and we default to "international" (USD). India visitors always see INR.
+  const existingCookie = request.cookies.get("vc-region")
+  if (!existingCookie) {
+    const country = request.headers.get("cf-ipcountry") ?? ""
+    const region = country.toUpperCase() === "IN" ? "india" : "international"
+    const response = NextResponse.next()
+    response.cookies.set("vc-region", region, {
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+      path: "/",
+      sameSite: "lax",
+      // Not httpOnly — cart-provider.tsx reads this client-side via document.cookie
+    })
+    return response
+  }
+
   return NextResponse.next()
 }
 
@@ -58,5 +80,8 @@ export const config = {
     "/auth/:path*",
     "/health",
     "/.well-known/:path*",
+    // Storefront pages — run middleware for geo-IP cookie detection.
+    // Excludes Next.js internals (_next/static, _next/image) and favicon.
+    "/((?!_next/static|_next/image|favicon\\.ico).*)",
   ],
 }

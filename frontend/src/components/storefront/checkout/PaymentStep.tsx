@@ -11,7 +11,6 @@ import { normalizeImageUrl } from "@/lib/image-url"
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
-
 /** Dynamically load the Razorpay checkout.js script (idempotent). */
 function loadRazorpayScript(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -25,6 +24,27 @@ function loadRazorpayScript(): Promise<boolean> {
   })
 }
 
+/** Dynamically load the Stripe.js script (idempotent). */
+function loadStripeScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false)
+    if ((window as any).Stripe) return resolve(true)
+    const script = document.createElement("script")
+    script.src = "https://js.stripe.com/v3/"
+    script.onload = () => resolve(true)
+    script.onerror = () => resolve(false)
+    document.body.appendChild(script)
+  })
+}
+
+/** Format a price value (already in major units) for the given currency. */
+function formatPrice(amount: number, currency: string): string {
+  if (currency === "usd") {
+    return `$${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }
+  return `₹${amount.toLocaleString("en-IN")}`
+}
+
 export function PaymentStep() {
   const router = useRouter()
   const { cart } = useCart()
@@ -33,6 +53,7 @@ export function PaymentStep() {
     paymentMethod,
     setPaymentMethod,
     razorpayKeyId,
+    stripePublishableKey,
     codEnabled,
     codConfig,
     shippingOptions,
@@ -45,12 +66,27 @@ export function PaymentStep() {
     setError,
   } = useCheckout()
 
+  const currency = (cart as any)?.currency_code || "inr"
+  const isInternational = currency !== "inr"
+
   const RAZORPAY_KEY = razorpayKeyId || ""
-  const showRazorpay = Boolean(RAZORPAY_KEY)
-  const showCod = codEnabled
+  // Razorpay and COD are India-only
+  const showRazorpay = !isInternational && Boolean(RAZORPAY_KEY)
+  const showCod = !isInternational && codEnabled
+  // Stripe is for international carts only
+  const showStripe = isInternational && Boolean(stripePublishableKey)
 
   const [localError, setLocalError] = useState<string | null>(null)
   const [rzpLoading, setRzpLoading] = useState(false)
+  const [stripeLoading, setStripeLoading] = useState(false)
+
+  // Stripe state
+  const stripeRef = useRef<any>(null)
+  const stripeElementsRef = useRef<any>(null)
+  const cardElementRef = useRef<any>(null)
+  const cardContainerRef = useRef<HTMLDivElement>(null)
+  const [stripeReady, setStripeReady] = useState(false)
+
   const rzpRef = useRef<any>(null)
 
   useEffect(() => {
@@ -58,15 +94,61 @@ export function PaymentStep() {
     initPayment()
   }, [])
 
-  // Set default selection: Razorpay if key configured, else COD if enabled
+  // Set default payment method selection
   useEffect(() => {
     if (paymentMethod === "system" || !paymentMethod) {
-      if (showRazorpay) setPaymentMethod("razorpay")
+      if (showStripe) setPaymentMethod("stripe")
+      else if (showRazorpay) setPaymentMethod("razorpay")
       else if (showCod) setPaymentMethod("cod")
     }
-  }, [showRazorpay, showCod])
+  }, [showStripe, showRazorpay, showCod])
+
+  // Mount Stripe Card Element when Stripe is available and selected
+  useEffect(() => {
+    if (!showStripe || !stripePublishableKey || paymentMethod !== "stripe") return
+    let mounted = true
+
+    const setupStripe = async () => {
+      const loaded = await loadStripeScript()
+      if (!loaded || !mounted || !cardContainerRef.current) return
+
+      // Reuse existing instance if already created
+      if (!stripeRef.current) {
+        stripeRef.current = (window as any).Stripe(stripePublishableKey)
+      }
+      if (!stripeElementsRef.current) {
+        stripeElementsRef.current = stripeRef.current.elements()
+      }
+      // Destroy existing card element before re-mounting (avoids duplicate mount errors)
+      if (cardElementRef.current) {
+        cardElementRef.current.destroy()
+        cardElementRef.current = null
+      }
+      const card = stripeElementsRef.current.create("card", {
+        style: {
+          base: {
+            fontSize: "15px",
+            color: "#433b35",
+            fontFamily: "'Open Sans', sans-serif",
+            "::placeholder": { color: "#a39585" },
+          },
+          invalid: { color: "#EF4444" },
+        },
+        hidePostalCode: true,
+      })
+      card.mount(cardContainerRef.current)
+      cardElementRef.current = card
+      if (mounted) setStripeReady(true)
+    }
+
+    setupStripe()
+    return () => {
+      mounted = false
+    }
+  }, [showStripe, stripePublishableKey, paymentMethod])
 
   const items = cart?.items || []
+  // Cart totals are in minor units (paise / cents) — divide by 100 for display
   const subtotal = (cart?.subtotal || 0) / 100
   const shippingFee = (cart?.shipping_total || 0) / 100
   const taxAmount = (cart?.tax_total || 0) / 100
@@ -147,9 +229,75 @@ export function PaymentStep() {
     }
   }
 
+  const handleStripePayment = async () => {
+    setLocalError(null)
+    setError(null)
+    setStripeLoading(true)
+
+    try {
+      if (!stripeRef.current || !cardElementRef.current) {
+        throw new Error("Payment form not ready. Please wait and try again.")
+      }
+
+      // Create a PaymentIntent on the backend (reads Stripe secret from store.metadata)
+      const intentRes = await fetch(`${BACKEND_URL}/store/stripe/create-payment-intent`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-publishable-api-key": PUB_KEY,
+        },
+        body: JSON.stringify({
+          amount: (cart?.total || 0) / 100, // cents → dollars (route expects major units)
+          currency: "USD",
+        }),
+      })
+      const intentData = await intentRes.json()
+      if (!intentRes.ok || !intentData.client_secret) {
+        throw new Error(intentData.error || "Failed to initialize payment. Please try again.")
+      }
+
+      // Confirm the card payment using Stripe.js
+      const { error: stripeError } = await stripeRef.current.confirmCardPayment(
+        intentData.client_secret,
+        {
+          payment_method: {
+            card: cardElementRef.current,
+            billing_details: {
+              name: [shippingAddr?.first_name, shippingAddr?.last_name].filter(Boolean).join(" "),
+              email: contactEmail,
+              address: {
+                line1: shippingAddr?.address_1 || "",
+                city: shippingAddr?.city || "",
+                postal_code: shippingAddr?.postal_code || "",
+                country: shippingAddr?.country_code || "",
+              },
+            },
+          },
+        }
+      )
+
+      if (stripeError) {
+        throw new Error(stripeError.message || "Payment failed. Please try again.")
+      }
+
+      // Stripe payment confirmed — complete the Medusa order
+      const { orderId: medusaOrderId } = await completeCheckout()
+      router.push(`/order-confirmation/${medusaOrderId}?clear=1`)
+    } catch (err: any) {
+      setLocalError(err?.message || "Payment failed. Please try again.")
+    } finally {
+      setStripeLoading(false)
+    }
+  }
+
   const handlePlaceOrder = async () => {
     setLocalError(null)
     setError(null)
+
+    if (paymentMethod === "stripe") {
+      await handleStripePayment()
+      return
+    }
 
     if (paymentMethod === "razorpay") {
       await handleRazorpayPayment()
@@ -189,7 +337,8 @@ export function PaymentStep() {
       .join(", ")
   }
 
-  const noPaymentConfigured = !showRazorpay && !showCod
+  const noPaymentConfigured = !showRazorpay && !showCod && !showStripe
+  const anyLoading = isProcessing || rzpLoading || stripeLoading
 
   return (
     <div className="space-y-5">
@@ -223,7 +372,7 @@ export function PaymentStep() {
               </div>
               <div className="text-right flex-shrink-0">
                 <p className="text-sm font-semibold" style={{ color: earth[700] }}>
-                  ₹{((item.unit_price || 0) / 100 * item.quantity).toLocaleString("en-IN")}
+                  {formatPrice((item.unit_price || 0) / 100 * item.quantity, currency)}
                 </p>
                 <p className="text-xs" style={{ color: earth[400] }}>× {item.quantity}</p>
               </div>
@@ -257,12 +406,45 @@ export function PaymentStep() {
         </div>
       </div>
 
-      {/* Payment method — radio selection between what admin has configured */}
+      {/* Payment method selection */}
       <div>
         <p className="text-xs font-semibold mb-2.5 uppercase tracking-wide" style={{ color: earth[500] }}>Payment Method</p>
         <div className="space-y-2">
 
-          {/* Online Payment via Razorpay */}
+          {/* Stripe — international (USD) customers */}
+          {showStripe && (
+            <label
+              className="flex items-start gap-3 p-4 rounded-xl cursor-pointer transition-all"
+              style={{
+                border: `1.5px solid ${paymentMethod === "stripe" ? primary[500] : "#e8e0d8"}`,
+                background: paymentMethod === "stripe" ? primary[50] : bg.card,
+              }}
+            >
+              <input
+                type="radio"
+                name="payment"
+                value="stripe"
+                checked={paymentMethod === "stripe"}
+                onChange={() => setPaymentMethod("stripe")}
+                style={{ accentColor: primary[500], marginTop: 2 }}
+              />
+              <CreditCard className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: paymentMethod === "stripe" ? primary[500] : earth[400] }} />
+              <div className="flex-1">
+                <p className="text-sm font-semibold" style={{ color: earth[700] }}>Card Payment</p>
+                <p className="text-xs mb-3" style={{ color: earth[400] }}>Credit or debit card — secured by Stripe</p>
+                {/* Stripe card element container — only visible when this method is selected */}
+                {paymentMethod === "stripe" && (
+                  <div
+                    ref={cardContainerRef}
+                    className="p-3 rounded-lg"
+                    style={{ background: "#fff", border: "1px solid #e8e0d8" }}
+                  />
+                )}
+              </div>
+            </label>
+          )}
+
+          {/* Razorpay — India (INR) customers */}
           {showRazorpay && (
             <label
               className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all"
@@ -287,7 +469,7 @@ export function PaymentStep() {
             </label>
           )}
 
-          {/* Cash on Delivery */}
+          {/* Cash on Delivery — India only */}
           {showCod && (
             <label
               className="flex items-center gap-3 p-4 rounded-xl cursor-pointer transition-all"
@@ -339,19 +521,19 @@ export function PaymentStep() {
         {[
           { label: "Subtotal", value: subtotal },
           ...(shippingFee > 0 ? [{ label: "Shipping", value: shippingFee }] : []),
-          ...(taxAmount > 0 ? [{ label: "GST", value: taxAmount }] : []),
+          ...(taxAmount > 0 ? [{ label: "Tax", value: taxAmount }] : []),
           ...(discountTotal > 0 ? [{ label: "Discount", value: -discountTotal, green: true }] : []),
         ].map(({ label, value, green }: any) => (
           <div key={label} className="flex justify-between text-sm">
             <span style={{ color: earth[500] }}>{label}</span>
             <span style={{ color: green ? "#10B981" : earth[600], fontWeight: green ? 600 : 400 }}>
-              {green ? "-" : ""}₹{Math.abs(value).toLocaleString("en-IN")}
+              {green ? "-" : ""}{formatPrice(Math.abs(value), currency)}
             </span>
           </div>
         ))}
         <div className="pt-2 flex justify-between font-bold text-base" style={{ borderTop: "1px solid #e8e0d8" }}>
           <span style={{ color: earth[700] }}>Total</span>
-          <span style={{ color: primary[500] }}>₹{grandTotal.toLocaleString("en-IN")}</span>
+          <span style={{ color: primary[500] }}>{formatPrice(grandTotal, currency)}</span>
         </div>
       </div>
 
@@ -379,15 +561,15 @@ export function PaymentStep() {
         </button>
         <button
           onClick={handlePlaceOrder}
-          disabled={isProcessing || rzpLoading || noPaymentConfigured}
+          disabled={anyLoading || noPaymentConfigured || (paymentMethod === "stripe" && !stripeReady && showStripe)}
           className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           style={{ background: `linear-gradient(135deg, ${primary[500]}, #054348)`, fontFamily: fonts.body }}
         >
-          {isProcessing || rzpLoading
-            ? (rzpLoading ? "Opening Payment..." : "Placing Order...")
+          {anyLoading
+            ? (rzpLoading ? "Opening Payment..." : stripeLoading ? "Processing..." : "Placing Order...")
             : paymentMethod === "cod"
               ? `Place Order · ₹${grandTotal.toLocaleString("en-IN")} (COD)`
-              : `Pay ₹${grandTotal.toLocaleString("en-IN")}`}
+              : `Pay ${formatPrice(grandTotal, currency)}`}
         </button>
       </div>
     </div>
