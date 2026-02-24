@@ -355,11 +355,11 @@ export function Homepage({
     // Default CSS order values (spaced by 10 to allow trust badge insertion between new_arrivals and bestsellers)
     const defaults: Record<string, number> = {
       hero: 10,
+      trust: 15,
       categories: 20,
       featured: 30,
       deals: 40,
       new_arrivals: 50,
-      trust: 55,
       bestsellers: 60,
       testimonials: 70,
       newsletter: 80,
@@ -367,12 +367,8 @@ export function Homepage({
     if (!sectionConfig) return defaults[type] ?? 100
 
     if (type === "trust") {
-      // Trust badges always appear after new_arrivals
-      const na = sectionConfig.find((c) => c.type === "new_arrivals")
-      if (na) return na.order * 10 + 5
-      const bs = sectionConfig.find((c) => c.type === "bestsellers")
-      if (bs) return bs.order * 10 - 5
-      return 55
+      // Trust badges are always pinned directly below the hero slider
+      return 15
     }
 
     const s = sectionConfig.find((c) => c.type === type)
@@ -662,11 +658,11 @@ export function Homepage({
                   <div key={badge.id} className="flex items-center gap-3.5">
                     <div
                       className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: primary[50] }}
+                      style={{ background: primary[500] }}
                     >
                       <Icon
                         className="w-5 h-5"
-                        style={{ color: primary[500] }}
+                        style={{ color: "#ffffff" }}
                       />
                     </div>
                     <div>

@@ -34,8 +34,8 @@ const BACKEND_URL =
 const TRUST_BADGES: TrustBadge[] = [
   {
     id: "badge-1",
-    label: "Free Shipping",
-    sublabel: "On orders above ₹999",
+    label: "Free Delivery",
+    sublabel: "On all prepaid orders",
     icon: "truck",
   },
   {
