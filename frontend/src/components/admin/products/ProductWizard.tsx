@@ -12,6 +12,7 @@ import {
   GripVertical,
 } from "lucide-react"
 import type { ProductDetail, CategoryOption, ProductWizardProps } from "@/types/admin-product"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 import { normalizeImageUrl } from "@/lib/image-url"
 
 const c = {
@@ -142,16 +143,11 @@ function SelectField({
         {label}
         {required && <span style={{ color: c.error }}> *</span>}
       </label>
-      <select
+      <ThemeSelect
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all"
-        style={{ borderColor: c.earth300, fontFamily: fonts.body }}
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
+        onChange={onChange}
+        options={options}
+      />
     </div>
   )
 }

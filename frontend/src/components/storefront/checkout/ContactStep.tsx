@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useAuth } from "@/providers/auth-provider"
 import { useCheckout } from "@/providers/checkout-provider"
 import { primary, earth, bg, fonts } from "@/lib/theme"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 
 const COUNTRY_CODES = [
   { code: "+91", country: "India", flag: "🇮🇳" },
@@ -116,18 +117,12 @@ export function ContactStep() {
           )}
         </label>
         <div className="flex gap-2">
-          <select
+          <ThemeSelect
             value={countryCode}
-            onChange={(e) => setCountryCode(e.target.value)}
-            className="px-2 py-3 rounded-xl text-sm outline-none transition-all flex-shrink-0"
-            style={{ border: `1.5px solid #e8e0d8`, color: earth[700], background: bg.card, width: 100 }}
-          >
-            {COUNTRY_CODES.map((c) => (
-              <option key={c.code} value={c.code}>
-                {c.flag} {c.code}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => setCountryCode(v)}
+            options={COUNTRY_CODES.map((c) => ({ value: c.code, label: `${c.flag} ${c.code}` }))}
+            style={{ width: 100, flexShrink: 0 }}
+          />
           <div className="flex-1 relative">
             <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: earth[300] }} />
             <input

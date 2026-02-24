@@ -31,6 +31,7 @@ import type {
   TargetAudience,
   NotificationsIntegrationConfig,
 } from "@/types/admin-notifications"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 
 const c = {
   primary500: primary[500],
@@ -1434,28 +1435,28 @@ function InAppTab({
             </div>
             <div>
               <label style={labelStyle}>Target Audience</label>
-              <select
+              <ThemeSelect
                 value={audience}
-                onChange={(e) => setAudience(e.target.value as TargetAudience)}
-                style={inputStyle}
-              >
-                <option value="all">All Users</option>
-                <option value="new">New Users</option>
-                <option value="returning">Returning Users</option>
-                <option value="vip">VIP Users</option>
-              </select>
+                onChange={(v) => setAudience(v as TargetAudience)}
+                options={[
+                  { value: "all", label: "All Users" },
+                  { value: "new", label: "New Users" },
+                  { value: "returning", label: "Returning Users" },
+                  { value: "vip", label: "VIP Users" },
+                ]}
+              />
             </div>
             <div>
               <label style={labelStyle}>Display Type</label>
-              <select
+              <ThemeSelect
                 value={type}
-                onChange={(e) => setType(e.target.value as AnnouncementType)}
-                style={inputStyle}
-              >
-                <option value="banner">Banner (top of page)</option>
-                <option value="modal">Modal (popup)</option>
-                <option value="toast">Toast (notification)</option>
-              </select>
+                onChange={(v) => setType(v as AnnouncementType)}
+                options={[
+                  { value: "banner", label: "Banner (top of page)" },
+                  { value: "modal", label: "Modal (popup)" },
+                  { value: "toast", label: "Toast (notification)" },
+                ]}
+              />
             </div>
             <div>
               <label style={labelStyle}>Start Date (optional)</label>

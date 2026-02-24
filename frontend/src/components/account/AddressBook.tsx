@@ -5,6 +5,7 @@ import { MapPin, Plus, Edit2, Trash2, CheckCircle2, Loader2, X } from "lucide-re
 import { useDashboardData } from "@/hooks/useDashboardData"
 import { primary, earth, bg, fonts } from "@/lib/theme"
 import type { Address } from "@/types/dashboard"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 
 const COUNTRY_OPTIONS = [
   { code: "in", name: "India" },
@@ -195,10 +196,12 @@ export function AddressBook() {
                 <div>
                   <label className="block text-xs font-semibold mb-1" style={{ color: earth[600] }}>State *</label>
                   {form.country === "in" ? (
-                    <select style={{ ...inputStyle, appearance: "none" }} value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })}>
-                      <option value="">Select state</option>
-                      {INDIA_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                    <ThemeSelect
+                      value={form.state}
+                      onChange={(v) => setForm({ ...form, state: v })}
+                      options={[{ value: "", label: "Select state" }, ...INDIA_STATES.map((s) => ({ value: s, label: s }))]}
+                      placeholder="Select state"
+                    />
                   ) : (
                     <input style={inputStyle} value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} placeholder="State" />
                   )}
@@ -211,9 +214,11 @@ export function AddressBook() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold mb-1" style={{ color: earth[600] }}>Country</label>
-                  <select style={{ ...inputStyle, appearance: "none" }} value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}>
-                    {COUNTRY_OPTIONS.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
-                  </select>
+                  <ThemeSelect
+                    value={form.country}
+                    onChange={(v) => setForm({ ...form, country: v })}
+                    options={COUNTRY_OPTIONS.map((c) => ({ value: c.code, label: c.name }))}
+                  />
                 </div>
               </div>
               <div>

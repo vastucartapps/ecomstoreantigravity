@@ -11,6 +11,7 @@ import type {
 } from "@/types/storefront"
 import { ProductCard } from "./ProductCard"
 import { primary, secondary, earth, bg, gradients, fonts } from "@/lib/theme"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 
 function FilterSidebar({
   filterGroups,
@@ -401,23 +402,17 @@ export function CategoryListing({
               <SlidersHorizontal className="w-4 h-4" /> Filters
             </button>
             )}
-            <select
+            <ThemeSelect
               value={currentSort}
-              onChange={(e) => onSortChange?.(e.target.value)}
-              className="px-4 py-2.5 rounded-xl text-sm border outline-none"
+              onChange={(v) => onSortChange?.(v)}
+              options={sortOptions.map((opt) => ({ value: opt.value, label: opt.label }))}
               style={{
                 borderColor: "#e8e0d8",
                 color: earth[600],
                 background: bg.card,
                 fontFamily: fonts.body,
               }}
-            >
-              {sortOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+            />
           </div>
         </div>
 

@@ -20,6 +20,7 @@ import {
   FileText,
   AlertCircle,
 } from "lucide-react"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 import type {
   AdminBookingsProps,
   BookingRow,
@@ -921,27 +922,16 @@ const BookingDetailView = ({
           </h3>
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <StatusBadge status={booking.status} />
-            <select
+            <ThemeSelect
               value={selectedStatus}
-              onChange={(e) =>
-                setSelectedStatus(e.target.value as BookingStatus)
-              }
-              style={{
-                padding: "10px 12px",
-                borderRadius: "8px",
-                border: `1px solid ${c.earth300}`,
-                fontSize: "14px",
-                fontFamily: fonts.body,
-                backgroundColor: c.card,
-                color: c.earth700,
-                cursor: "pointer",
-              }}
-            >
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+              onChange={(v) => setSelectedStatus(v as BookingStatus)}
+              options={[
+                { value: "pending", label: "Pending" },
+                { value: "confirmed", label: "Confirmed" },
+                { value: "completed", label: "Completed" },
+                { value: "cancelled", label: "Cancelled" },
+              ]}
+            />
             <button
               onClick={() => onUpdateStatus(booking.id, selectedStatus)}
               style={{
@@ -1338,30 +1328,20 @@ const SettingsView = ({
               >
                 Slot Duration
               </label>
-              <select
-                value={config.slotDuration}
-                onChange={(e) =>
+              <ThemeSelect
+                value={String(config.slotDuration)}
+                onChange={(v) =>
                   setConfig({
                     ...config,
-                    slotDuration: parseInt(e.target.value) as 30 | 45 | 60,
+                    slotDuration: parseInt(v) as 30 | 45 | 60,
                   })
                 }
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: "8px",
-                  border: `1px solid ${c.earth300}`,
-                  fontSize: "14px",
-                  fontFamily: fonts.body,
-                  backgroundColor: c.card,
-                  color: c.earth700,
-                  cursor: "pointer",
-                }}
-              >
-                <option value={30}>30 minutes</option>
-                <option value={45}>45 minutes</option>
-                <option value={60}>60 minutes</option>
-              </select>
+                options={[
+                  { value: "30", label: "30 minutes" },
+                  { value: "45", label: "45 minutes" },
+                  { value: "60", label: "60 minutes" },
+                ]}
+              />
             </div>
 
             {/* Buffer & Max Bookings */}

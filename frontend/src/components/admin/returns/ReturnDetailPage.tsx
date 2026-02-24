@@ -20,6 +20,7 @@ import type {
   RefundType,
   RefundMethod,
 } from "@/types/admin-return"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 
 // Brand constants
 const c = {
@@ -991,24 +992,14 @@ export function ReturnDetailPage({
                   >
                     Refund Method
                   </label>
-                  <select
+                  <ThemeSelect
                     value={refundMethod}
-                    onChange={(e) => setRefundMethod(e.target.value as RefundMethod)}
-                    style={{
-                      width: "100%",
-                      fontFamily: fonts.body,
-                      fontSize: "0.9375rem",
-                      color: c.earth700,
-                      backgroundColor: c.bg,
-                      border: `1px solid ${c.subtle}`,
-                      borderRadius: "0.375rem",
-                      padding: "0.75rem",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <option value="original_payment">Original Payment Method</option>
-                    <option value="store_credit">Store Credit (Gift Card)</option>
-                  </select>
+                    onChange={(v) => setRefundMethod(v as RefundMethod)}
+                    options={[
+                      { value: "original_payment", label: "Original Payment Method" },
+                      { value: "store_credit", label: "Store Credit (Gift Card)" },
+                    ]}
+                  />
                 </div>
 
                 {/* Action Buttons */}

@@ -37,6 +37,7 @@ import {
   shadows,
 } from "@/lib/theme"
 import { normalizeImageUrl } from "@/lib/image-url"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 import type {
   AdminEcosystemAdsProps,
   AdTab,
@@ -363,16 +364,15 @@ function BannerForm({
             <label style={{ color: earth[600], fontFamily: fonts.body }} className="block text-sm font-medium mb-1">
               Status
             </label>
-            <select
+            <ThemeSelect
               value={form.status}
-              onChange={(e) => setForm({ ...form, status: e.target.value as BannerStatus })}
-              className="w-full px-3 py-2 rounded-lg border text-sm"
-              style={inputStyle}
-            >
-              <option value="draft">Draft</option>
-              <option value="scheduled">Scheduled</option>
-              <option value="live">Live</option>
-            </select>
+              onChange={(v) => setForm({ ...form, status: v as BannerStatus })}
+              options={[
+                { value: "draft", label: "Draft" },
+                { value: "scheduled", label: "Scheduled" },
+                { value: "live", label: "Live" },
+              ]}
+            />
           </div>
           <div>
             <label style={{ color: earth[600], fontFamily: fonts.body }} className="block text-sm font-medium mb-1">
@@ -1060,18 +1060,15 @@ function SlotForm({
           className="flex-1 min-w-[140px] px-3 py-1.5 rounded-lg border text-sm"
           style={{ borderColor: earth[300], color: earth[700], fontFamily: fonts.body }}
         />
-        <select
+        <ThemeSelect
           value={ratio}
-          onChange={(e) => setRatio(e.target.value as AspectRatio)}
-          className="px-3 py-1.5 rounded-lg border text-sm"
-          style={{ borderColor: earth[300], color: earth[700], fontFamily: fonts.mono }}
-        >
-          {ALL_RATIOS.map((r) => (
-            <option key={r} value={r}>
-              {r} ({ratioLabels[r].label})
-            </option>
-          ))}
-        </select>
+          onChange={(v) => setRatio(v as AspectRatio)}
+          options={ALL_RATIOS.map((r) => ({
+            value: r,
+            label: `${r} (${ratioLabels[r].label})`,
+          }))}
+          size="sm"
+        />
         <button
           onClick={handleSubmit}
           disabled={isSubmitting || !name.trim()}
@@ -1210,25 +1207,18 @@ function SiteCard({
                       </button>
                     </div>
                   ) : (
-                    <select
-                      onChange={(e) => {
-                        if (e.target.value) onAssign?.(slot.id, e.target.value)
-                      }}
-                      defaultValue=""
-                      className="mt-1 text-xs px-2 py-1 rounded border"
-                      style={{ borderColor: earth[300], color: earth[600], fontFamily: fonts.body }}
-                    >
-                      <option value="">Assign banner...</option>
-                      {banners
-                        .filter(
-                          (b) => b.is_active
-                        )
-                        .map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.name}
-                          </option>
-                        ))}
-                    </select>
+                    <ThemeSelect
+                      value=""
+                      onChange={(v) => { if (v) onAssign?.(slot.id, v) }}
+                      options={[
+                        { value: "", label: "Assign banner..." },
+                        ...banners
+                          .filter((b) => b.is_active)
+                          .map((b) => ({ value: b.id, label: b.name })),
+                      ]}
+                      placeholder="Assign banner..."
+                      size="sm"
+                    />
                   )}
                 </div>
                 <div
@@ -1519,18 +1509,12 @@ function AnalyticsTab({
     <div>
       {/* Period selector */}
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-        <select
+        <ThemeSelect
           value={selectedPeriod}
-          onChange={(e) => handlePeriodChange(e.target.value)}
-          className="px-3 py-2 rounded-lg border text-sm"
-          style={{ borderColor: earth[300], color: earth[700], fontFamily: fonts.body }}
-        >
-          {periodOptions.map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => handlePeriodChange(v)}
+          options={periodOptions.map((p) => ({ value: p.value, label: p.label }))}
+          size="sm"
+        />
         {isRefreshing && (
           <Loader2 size={16} className="animate-spin" style={{ color: primary[400] }} />
         )}
@@ -2061,37 +2045,33 @@ function SocialTab({
                 >
                   Select Banner
                 </label>
-                <select
+                <ThemeSelect
                   value={publishForm.bannerId}
-                  onChange={(e) => {
-                    const b = banners.find((bn) => bn.id === e.target.value)
+                  onChange={(v) => {
+                    const b = banners.find((bn) => bn.id === v)
                     setPublishForm({
                       ...publishForm,
-                      bannerId: e.target.value,
+                      bannerId: v,
                       title: b?.name || publishForm.title,
                       headline: b?.headline || publishForm.headline,
                       linkUrl: b?.cta_url || publishForm.linkUrl,
                       ctaText: b?.cta_text || publishForm.ctaText,
                     })
                   }}
-                  className="w-full px-3 py-2 rounded-lg border text-sm"
-                  style={{ borderColor: earth[300], color: earth[700], fontFamily: fonts.body }}
-                >
-                  <option value="">Choose a banner...</option>
-                  {banners
-                    .filter(
-                      (b) =>
-                        b.is_active &&
-                        b.creatives.some(
-                          (cr) => cr.ratio === platformMeta[publishForm.platform].ratio
-                        )
-                    )
-                    .map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                </select>
+                  options={[
+                    { value: "", label: "Choose a banner..." },
+                    ...banners
+                      .filter(
+                        (b) =>
+                          b.is_active &&
+                          b.creatives.some(
+                            (cr) => cr.ratio === platformMeta[publishForm.platform].ratio
+                          )
+                      )
+                      .map((b) => ({ value: b.id, label: b.name })),
+                  ]}
+                  placeholder="Choose a banner..."
+                />
               </div>
 
               {/* Rich metadata fields */}

@@ -27,6 +27,7 @@ import {
   Zap,
   XCircle,
 } from "lucide-react"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 import type {
   AdminIntegrationsProps,
   IntegrationTab,
@@ -946,25 +947,18 @@ function SEOSettingsPanel({
                 backgroundColor: c.bg,
               }}
             />
-            <select
+            <ThemeSelect
               value={newTag.platform}
-              onChange={(e) =>
-                setNewTag((prev) => ({ ...prev, platform: e.target.value }))
-              }
-              className="px-3 py-1.5 rounded-md text-xs border outline-none"
-              style={{
-                borderColor: c.primary100,
-                color: c.earth700,
-                fontFamily: fonts.body,
-                backgroundColor: c.bg,
-              }}
-            >
-              <option>Google</option>
-              <option>Meta</option>
-              <option>TikTok</option>
-              <option>Pinterest</option>
-              <option>Other</option>
-            </select>
+              onChange={(v) => setNewTag((prev) => ({ ...prev, platform: v }))}
+              options={[
+                { value: "Google", label: "Google" },
+                { value: "Meta", label: "Meta" },
+                { value: "TikTok", label: "TikTok" },
+                { value: "Pinterest", label: "Pinterest" },
+                { value: "Other", label: "Other" },
+              ]}
+              size="sm"
+            />
             <input
               type="text"
               value={newTag.pixelId}

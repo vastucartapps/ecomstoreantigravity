@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { ArrowLeft, Upload, X, ExternalLink } from "lucide-react"
 import type { Category, CategoryFormProps, CategoryGoogleMerchant } from "@/types/admin-category"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 import { normalizeImageUrl } from "@/lib/image-url"
 
 const c = {
@@ -345,26 +346,19 @@ export function CategoryForm({
                 >
                   Parent Category
                 </label>
-                <select
+                <ThemeSelect
                   value={formData.parentId}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, parentId: e.target.value }))
-                  }
-                  className="w-full px-4 py-2 rounded-lg transition-colors"
-                  style={inputStyle}
-                  onFocus={handleFocus}
-                  onBlur={handleBlur}
-                >
-                  <option value="">None (Top Level)</option>
-                  {parentOptions
-                    .filter((opt) => opt.id !== category?.id) // prevent self-parenting
-                    .map((opt) => (
-                      <option key={opt.id} value={opt.id}>
-                        {"— ".repeat(opt.depth)}
-                        {opt.name}
-                      </option>
-                    ))}
-                </select>
+                  onChange={(v) => setFormData((prev) => ({ ...prev, parentId: v }))}
+                  options={[
+                    { value: "", label: "None (Top Level)" },
+                    ...parentOptions
+                      .filter((opt) => opt.id !== category?.id)
+                      .map((opt) => ({
+                        value: opt.id,
+                        label: "— ".repeat(opt.depth) + opt.name,
+                      })),
+                  ]}
+                />
               </div>
 
               {/* URL Slug */}

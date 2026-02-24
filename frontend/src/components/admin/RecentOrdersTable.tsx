@@ -1,6 +1,7 @@
 "use client"
 
 import type { RecentOrder, OrderStatus } from "@/types/admin-dashboard"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 
 const c = {
   primary500: "#013f47",
@@ -199,30 +200,15 @@ export function RecentOrdersTable({
 
                           {/* Status dropdown */}
                           <td className="py-4 pr-4">
-                            <select
+                            <ThemeSelect
                               value={order.status}
-                              onChange={(e) =>
-                                onUpdateOrderStatus?.(order.id, e.target.value as OrderStatus)
-                              }
-                              className="rounded px-2 py-1 text-xs font-semibold"
-                              style={{
-                                fontFamily: fonts.body,
-                                backgroundColor: statusStyle.bg,
-                                color: statusStyle.text,
-                                border: "none",
-                                outline: "none",
-                                cursor: "pointer",
-                              }}
-                            >
-                              {allStatuses.map((s) => {
+                              onChange={(v) => onUpdateOrderStatus?.(order.id, v as OrderStatus)}
+                              options={allStatuses.map((s) => {
                                 const st = getStatusStyle(s)
-                                return (
-                                  <option key={s} value={s}>
-                                    {st.label}
-                                  </option>
-                                )
+                                return { value: s, label: st.label }
                               })}
-                            </select>
+                              size="sm"
+                            />
                           </td>
 
                           {/* Date */}

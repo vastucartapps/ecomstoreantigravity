@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 import type {
   OrdersTableProps,
   OrderRow,
@@ -768,24 +769,16 @@ export function OrdersTable({
               <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <span style={{ fontSize: "14px", color: c.earth600 }}>Rows per page:</span>
-                  <select
-                    value={pagination.perPage}
-                    onChange={(e) => onChangePerPage?.(Number(e.target.value))}
-                    style={{
-                      padding: "6px 12px",
-                      fontSize: "14px",
-                      border: `1px solid ${c.earth300}`,
-                      borderRadius: "6px",
-                      backgroundColor: c.card,
-                      color: c.earth700,
-                      fontFamily: fonts.body,
-                      cursor: "pointer",
-                    }}
-                  >
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                  </select>
+                  <ThemeSelect
+                    value={String(pagination.perPage)}
+                    onChange={(v) => onChangePerPage?.(Number(v))}
+                    options={[
+                      { value: "10", label: "10" },
+                      { value: "25", label: "25" },
+                      { value: "50", label: "50" },
+                    ]}
+                    size="sm"
+                  />
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

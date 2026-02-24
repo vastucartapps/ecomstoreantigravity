@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { adminFetch } from "@/lib/medusa"
 import { primary, earth, fonts, semantic } from "@/lib/theme"
 import { Save, Store, Mail, Phone, Globe, Key, RefreshCw } from "lucide-react"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 
 interface StoreSettings {
   name: string
@@ -295,35 +296,28 @@ export default function AdminSettingsPage() {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
           <Field label="Default Currency">
-            <div style={{ position: "relative" }}>
-              <Globe
-                size={15}
-                color={c.muted}
-                style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)" }}
-              />
-              <select
-                style={{ ...inputStyle, paddingLeft: "32px", cursor: "pointer" }}
-                value={settings.defaultCurrency}
-                onChange={(e) => setSettings((s) => ({ ...s, defaultCurrency: e.target.value }))}
-              >
-                <option value="INR">INR — Indian Rupee</option>
-                <option value="USD">USD — US Dollar</option>
-                <option value="EUR">EUR — Euro</option>
-                <option value="GBP">GBP — British Pound</option>
-              </select>
-            </div>
+            <ThemeSelect
+              value={settings.defaultCurrency}
+              onChange={(v) => setSettings((s) => ({ ...s, defaultCurrency: v }))}
+              options={[
+                { value: "INR", label: "INR — Indian Rupee" },
+                { value: "USD", label: "USD — US Dollar" },
+                { value: "EUR", label: "EUR — Euro" },
+                { value: "GBP", label: "GBP — British Pound" },
+              ]}
+            />
           </Field>
           <Field label="Timezone">
-            <select
-              style={{ ...inputStyle, cursor: "pointer" }}
+            <ThemeSelect
               value={settings.timezone}
-              onChange={(e) => setSettings((s) => ({ ...s, timezone: e.target.value }))}
-            >
-              <option value="Asia/Kolkata">Asia/Kolkata (IST, UTC+5:30)</option>
-              <option value="UTC">UTC</option>
-              <option value="America/New_York">America/New_York (EST)</option>
-              <option value="Europe/London">Europe/London (GMT)</option>
-            </select>
+              onChange={(v) => setSettings((s) => ({ ...s, timezone: v }))}
+              options={[
+                { value: "Asia/Kolkata", label: "Asia/Kolkata (IST, UTC+5:30)" },
+                { value: "UTC", label: "UTC" },
+                { value: "America/New_York", label: "America/New_York (EST)" },
+                { value: "Europe/London", label: "Europe/London (GMT)" },
+              ]}
+            />
           </Field>
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>

@@ -21,6 +21,7 @@ import type {
   OrderItem,
   OrderStatus,
 } from "@/types/admin-order"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 
 const c = {
   primary500: "#013f47",
@@ -513,26 +514,20 @@ export function OrderDetailPage({
                     >
                       New Status
                     </label>
-                    <select
+                    <ThemeSelect
                       value={selectedStatus}
-                      onChange={(e) => setSelectedStatus(e.target.value as OrderStatus)}
-                      className="w-full px-4 py-2 rounded-lg border transition-colors"
-                      style={{
-                        borderColor: c.subtle,
-                        color: c.earth700,
-                        fontFamily: fonts.body,
-                        backgroundColor: c.card,
-                      }}
-                    >
-                      <option value="processing">Processing</option>
-                      <option value="accepted">Accepted</option>
-                      <option value="shipped">Shipped</option>
-                      <option value="in_transit">In Transit</option>
-                      <option value="out_for_delivery">Out for Delivery</option>
-                      <option value="delivered">Delivered</option>
-                      <option value="cancelled">Cancelled</option>
-                      <option value="returned">Returned</option>
-                    </select>
+                      onChange={(v) => setSelectedStatus(v as OrderStatus)}
+                      options={[
+                        { value: "processing", label: "Processing" },
+                        { value: "accepted", label: "Accepted" },
+                        { value: "shipped", label: "Shipped" },
+                        { value: "in_transit", label: "In Transit" },
+                        { value: "out_for_delivery", label: "Out for Delivery" },
+                        { value: "delivered", label: "Delivered" },
+                        { value: "cancelled", label: "Cancelled" },
+                        { value: "returned", label: "Returned" },
+                      ]}
+                    />
                   </div>
 
                   {showTrackingFields && (

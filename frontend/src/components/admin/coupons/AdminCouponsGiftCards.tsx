@@ -27,6 +27,7 @@ import type {
   GiftCardStatus,
   GiftCardTransaction,
 } from "@/types/admin-coupon"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 
 const c = {
   primary500: "#013f47",
@@ -655,14 +656,14 @@ function CouponForm({
             </div>
             <div>
               <label style={labelStyle}>Currency</label>
-              <select
+              <ThemeSelect
                 value={currency}
-                onChange={(e) => setCurrency(e.target.value as "INR" | "USD")}
-                style={inputStyle}
-              >
-                <option value="INR">INR (₹)</option>
-                <option value="USD">USD ($)</option>
-              </select>
+                onChange={(v) => setCurrency(v as "INR" | "USD")}
+                options={[
+                  { value: "INR", label: "INR (₹)" },
+                  { value: "USD", label: "USD ($)" },
+                ]}
+              />
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -1622,14 +1623,14 @@ function CreateGiftCardModal({ onClose, onCreate }: CreateGiftCardModalProps) {
               >
                 Currency
               </label>
-              <select
+              <ThemeSelect
                 value={currency}
-                onChange={(e) => setCurrency(e.target.value as "INR" | "USD")}
-                style={inputStyle}
-              >
-                <option value="INR">INR (₹)</option>
-                <option value="USD">USD ($)</option>
-              </select>
+                onChange={(v) => setCurrency(v as "INR" | "USD")}
+                options={[
+                  { value: "INR", label: "INR (₹)" },
+                  { value: "USD", label: "USD ($)" },
+                ]}
+              />
             </div>
           </div>
 

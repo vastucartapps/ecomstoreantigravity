@@ -11,9 +11,9 @@ import {
   Copy,
   Trash2,
   Star,
-  ChevronDown,
   X,
 } from "lucide-react"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 import type {
   Product,
   CategoryOption,
@@ -254,60 +254,41 @@ export function ProductList({
           {/* Filters */}
           <div className="flex flex-wrap gap-2">
             {/* Status Filter */}
-            <div className="relative">
-              <select
-                value={filters.status || "all"}
-                onChange={(e) =>
-                  onChangeFilters?.({ status: e.target.value as ProductFilters["status"] })
-                }
-                className="appearance-none rounded-lg border py-2 pl-3 pr-10 text-sm focus:outline-none focus:ring-2"
-                style={{ borderColor: c.subtle, backgroundColor: c.card, color: c.earth700 }}
-              >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-                <option value="draft">Draft</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: c.earth400 }} />
-            </div>
+            <ThemeSelect
+              value={filters.status || "all"}
+              onChange={(v) => onChangeFilters?.({ status: v as ProductFilters["status"] })}
+              options={[
+                { value: "all", label: "All Status" },
+                { value: "active", label: "Active" },
+                { value: "inactive", label: "Inactive" },
+                { value: "draft", label: "Draft" },
+              ]}
+              size="sm"
+            />
 
             {/* Category Filter */}
-            <div className="relative">
-              <select
-                value={filters.category || "all"}
-                onChange={(e) =>
-                  onChangeFilters?.({ category: e.target.value === "all" ? "" : e.target.value })
-                }
-                className="appearance-none rounded-lg border py-2 pl-3 pr-10 text-sm focus:outline-none focus:ring-2"
-                style={{ borderColor: c.subtle, backgroundColor: c.card, color: c.earth700 }}
-              >
-                <option value="all">All Categories</option>
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: c.earth400 }} />
-            </div>
+            <ThemeSelect
+              value={filters.category || "all"}
+              onChange={(v) => onChangeFilters?.({ category: v === "all" ? "" : v })}
+              options={[
+                { value: "all", label: "All Categories" },
+                ...categories.map((cat) => ({ value: cat.id, label: cat.name })),
+              ]}
+              size="sm"
+            />
 
             {/* Stock Filter */}
-            <div className="relative">
-              <select
-                value={filters.stockLevel || "all"}
-                onChange={(e) =>
-                  onChangeFilters?.({ stockLevel: e.target.value as ProductFilters["stockLevel"] })
-                }
-                className="appearance-none rounded-lg border py-2 pl-3 pr-10 text-sm focus:outline-none focus:ring-2"
-                style={{ borderColor: c.subtle, backgroundColor: c.card, color: c.earth700 }}
-              >
-                <option value="all">All Stock</option>
-                <option value="in_stock">In Stock</option>
-                <option value="low_stock">Low Stock</option>
-                <option value="out_of_stock">Out of Stock</option>
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: c.earth400 }} />
-            </div>
+            <ThemeSelect
+              value={filters.stockLevel || "all"}
+              onChange={(v) => onChangeFilters?.({ stockLevel: v as ProductFilters["stockLevel"] })}
+              options={[
+                { value: "all", label: "All Stock" },
+                { value: "in_stock", label: "In Stock" },
+                { value: "low_stock", label: "Low Stock" },
+                { value: "out_of_stock", label: "Out of Stock" },
+              ]}
+              size="sm"
+            />
           </div>
 
           {/* View Toggle */}

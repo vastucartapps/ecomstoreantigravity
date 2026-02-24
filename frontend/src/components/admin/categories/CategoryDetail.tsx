@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Edit, Trash2, Eye, EyeOff, Package, Calendar, Hash } from "lucide-react"
 import type { Category, CategoryDetailProps, CategoryOption } from "@/types/admin-category"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 
 const c = {
   primary500: "#013f47",
@@ -378,25 +379,18 @@ export function CategoryDetail({
                 >
                   Reassign products to:
                 </label>
-                <select
+                <ThemeSelect
                   value={reassignToCategoryId}
-                  onChange={(e) => setReassignToCategoryId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg text-sm"
-                  style={{
-                    border: `1px solid ${c.earth300}`,
-                    backgroundColor: c.card,
-                    color: c.earth700,
-                    fontFamily: fonts.body,
-                  }}
-                >
-                  <option value="">— Leave unlinked —</option>
-                  {reassignOptions.map((opt) => (
-                    <option key={opt.id} value={opt.id}>
-                      {"— ".repeat(opt.depth)}
-                      {opt.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setReassignToCategoryId(v)}
+                  options={[
+                    { value: "", label: "— Leave unlinked —" },
+                    ...reassignOptions.map((opt) => ({
+                      value: opt.id,
+                      label: "— ".repeat(opt.depth) + opt.name,
+                    })),
+                  ]}
+                  size="sm"
+                />
               </div>
             ) : (
               <p className="text-sm mb-3" style={{ color: c.earth600, fontFamily: fonts.body }}>

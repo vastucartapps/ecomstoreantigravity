@@ -5,6 +5,7 @@ import { Home, Briefcase, MapPin, Plus, ArrowRight, ArrowLeft } from "lucide-rea
 import { useAuth } from "@/providers/auth-provider"
 import { useCheckout } from "@/providers/checkout-provider"
 import { primary, secondary, earth, bg, fonts } from "@/lib/theme"
+import { ThemeSelect } from "@/components/ui/ThemeSelect"
 import type { AddressPayload } from "@/types/checkout"
 
 const INDIAN_STATES = [
@@ -77,10 +78,12 @@ function AddressFormFields({ data, onChange, prefix = "checkout" }: {
       </div>
       <div>
         <label htmlFor={`${prefix}-country`} className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>Country *</label>
-        <select id={`${prefix}-country`} name="country_code" autoComplete="country"
-          className={inputCls} style={inputStyle} value={data.country} onChange={(e) => onChange({ ...data, country: e.target.value })}>
-          {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}
-        </select>
+        <ThemeSelect
+          value={data.country}
+          onChange={(v) => onChange({ ...data, country: v })}
+          options={COUNTRIES.map((c) => ({ value: c.code, label: c.label }))}
+          style={inputStyle}
+        />
       </div>
       <div className="sm:col-span-2">
         <label htmlFor={`${prefix}-address1`} className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>Street Address *</label>
@@ -104,11 +107,13 @@ function AddressFormFields({ data, onChange, prefix = "checkout" }: {
       {data.country === "in" ? (
         <div>
           <label htmlFor={`${prefix}-state`} className="block text-xs font-semibold mb-1.5" style={{ color: earth[600] }}>State *</label>
-          <select id={`${prefix}-state`} name="province" autoComplete="address-level1"
-            className={inputCls} style={inputStyle} value={data.state} onChange={(e) => onChange({ ...data, state: e.target.value })}>
-            <option value="">Select state</option>
-            {INDIAN_STATES.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <ThemeSelect
+            value={data.state}
+            onChange={(v) => onChange({ ...data, state: v })}
+            options={[{ value: "", label: "Select state" }, ...INDIAN_STATES.map((s) => ({ value: s, label: s }))]}
+            placeholder="Select state"
+            style={inputStyle}
+          />
         </div>
       ) : (
         <div>
