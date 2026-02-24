@@ -244,17 +244,29 @@ export function useAdminIntegrations() {
 
   /**
    * Save updated config fields for an integration.
-   * Does NOT change status — admin must re-test.
+   * If the fields pass client-side validation, automatically marks the
+   * integration as connected + active so the admin does not need to click
+   * the toggle separately after entering their IDs.
    */
   async function saveIntegrationConfig(
     integrationId: string,
     fields: Record<string, string>,
     currentConfig: IntegrationsConfig
   ): Promise<IntegrationsConfig> {
+    const valid = validateIntegration(integrationId, fields)
     const updated: IntegrationsConfig = {
       ...currentConfig,
       integrations: currentConfig.integrations.map((i) =>
-        i.id === integrationId ? { ...i, configFields: fields } : i
+        i.id === integrationId
+          ? {
+              ...i,
+              configFields: fields,
+              // Auto-connect when credentials are valid; preserve existing state otherwise
+              ...(valid
+                ? { isConnected: true, status: "active" as const }
+                : {}),
+            }
+          : i
       ),
     }
     await writeConfig(updated)

@@ -8,6 +8,8 @@ import type {
   FooterConfig,
   HeroSlide,
   MarketingSlide,
+  AboutConfig,
+  ContactConfig,
 } from "@/types/admin-storefront"
 
 const DEFAULT_ANNOUNCEMENT: Announcement = {
@@ -130,6 +132,47 @@ const DEFAULT_FOOTER: FooterConfig = {
   copyrightText: `© ${new Date().getFullYear()} VastuCart. All rights reserved.`,
   showSocialLinks: true,
 }
+
+const DEFAULT_ABOUT_CONFIG: AboutConfig = {
+  heroTagline: "Bringing Sacred India to Every Home",
+  heroSubtext: "Authentic spiritual products, sourced directly from artisans across India",
+  stats: [
+    { label: "Years of Trust", value: "10", suffix: "+" },
+    { label: "Artisan Partners", value: "200", suffix: "+" },
+    { label: "Products", value: "1500", suffix: "+" },
+    { label: "Happy Customers", value: "50000", suffix: "+" },
+  ],
+  storyTitle: "Our Story",
+  storyText: "VastuCart was founded with a simple mission: to make authentic spiritual and Vastu products accessible to every home across India. We started when our founder noticed how difficult it was to find genuine, high-quality spiritual products online. Most platforms offered replicas or imported goods lacking the authentic craftsmanship that makes these items truly special.\n\nToday, we source directly from over 200 artisan partners across India — from the brass workshops of Moradabad to the incense makers of Bengaluru. Every product we sell carries the quality and authenticity you deserve.",
+  founderName: "Prashant Vaishnav",
+  founderRole: "Founder & CEO",
+  founderBio: "A Vastu practitioner with over a decade of experience, Prashant started VastuCart to bridge the gap between authentic Indian craftsmanship and modern online commerce.",
+  artisanRegions: ["Moradabad", "Varanasi", "Jaipur", "Bengaluru", "Rajkot", "Pune"],
+}
+
+const DEFAULT_CONTACT_CONFIG: ContactConfig = {
+  phone: "+91 98765 43210",
+  email: "support@vastucart.com",
+  whatsapp: "+91 98765 43210",
+  wholesaleEmail: "wholesale@vastucart.com",
+  address: "42 Temple Lane, Varanasi, Uttar Pradesh 221001, India",
+  workingHours: {
+    weekdays: "Mon \u2013 Sat: 9:00 AM \u2013 6:00 PM IST",
+    weekends: "Sunday: Closed",
+  },
+  faqs: [
+    { id: "f1", question: "How long does delivery take?", answer: "Standard delivery takes 7\u201310 business days. Express delivery is 4\u20137 business days." },
+    { id: "f2", question: "Do you offer returns?", answer: "Yes, within 7 days of delivery for unused items in original packaging." },
+    { id: "f3", question: "Are your products authentic?", answer: "Every product is sourced from certified artisans. We verify authenticity before listing." },
+    { id: "f4", question: "Do you ship internationally?", answer: "Yes, we ship to 25+ countries. International delivery is 15\u201330 business days." },
+  ],
+  grievanceOfficer: {
+    name: "Prashant Vaishnav",
+    email: "grievance@vastucart.com",
+    address: "42 Temple Lane, Varanasi, Uttar Pradesh 221001, India",
+  },
+}
+
 
 async function readStore(): Promise<{ id: string; config: StorefrontConfig; rawMetadata: Record<string, unknown> }> {
   const res = await adminFetch<{ stores: Array<{ id: string; metadata?: Record<string, unknown> }> }>("/admin/stores")
@@ -286,6 +329,37 @@ export function useAdminStorefront() {
   async function deleteMarketingSlide(id: string): Promise<void> {
     await adminFetch(`/admin/marketing-slides/${id}`, { method: "DELETE" })
   }
+  // ── About Config ────────────────────────────────────────────────────────────
+
+  async function fetchAboutConfig(): Promise<AboutConfig> {
+    const { rawMetadata } = await readStore()
+    const saved = rawMetadata.about_config as AboutConfig | undefined
+    return saved ? { ...DEFAULT_ABOUT_CONFIG, ...saved } : DEFAULT_ABOUT_CONFIG
+  }
+
+  async function saveAboutConfig(config: AboutConfig): Promise<void> {
+    const { id, rawMetadata } = await readStore()
+    await adminFetch(`/admin/stores/${id}`, {
+      method: "POST",
+      body: { metadata: { ...rawMetadata, about_config: config } },
+    })
+  }
+
+  // ── Contact Config ───────────────────────────────────────────────────────────
+
+  async function fetchContactConfig(): Promise<ContactConfig> {
+    const { rawMetadata } = await readStore()
+    const saved = rawMetadata.contact_config as ContactConfig | undefined
+    return saved ? { ...DEFAULT_CONTACT_CONFIG, ...saved } : DEFAULT_CONTACT_CONFIG
+  }
+
+  async function saveContactConfig(config: ContactConfig): Promise<void> {
+    const { id, rawMetadata } = await readStore()
+    await adminFetch(`/admin/stores/${id}`, {
+      method: "POST",
+      body: { metadata: { ...rawMetadata, contact_config: config } },
+    })
+  }
 
   return {
     fetchConfig,
@@ -304,5 +378,9 @@ export function useAdminStorefront() {
     createMarketingSlide,
     updateMarketingSlide,
     deleteMarketingSlide,
+    fetchAboutConfig,
+    saveAboutConfig,
+    fetchContactConfig,
+    saveContactConfig,
   }
 }

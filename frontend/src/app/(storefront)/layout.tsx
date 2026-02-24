@@ -27,7 +27,8 @@ export default async function StorefrontLayout({
         "x-publishable-api-key":
           process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
       },
-      next: { revalidate: 60 },
+      // 15s revalidation so analytics changes go live quickly after saving
+      next: { revalidate: 15 },
     }),
   ])
 

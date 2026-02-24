@@ -200,6 +200,10 @@ export function ThemeSelect({
         <div
           ref={dropRef}
           role="listbox"
+          // tabIndex={-1} prevents the browser from auto-scrolling to this portal
+          // node (which lives at the bottom of document.body in DOM order) when it
+          // first renders — the root cause of the "jump to bottom" scroll bug.
+          tabIndex={-1}
           style={{
             ...dropStyle,
             zIndex: 99999,
@@ -223,6 +227,10 @@ export function ThemeSelect({
                 data-opt
                 type="button"
                 role="option"
+                // tabIndex={-1}: options are navigated via JS focusIdx state, not
+                // DOM focus. Without this, browsers may auto-focus/scroll to these
+                // buttons when the portal first renders in document.body.
+                tabIndex={-1}
                 aria-selected={isSelected}
                 onClick={() => {
                   onChange(opt.value)

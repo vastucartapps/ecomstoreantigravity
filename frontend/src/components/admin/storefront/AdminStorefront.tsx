@@ -41,10 +41,13 @@ import type {
   FooterLink,
   HeroSlide,
   MarketingSlide,
+  AboutConfig,
+  ContactConfig,
+  FaqItem,
 } from "@/types/admin-storefront"
 import { normalizeImageUrl } from "@/lib/image-url"
 
-type ActiveTab = "announcement" | "branding" | "homepage" | "content" | "footer" | "hero" | "login-slides"
+type ActiveTab = "announcement" | "branding" | "homepage" | "content" | "footer" | "hero" | "login-slides" | "about-contact"
 
 const cardStyle: React.CSSProperties = {
   background: `linear-gradient(#ffffff, #ffffff) padding-box, linear-gradient(90deg, ${primary[500]}, #2a7a72, ${secondary[500]}) border-box`,
@@ -376,6 +379,8 @@ export function AdminStorefront({
   footerConfig: initialFooter,
   heroSlides: initialHeroSlides,
   marketingSlides: initialMarketingSlides,
+  aboutConfig: initialAboutConfig,
+  contactConfig: initialContactConfig,
   onUpdateAnnouncement,
   onUpdateBranding,
   onReorderSection,
@@ -389,6 +394,8 @@ export function AdminStorefront({
   onCreateMarketingSlide,
   onUpdateMarketingSlide,
   onDeleteMarketingSlide,
+  onSaveAboutConfig,
+  onSaveContactConfig,
 }: AdminStorefrontProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("announcement")
 
@@ -422,6 +429,16 @@ export function AdminStorefront({
   useEffect(() => { setHeroSlides(initialHeroSlides) }, [initialHeroSlides])
   useEffect(() => { setMarketingSlides(initialMarketingSlides) }, [initialMarketingSlides])
 
+  // About & Contact state
+  const [aboutConfig, setAboutConfig] = useState<AboutConfig>(initialAboutConfig)
+  const [contactConfig, setContactConfig] = useState<ContactConfig>(initialContactConfig)
+  const [aboutSubTab, setAboutSubTab] = useState<"about" | "contact">("about")
+  const [savingAbout, setSavingAbout] = useState(false)
+  const [savingContact, setSavingContact] = useState(false)
+
+  useEffect(() => { setAboutConfig(initialAboutConfig) }, [initialAboutConfig])
+  useEffect(() => { setContactConfig(initialContactConfig) }, [initialContactConfig])
+
   // Content page editor
   const [editingPageId, setEditingPageId] = useState<string | null>(null)
   const [pageContent, setPageContent] = useState("")
@@ -443,6 +460,7 @@ export function AdminStorefront({
     { key: "homepage", label: "Homepage Sections", Icon: Layout },
     { key: "content", label: "Content Pages", Icon: FileText },
     { key: "footer", label: "Footer", Icon: Info },
+    { key: "about-contact", label: "About & Contact", Icon: Info },
   ]
 
   const sortedSections = [...sections].sort((a, b) => a.order - b.order)
@@ -526,6 +544,24 @@ export function AdminStorefront({
       await onUpdateFooter(footer)
     } finally {
       setSavingFooter(false)
+    }
+  }
+
+  async function handleSaveAbout() {
+    setSavingAbout(true)
+    try {
+      await onSaveAboutConfig(aboutConfig)
+    } finally {
+      setSavingAbout(false)
+    }
+  }
+
+  async function handleSaveContact() {
+    setSavingContact(true)
+    try {
+      await onSaveContactConfig(contactConfig)
+    } finally {
+      setSavingContact(false)
     }
   }
 
@@ -1923,6 +1959,538 @@ export function AdminStorefront({
             )}
             Save Footer
           </button>
+        </div>
+      )}
+
+      {/* ── About & Contact Panel ─────────────────────────────────────────── */}
+      {activeTab === "about-contact" && (
+        <div style={cardStyle}>
+          <h2
+            style={{
+              fontFamily: fonts.heading,
+              fontSize: "1.25rem",
+              fontWeight: 700,
+              color: primary[900],
+              marginBottom: "24px",
+            }}
+          >
+            About & Contact Pages
+          </h2>
+
+          {/* Sub-tabs */}
+          <div
+            style={{
+              display: "flex",
+              gap: "4px",
+              marginBottom: "32px",
+              borderBottom: `2px solid #f5dfbb`,
+            }}
+          >
+            {(["about", "contact"] as const).map((st) => (
+              <button
+                key={st}
+                onClick={() => setAboutSubTab(st)}
+                style={{
+                  padding: "10px 20px",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "14px",
+                  fontWeight: aboutSubTab === st ? 700 : 500,
+                  color: aboutSubTab === st ? primary[500] : earth[500],
+                  borderBottom: aboutSubTab === st ? `3px solid ${primary[500]}` : "3px solid transparent",
+                  marginBottom: "-2px",
+                  transition: "all 150ms",
+                  textTransform: "capitalize",
+                  fontFamily: fonts.body,
+                }}
+              >
+                {st === "about" ? "About Page" : "Contact Page"}
+              </button>
+            ))}
+          </div>
+
+          {/* ── About Sub-tab ─────────────────────────────────── */}
+          {aboutSubTab === "about" && (
+            <div style={{ display: "grid", gap: "24px" }}>
+
+              {/* Hero */}
+              <div>
+                <h3 style={{ fontFamily: fonts.heading, fontSize: "1rem", fontWeight: 700, color: earth[700], margin: "0 0 16px" }}>
+                  Hero Section
+                </h3>
+                <div style={{ display: "grid", gap: "16px" }}>
+                  <div>
+                    <label style={labelStyle}>Hero Tagline</label>
+                    <input
+                      type="text"
+                      value={aboutConfig.heroTagline}
+                      onChange={(e) => setAboutConfig({ ...aboutConfig, heroTagline: e.target.value })}
+                      style={inputStyle}
+                      onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                      onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Hero Subtext</label>
+                    <input
+                      type="text"
+                      value={aboutConfig.heroSubtext}
+                      onChange={(e) => setAboutConfig({ ...aboutConfig, heroSubtext: e.target.value })}
+                      style={inputStyle}
+                      onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                      onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div>
+                <h3 style={{ fontFamily: fonts.heading, fontSize: "1rem", fontWeight: 700, color: earth[700], margin: "0 0 16px" }}>
+                  Stats
+                </h3>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
+                  {aboutConfig.stats.map((stat, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        padding: "16px",
+                        background: "#f9f6f3",
+                        borderRadius: "8px",
+                        border: `1px solid #e8ddd4`,
+                      }}
+                    >
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 80px 80px", gap: "8px" }}>
+                        <div>
+                          <label style={{ ...labelStyle, fontSize: "12px" }}>Label</label>
+                          <input
+                            type="text"
+                            value={stat.label}
+                            onChange={(e) => {
+                              const stats = aboutConfig.stats.map((s, j) => j === i ? { ...s, label: e.target.value } : s)
+                              setAboutConfig({ ...aboutConfig, stats })
+                            }}
+                            style={{ ...inputStyle, padding: "7px 10px", fontSize: "13px" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ ...labelStyle, fontSize: "12px" }}>Value</label>
+                          <input
+                            type="text"
+                            value={stat.value}
+                            onChange={(e) => {
+                              const stats = aboutConfig.stats.map((s, j) => j === i ? { ...s, value: e.target.value } : s)
+                              setAboutConfig({ ...aboutConfig, stats })
+                            }}
+                            style={{ ...inputStyle, padding: "7px 10px", fontSize: "13px" }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ ...labelStyle, fontSize: "12px" }}>Suffix</label>
+                          <input
+                            type="text"
+                            value={stat.suffix}
+                            onChange={(e) => {
+                              const stats = aboutConfig.stats.map((s, j) => j === i ? { ...s, suffix: e.target.value } : s)
+                              setAboutConfig({ ...aboutConfig, stats })
+                            }}
+                            style={{ ...inputStyle, padding: "7px 10px", fontSize: "13px" }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Story */}
+              <div>
+                <h3 style={{ fontFamily: fonts.heading, fontSize: "1rem", fontWeight: 700, color: earth[700], margin: "0 0 16px" }}>
+                  Brand Story
+                </h3>
+                <div style={{ display: "grid", gap: "16px" }}>
+                  <div>
+                    <label style={labelStyle}>Story Title</label>
+                    <input
+                      type="text"
+                      value={aboutConfig.storyTitle}
+                      onChange={(e) => setAboutConfig({ ...aboutConfig, storyTitle: e.target.value })}
+                      style={inputStyle}
+                      onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                      onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Story Text (use double newline for paragraphs)</label>
+                    <textarea
+                      value={aboutConfig.storyText}
+                      onChange={(e) => setAboutConfig({ ...aboutConfig, storyText: e.target.value })}
+                      rows={6}
+                      style={{ ...inputStyle, resize: "vertical", minHeight: "120px" }}
+                      onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                      onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Founder */}
+              <div>
+                <h3 style={{ fontFamily: fonts.heading, fontSize: "1rem", fontWeight: 700, color: earth[700], margin: "0 0 16px" }}>
+                  Founder
+                </h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={labelStyle}>Founder Name</label>
+                    <input
+                      type="text"
+                      value={aboutConfig.founderName}
+                      onChange={(e) => setAboutConfig({ ...aboutConfig, founderName: e.target.value })}
+                      style={inputStyle}
+                      onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                      onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Founder Role</label>
+                    <input
+                      type="text"
+                      value={aboutConfig.founderRole}
+                      onChange={(e) => setAboutConfig({ ...aboutConfig, founderRole: e.target.value })}
+                      style={inputStyle}
+                      onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                      onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginTop: "16px" }}>
+                  <label style={labelStyle}>Founder Bio</label>
+                  <textarea
+                    value={aboutConfig.founderBio}
+                    onChange={(e) => setAboutConfig({ ...aboutConfig, founderBio: e.target.value })}
+                    rows={3}
+                    style={{ ...inputStyle, resize: "vertical" }}
+                    onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                    onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                  />
+                </div>
+              </div>
+
+              {/* Artisan Regions */}
+              <div>
+                <h3 style={{ fontFamily: fonts.heading, fontSize: "1rem", fontWeight: 700, color: earth[700], margin: "0 0 16px" }}>
+                  Artisan Regions
+                </h3>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
+                  {aboutConfig.artisanRegions.map((region, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        padding: "5px 12px",
+                        background: primary[50],
+                        color: primary[500],
+                        borderRadius: "9999px",
+                        fontSize: "13px",
+                        fontFamily: fonts.body,
+                        fontWeight: 600,
+                        border: `1px solid ${primary[100]}`,
+                      }}
+                    >
+                      {region}
+                      <button
+                        onClick={() => setAboutConfig({ ...aboutConfig, artisanRegions: aboutConfig.artisanRegions.filter((_, j) => j !== i) })}
+                        style={{ background: "none", border: "none", cursor: "pointer", color: earth[400], padding: "0", lineHeight: 1, fontSize: "14px" }}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <input
+                    id="new-region-input"
+                    type="text"
+                    placeholder="Add region (e.g. Agra)"
+                    style={{ ...inputStyle, width: "240px" }}
+                    onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                    onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const val = (e.target as HTMLInputElement).value.trim()
+                        if (val && !aboutConfig.artisanRegions.includes(val)) {
+                          setAboutConfig({ ...aboutConfig, artisanRegions: [...aboutConfig.artisanRegions, val] });
+                          (e.target as HTMLInputElement).value = ""
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const input = document.getElementById("new-region-input") as HTMLInputElement
+                      if (!input) return
+                      const val = input.value.trim()
+                      if (val && !aboutConfig.artisanRegions.includes(val)) {
+                        setAboutConfig({ ...aboutConfig, artisanRegions: [...aboutConfig.artisanRegions, val] })
+                        input.value = ""
+                      }
+                    }}
+                    style={{
+                      padding: "10px 16px",
+                      background: primary[50],
+                      color: primary[500],
+                      border: `1px solid ${primary[200]}`,
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: fonts.body,
+                    }}
+                  >
+                    + Add
+                  </button>
+                </div>
+              </div>
+
+              {/* Save button */}
+              <div>
+                <button
+                  onClick={handleSaveAbout}
+                  disabled={savingAbout}
+                  style={{
+                    ...saveBtnStyle,
+                    opacity: savingAbout ? 0.7 : 1,
+                    cursor: savingAbout ? "not-allowed" : "pointer",
+                  }}
+                  onMouseEnter={(e) => { if (!savingAbout) e.currentTarget.style.background = primary[400] }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = primary[500] }}
+                >
+                  {savingAbout ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  Save About Page
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Contact Sub-tab ───────────────────────────────── */}
+          {aboutSubTab === "contact" && (
+            <div style={{ display: "grid", gap: "24px" }}>
+
+              {/* Contact details */}
+              <div>
+                <h3 style={{ fontFamily: fonts.heading, fontSize: "1rem", fontWeight: 700, color: earth[700], margin: "0 0 16px" }}>
+                  Contact Details
+                </h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  {(
+                    [
+                      { key: "phone", label: "Phone" },
+                      { key: "email", label: "Support Email" },
+                      { key: "whatsapp", label: "WhatsApp Number" },
+                      { key: "wholesaleEmail", label: "Wholesale Email" },
+                    ] as const
+                  ).map(({ key, label }) => (
+                    <div key={key}>
+                      <label style={labelStyle}>{label}</label>
+                      <input
+                        type="text"
+                        value={contactConfig[key]}
+                        onChange={(e) => setContactConfig({ ...contactConfig, [key]: e.target.value })}
+                        style={inputStyle}
+                        onFocus={(evt) => (evt.target.style.borderColor = primary[400])}
+                        onBlur={(evt) => (evt.target.style.borderColor = earth[300])}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: "16px" }}>
+                  <label style={labelStyle}>Office Address</label>
+                  <input
+                    type="text"
+                    value={contactConfig.address}
+                    onChange={(e) => setContactConfig({ ...contactConfig, address: e.target.value })}
+                    style={inputStyle}
+                    onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                    onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                  />
+                </div>
+              </div>
+
+              {/* Working Hours */}
+              <div>
+                <h3 style={{ fontFamily: fonts.heading, fontSize: "1rem", fontWeight: 700, color: earth[700], margin: "0 0 16px" }}>
+                  Working Hours
+                </h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={labelStyle}>Weekdays</label>
+                    <input
+                      type="text"
+                      value={contactConfig.workingHours.weekdays}
+                      onChange={(e) => setContactConfig({ ...contactConfig, workingHours: { ...contactConfig.workingHours, weekdays: e.target.value } })}
+                      style={inputStyle}
+                      onFocus={(evt) => (evt.target.style.borderColor = primary[400])}
+                      onBlur={(evt) => (evt.target.style.borderColor = earth[300])}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Weekends</label>
+                    <input
+                      type="text"
+                      value={contactConfig.workingHours.weekends}
+                      onChange={(e) => setContactConfig({ ...contactConfig, workingHours: { ...contactConfig.workingHours, weekends: e.target.value } })}
+                      style={inputStyle}
+                      onFocus={(evt) => (evt.target.style.borderColor = primary[400])}
+                      onBlur={(evt) => (evt.target.style.borderColor = earth[300])}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* FAQ Editor */}
+              <div>
+                <h3 style={{ fontFamily: fonts.heading, fontSize: "1rem", fontWeight: 700, color: earth[700], margin: "0 0 16px" }}>
+                  FAQs
+                </h3>
+                <div style={{ display: "grid", gap: "12px", marginBottom: "16px" }}>
+                  {contactConfig.faqs.map((faq, i) => (
+                    <div
+                      key={faq.id}
+                      style={{
+                        padding: "16px",
+                        background: "#f9f6f3",
+                        borderRadius: "8px",
+                        border: `1px solid #e8ddd4`,
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px", marginBottom: "12px" }}>
+                        <div style={{ flex: 1 }}>
+                          <label style={{ ...labelStyle, fontSize: "12px", marginBottom: "4px" }}>Question</label>
+                          <input
+                            type="text"
+                            value={faq.question}
+                            onChange={(e) => {
+                              const faqs = contactConfig.faqs.map((f, j) => j === i ? { ...f, question: e.target.value } : f)
+                              setContactConfig({ ...contactConfig, faqs })
+                            }}
+                            style={{ ...inputStyle, fontSize: "13px", padding: "7px 10px" }}
+                          />
+                        </div>
+                        <button
+                          onClick={() => setContactConfig({ ...contactConfig, faqs: contactConfig.faqs.filter((_, j) => j !== i) })}
+                          style={{ color: "#EF4444", background: "none", border: "none", cursor: "pointer", padding: "4px", marginTop: "20px", flexShrink: 0 }}
+                          title="Remove FAQ"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                      <div>
+                        <label style={{ ...labelStyle, fontSize: "12px", marginBottom: "4px" }}>Answer</label>
+                        <textarea
+                          value={faq.answer}
+                          onChange={(e) => {
+                            const faqs = contactConfig.faqs.map((f, j) => j === i ? { ...f, answer: e.target.value } : f)
+                            setContactConfig({ ...contactConfig, faqs })
+                          }}
+                          rows={2}
+                          style={{ ...inputStyle, fontSize: "13px", padding: "7px 10px", resize: "vertical" }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => {
+                    const newFaq: FaqItem = {
+                      id: "faq-" + Date.now(),
+                      question: "New question?",
+                      answer: "Answer here.",
+                    }
+                    setContactConfig({ ...contactConfig, faqs: [...contactConfig.faqs, newFaq] })
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    background: "none",
+                    border: `1px dashed ${primary[200]}`,
+                    borderRadius: "8px",
+                    padding: "8px 16px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: primary[500],
+                    cursor: "pointer",
+                    fontFamily: fonts.body,
+                  }}
+                >
+                  <Plus size={14} /> Add FAQ
+                </button>
+              </div>
+
+              {/* Grievance Officer */}
+              <div>
+                <h3 style={{ fontFamily: fonts.heading, fontSize: "1rem", fontWeight: 700, color: earth[700], margin: "0 0 16px" }}>
+                  Grievance Officer
+                </h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <label style={labelStyle}>Name</label>
+                    <input
+                      type="text"
+                      value={contactConfig.grievanceOfficer.name}
+                      onChange={(e) => setContactConfig({ ...contactConfig, grievanceOfficer: { ...contactConfig.grievanceOfficer, name: e.target.value } })}
+                      style={inputStyle}
+                      onFocus={(evt) => (evt.target.style.borderColor = primary[400])}
+                      onBlur={(evt) => (evt.target.style.borderColor = earth[300])}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Email</label>
+                    <input
+                      type="text"
+                      value={contactConfig.grievanceOfficer.email}
+                      onChange={(e) => setContactConfig({ ...contactConfig, grievanceOfficer: { ...contactConfig.grievanceOfficer, email: e.target.value } })}
+                      style={inputStyle}
+                      onFocus={(evt) => (evt.target.style.borderColor = primary[400])}
+                      onBlur={(evt) => (evt.target.style.borderColor = earth[300])}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginTop: "16px" }}>
+                  <label style={labelStyle}>Address</label>
+                  <input
+                    type="text"
+                    value={contactConfig.grievanceOfficer.address}
+                    onChange={(e) => setContactConfig({ ...contactConfig, grievanceOfficer: { ...contactConfig.grievanceOfficer, address: e.target.value } })}
+                    style={inputStyle}
+                    onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                    onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                  />
+                </div>
+              </div>
+
+              {/* Save button */}
+              <div>
+                <button
+                  onClick={handleSaveContact}
+                  disabled={savingContact}
+                  style={{
+                    ...saveBtnStyle,
+                    opacity: savingContact ? 0.7 : 1,
+                    cursor: savingContact ? "not-allowed" : "pointer",
+                  }}
+                  onMouseEnter={(e) => { if (!savingContact) e.currentTarget.style.background = primary[400] }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = primary[500] }}
+                >
+                  {savingContact ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  Save Contact Page
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
