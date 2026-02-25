@@ -44,10 +44,10 @@ export function RichContent({ blocks }: RichContentProps) {
               <div key={block.id}>
                 {blockIdx > 0 && divider}
                 {block.title && <SectionTitle title={block.title} />}
-                {/* 970:600 = 97:60 — matches uploaded image ratio exactly, no crop/letterbox */}
+                {/* 970:400 = 97:40 — standard hero image ratio */}
                 <div
                   className="relative rounded-2xl overflow-hidden shadow-lg"
-                  style={{ aspectRatio: "97/60" }}
+                  style={{ aspectRatio: "97/40" }}
                 >
                   <img
                     src={block.imageUrl}
@@ -213,44 +213,45 @@ export function RichContent({ blocks }: RichContentProps) {
               </div>
             )
 
-          // ── IMAGE + TEXT SIDE-BY-SIDE ─────────────────────────────────────────
+          // ── IMAGE + TEXT STACKED ──────────────────────────────────────────────
           case "image_text":
             return (
               <div key={block.id}>
                 {blockIdx > 0 && divider}
                 {block.title && <SectionTitle title={block.title} />}
-                {/* Desktop: image left ~55% | text right ~45%. Mobile: stacked. imagePosition controls side. */}
-                <div className={`flex flex-col gap-6 sm:gap-10 items-start ${block.imagePosition === "right" ? "sm:flex-row-reverse" : "sm:flex-row"}`}>
-                  {block.imageUrl && (
-                    <div className="w-full sm:w-[55%] flex-shrink-0">
-                      {/* Exact 970:600 ratio — no crop, no letterbox, no padding gaps */}
-                      <div
-                        className="rounded-xl overflow-hidden shadow-sm"
-                        style={{ aspectRatio: "97/60" }}
-                      >
-                        <img
-                          src={block.imageUrl}
-                          alt={block.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </div>
-                  )}
-                  {block.content && (
-                    <div className="flex-1 flex flex-col justify-center min-h-0">
-                      <p
-                        className="text-sm sm:text-base leading-relaxed"
-                        style={{
-                          color: earth[600],
-                          fontFamily: fonts.body,
-                          lineHeight: 1.85,
-                        }}
-                      >
-                        {block.content}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                {/* Full-width image (970×600) → headline → description */}
+                {block.imageUrl && (
+                  <div
+                    className="w-full rounded-xl overflow-hidden shadow-sm"
+                    style={{ aspectRatio: "97/60" }}
+                  >
+                    <img
+                      src={block.imageUrl}
+                      alt={block.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                {block.headline && (
+                  <h4
+                    className="text-lg sm:text-xl font-bold mt-5"
+                    style={{ color: earth[700], fontFamily: fonts.heading }}
+                  >
+                    {block.headline}
+                  </h4>
+                )}
+                {block.content && (
+                  <p
+                    className="text-sm sm:text-base leading-relaxed mt-3"
+                    style={{
+                      color: earth[600],
+                      fontFamily: fonts.body,
+                      lineHeight: 1.85,
+                    }}
+                  >
+                    {block.content}
+                  </p>
+                )}
               </div>
             )
 

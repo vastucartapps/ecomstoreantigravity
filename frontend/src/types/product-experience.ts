@@ -51,14 +51,14 @@ export interface RichContentComparison {
   metrics: ComparisonMetric[]
 }
 
-/** A+ image + text side-by-side block */
+/** A+ image + text stacked block */
 export interface RichContentImageText {
   id: string
   type: "image_text"
   title: string
-  content: string
   imageUrl: string
-  imagePosition?: "left" | "right"
+  headline?: string
+  content: string
 }
 
 /** A+ text-only block */

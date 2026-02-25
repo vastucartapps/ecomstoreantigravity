@@ -798,48 +798,31 @@ export function ProductWizard({
                       placeholder="Block title"
                     />
 
+                    {block.type === "image_text" && (
+                      <InputField
+                        label="Headline (shown below image)"
+                        value={(block as any).headline || ""}
+                        onChange={(v) => {
+                          const updated = [...(formData.richContent || [])]
+                          updated[idx] = { ...updated[idx], headline: v }
+                          updateField("richContent", updated)
+                        }}
+                        placeholder="Bold heading shown under the image"
+                      />
+                    )}
+
                     {(block.type === "text" || block.type === "image_text" || block.type === "comparison") && (
                       <InputField
-                        label="Content"
+                        label="Description"
                         value={block.content}
                         onChange={(v) => {
                           const updated = [...(formData.richContent || [])]
                           updated[idx] = { ...updated[idx], content: v }
                           updateField("richContent", updated)
                         }}
-                        placeholder="Block content or markdown"
+                        placeholder="Body text shown below the headline"
                         rows={4}
                       />
-                    )}
-
-                    {block.type === "image_text" && (
-                      <div className="mt-3">
-                        <label className="block text-xs font-medium mb-1.5" style={{ color: c.earth600, fontFamily: fonts.body }}>
-                          Image Position
-                        </label>
-                        <div className="flex gap-2">
-                          {(["left", "right"] as const).map((pos) => (
-                            <button
-                              key={pos}
-                              type="button"
-                              onClick={() => {
-                                const updated = [...(formData.richContent || [])]
-                                updated[idx] = { ...updated[idx], imagePosition: pos }
-                                updateField("richContent", updated)
-                              }}
-                              className="flex-1 py-1.5 text-xs font-medium rounded-lg border transition-colors capitalize"
-                              style={{
-                                borderColor: (block as any).imagePosition === pos || (!((block as any).imagePosition) && pos === "left") ? c.primary500 : c.earth300,
-                                background: (block as any).imagePosition === pos || (!((block as any).imagePosition) && pos === "left") ? c.primary50 : c.card,
-                                color: (block as any).imagePosition === pos || (!((block as any).imagePosition) && pos === "left") ? c.primary500 : c.earth600,
-                                fontFamily: fonts.body,
-                              }}
-                            >
-                              Image {pos}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
                     )}
 
                     {(block.type === "image" || block.type === "image_text" || block.type === "banner") && (
