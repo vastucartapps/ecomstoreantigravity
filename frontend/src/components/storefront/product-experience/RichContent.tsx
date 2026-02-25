@@ -10,12 +10,15 @@ interface RichContentProps {
 
 export function RichContent({ blocks }: RichContentProps) {
   return (
-    <div className="space-y-16">
-      {blocks.map((block) => {
+    <div>
+      {blocks.map((block, blockIdx) => {
         switch (block.type) {
           case "hero":
             return (
               <div key={block.id}>
+                {blockIdx > 0 && (
+                  <div style={{ height: 1, background: "linear-gradient(90deg, transparent, #e8e2da 30%, #e8e2da 70%, transparent)", margin: "32px 0" }} />
+                )}
                 <div className="flex items-center gap-4 mb-8">
                   <div className="flex-1 h-px" style={{ background: gradients.accentBorder }} />
                   <h3
@@ -59,6 +62,9 @@ export function RichContent({ blocks }: RichContentProps) {
           case "comparison":
             return (
               <div key={block.id}>
+                {blockIdx > 0 && (
+                  <div style={{ height: 1, background: "linear-gradient(90deg, transparent, #e8e2da 30%, #e8e2da 70%, transparent)", margin: "32px 0" }} />
+                )}
                 <div className="flex items-center gap-4 mb-10">
                   <div className="flex-1 h-px" style={{ background: gradients.accentBorder }} />
                   <h3
@@ -169,40 +175,67 @@ export function RichContent({ blocks }: RichContentProps) {
 
           case "image_text":
             return (
-              <div key={block.id} className="flex flex-col md:flex-row gap-8 items-center">
-                {block.imageUrl && (
-                  <div className="w-full md:w-1/2 rounded-2xl overflow-hidden shadow-md">
-                    <img
-                      src={block.imageUrl}
-                      alt={block.title}
-                      className="w-full h-64 md:h-80 object-cover"
-                    />
-                  </div>
+              <div key={block.id}>
+                {/* Thin spacer divider between blocks */}
+                {blockIdx > 0 && (
+                  <div style={{ height: 1, background: "linear-gradient(90deg, transparent, #e8e2da 30%, #e8e2da 70%, transparent)", margin: "32px 0" }} />
                 )}
-                <div className="w-full md:w-1/2">
-                  {block.title && (
+                {/* Headline */}
+                {block.title && (
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="flex-1 h-px" style={{ background: gradients.accentBorder }} />
                     <h3
-                      className="text-xl sm:text-2xl font-bold mb-4"
+                      className="text-xl sm:text-2xl font-bold text-center px-4"
                       style={{ color: earth[700], fontFamily: fonts.heading }}
                     >
                       {block.title}
                     </h3>
-                  )}
-                  {block.content && (
-                    <p
-                      className="text-sm sm:text-base leading-relaxed"
-                      style={{ color: earth[600], fontFamily: fonts.body, lineHeight: 1.8 }}
-                    >
-                      {block.content}
-                    </p>
-                  )}
-                </div>
+                    <div className="flex-1 h-px" style={{ background: gradients.accentBorder }} />
+                  </div>
+                )}
+                {/* Image in thin bordered frame — no cropping */}
+                {block.imageUrl && (
+                  <div
+                    className="mb-6"
+                    style={{
+                      border: "1px solid #e8e2da",
+                      borderRadius: 12,
+                      padding: "16px",
+                      background: "#faf7f4",
+                    }}
+                  >
+                    <img
+                      src={block.imageUrl}
+                      alt={block.title}
+                      style={{
+                        width: "100%",
+                        height: "auto",
+                        objectFit: "contain",
+                        display: "block",
+                        maxHeight: 480,
+                        margin: "0 auto",
+                      }}
+                    />
+                  </div>
+                )}
+                {/* Description — full width, justified */}
+                {block.content && (
+                  <p
+                    className="text-sm sm:text-base"
+                    style={{ color: earth[600], fontFamily: fonts.body, lineHeight: 1.8, textAlign: "justify" }}
+                  >
+                    {block.content}
+                  </p>
+                )}
               </div>
             )
 
           case "text":
             return (
-              <div key={block.id} className="max-w-3xl mx-auto text-center">
+              <div key={block.id}>
+                {blockIdx > 0 && (
+                  <div style={{ height: 1, background: "linear-gradient(90deg, transparent, #e8e2da 30%, #e8e2da 70%, transparent)", margin: "32px 0" }} />
+                )}
                 {block.title && (
                   <h3
                     className="text-xl sm:text-2xl font-bold mb-4"
@@ -213,8 +246,8 @@ export function RichContent({ blocks }: RichContentProps) {
                 )}
                 {block.content && (
                   <p
-                    className="text-sm sm:text-base leading-relaxed"
-                    style={{ color: earth[600], fontFamily: fonts.body, lineHeight: 1.8 }}
+                    className="text-sm sm:text-base"
+                    style={{ color: earth[600], fontFamily: fonts.body, lineHeight: 1.8, textAlign: "justify" }}
                   >
                     {block.content}
                   </p>
@@ -225,6 +258,9 @@ export function RichContent({ blocks }: RichContentProps) {
           case "image":
             return (
               <div key={block.id} className="text-center">
+                {blockIdx > 0 && (
+                  <div style={{ height: 1, background: "linear-gradient(90deg, transparent, #e8e2da 30%, #e8e2da 70%, transparent)", margin: "32px 0" }} />
+                )}
                 {block.title && (
                   <h3
                     className="text-xl sm:text-2xl font-bold mb-6"
@@ -235,7 +271,7 @@ export function RichContent({ blocks }: RichContentProps) {
                 )}
                 {block.imageUrl && (
                   <div className="rounded-2xl overflow-hidden shadow-lg inline-block max-w-2xl w-full">
-                    <img src={block.imageUrl} alt={block.title} className="w-full object-cover" />
+                    <img src={block.imageUrl} alt={block.title} className="w-full" style={{ objectFit: "contain", height: "auto" }} />
                   </div>
                 )}
               </div>
@@ -243,7 +279,11 @@ export function RichContent({ blocks }: RichContentProps) {
 
           case "banner":
             return (
-              <div key={block.id} className="relative rounded-2xl overflow-hidden shadow-xl">
+              <div key={block.id}>
+                {blockIdx > 0 && (
+                  <div style={{ height: 1, background: "linear-gradient(90deg, transparent, #e8e2da 30%, #e8e2da 70%, transparent)", margin: "32px 0" }} />
+                )}
+                <div className="relative rounded-2xl overflow-hidden shadow-xl">
                 {block.imageUrl ? (
                   <>
                     <img
@@ -278,6 +318,7 @@ export function RichContent({ blocks }: RichContentProps) {
                     </h3>
                   </div>
                 )}
+                </div>
               </div>
             )
 

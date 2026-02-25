@@ -143,6 +143,15 @@ services:
       - ALGOLIA_APP_ID=${ALGOLIA_APP_ID:-}
       - ALGOLIA_API_KEY=${ALGOLIA_API_KEY:-}
       - ALGOLIA_PRODUCT_INDEX_NAME=${ALGOLIA_PRODUCT_INDEX_NAME:-products}
+      # Email (Listmonk + Resend SMTP)
+      - LISTMONK_URL=http://listmonk:9000
+      - LISTMONK_USERNAME=${LISTMONK_USERNAME:-listmonk}
+      - LISTMONK_PASSWORD=${LISTMONK_PASSWORD:-changeme_listmonk}
+      - EMAIL_FROM=${EMAIL_FROM:-VastuCart <orders@vastucart.in>}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      # Store
+      - STORE_URL=${STORE_URL:-https://store.vastucart.in}
+      - SUPPORT_EMAIL=${SUPPORT_EMAIL:-support@vastucart.in}
     ports:
       - "9000:9000"
     labels:
@@ -199,9 +208,59 @@ services:
       retries: 5
       start_period: 20s
 
+  # ── One-shot: creates the listmonk database in the shared postgres instance ──
+  listmonk-db-init:
+    image: postgres:16-alpine
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: medusa
+    entrypoint: >
+      /bin/sh -c "
+      psql -h postgres -U medusa -c 'CREATE DATABASE listmonk;' 2>/dev/null || echo 'listmonk database already exists, skipping.';
+      exit 0;
+      "
+
+  # ── Listmonk: newsletter + transactional email manager ───────────────────────
+  listmonk:
+    image: listmonk/listmonk:latest
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      listmonk-db-init:
+        condition: service_completed_successfully
+    command: ["sh", "-c", "./listmonk --install --idempotent && ./listmonk"]
+    environment:
+      - LISTMONK_app__address=0.0.0.0:9000
+      - LISTMONK_app__admin_username=${LISTMONK_USERNAME:-listmonk}
+      - LISTMONK_app__admin_password=${LISTMONK_PASSWORD:-changeme_listmonk}
+      - LISTMONK_db__host=postgres
+      - LISTMONK_db__port=5432
+      - LISTMONK_db__user=medusa
+      - LISTMONK_db__password=medusa
+      - LISTMONK_db__database=listmonk
+      - LISTMONK_db__ssl_mode=disable
+      - LISTMONK_db__max_open=25
+      - LISTMONK_db__max_idle=25
+      - LISTMONK_db__conn_retries=5
+    ports:
+      - "9003:9000"   # Listmonk admin UI
+    volumes:
+      - listmonk_uploads:/listmonk/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
 volumes:
   postgres_data:
     # Named volume — survives container rebuilds, redeploys, and restarts
     # Data is ONLY lost if you explicitly run: docker volume rm <volume_name>
   redis_data:
   minio_data:
+  listmonk_uploads:

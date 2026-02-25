@@ -193,6 +193,8 @@ export interface ProductDetailProps {
   images: ProductImage[]
   variants: ProductVariant[]
   variantAttributes: VariantAttribute[]
+  /** imageUrl → ["all"] | ["Rose Gold", "Silver", ...] — controls which images show per variant */
+  variantImageMap?: Record<string, string[]>
   richContent: RichContentBlock[]
   specificationGroups: SpecificationGroup[]
   faqs: ProductFAQ[]

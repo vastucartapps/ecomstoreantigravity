@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import {
   ChevronRight, Star, Heart, ShoppingCart, Minus, Plus,
   Truck, RotateCcw, ChevronLeft, Zap, ShieldCheck, Link2,
@@ -28,6 +28,7 @@ export function ProductDetail({
   relatedProducts,
   breadcrumbs,
   isWishlisted = false,
+  variantImageMap,
   onAddToCart,
   onToggleWishlist,
   onShare,
@@ -54,6 +55,17 @@ export function ProductDetail({
   const relatedRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => { setWishlisted(isWishlisted) }, [isWishlisted])
+
+  // Filter gallery images based on selected variant + variant image map
+  const displayImages = useMemo(() => {
+    if (!variantImageMap || Object.keys(variantImageMap).length === 0) return images
+    const variantLabels = Object.values(selectedVariant?.attributes || {})
+    return images.filter((img) => {
+      const tags = variantImageMap[img.url]
+      if (!tags || tags.includes("all")) return true
+      return variantLabels.some((label) => tags.includes(label))
+    })
+  }, [images, selectedVariant, variantImageMap])
 
   const discountPercent = selectedVariant
     ? Math.round(((selectedVariant.mrp - selectedVariant.price) / selectedVariant.mrp) * 100)
@@ -119,7 +131,7 @@ export function ProductDetail({
         {/* TOP: Gallery + Product Info */}
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
           <div className="lg:w-[45%] flex-shrink-0">
-            <ImageGallery images={images} />
+            <ImageGallery images={displayImages} />
           </div>
 
           <div className="flex-1">

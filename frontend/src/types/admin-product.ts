@@ -107,6 +107,8 @@ export interface ProductDetail extends Product {
   tags: string[]
   hsnCode: string
   gstRate: number
+  /** imageUrl → ["all"] | ["Rose Gold", "Silver", ...] — which variants show this image */
+  variantImageMap?: Record<string, string[]>
 }
 
 /** Available category for filter/selection */

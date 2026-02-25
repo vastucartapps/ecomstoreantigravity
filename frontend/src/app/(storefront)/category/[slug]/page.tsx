@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState, useEffect, useCallback } from "react"
+import { Suspense, useState, useEffect, useCallback, useMemo } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { CategoryListing } from "@/components/storefront/CategoryListing"
 import { QuickViewModal } from "@/components/storefront/product-experience"
@@ -220,9 +220,8 @@ function CategoryContent() {
     slug: "",
     productCount: 0,
   })
-  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(
-    {}
-  )
+  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({})
+  const [priceRange, setPriceRange] = useState<[number, number]>([99, 50000])
 
   const currentPage = Number(searchParams.get("page")) || 1
   const currentSort = searchParams.get("sort") || "relevance"
@@ -297,6 +296,18 @@ function CategoryContent() {
   useEffect(() => {
     fetchCategoryAndProducts()
   }, [fetchCategoryAndProducts])
+
+  // Client-side filter applied to the fetched page of products
+  const filteredProducts = useMemo(() => {
+    let result = products
+    if (priceRange[0] > 99 || priceRange[1] < 50000) {
+      result = result.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1])
+    }
+    if (activeFilters["filter-availability"]?.includes("in-stock")) {
+      result = result.filter((p) => p.inStock)
+    }
+    return result
+  }, [products, priceRange, activeFilters])
 
   const breadcrumbs: Breadcrumb[] = [
     { label: "Home", href: "/" },
@@ -381,7 +392,7 @@ function CategoryContent() {
     <CategoryListing
       categoryHero={categoryHero}
       breadcrumbs={breadcrumbs}
-      products={products}
+      products={filteredProducts}
       totalCount={totalCount}
       currentPage={currentPage}
       totalPages={totalPages}
@@ -396,11 +407,10 @@ function CategoryContent() {
       onFilterChange={(filterId, values) => {
         setActiveFilters((prev) => ({ ...prev, [filterId]: values }))
       }}
-      onPriceRangeChange={() => {
-        // Price range filtering will refetch with price params
-      }}
+      onPriceRangeChange={(min, max) => setPriceRange([min, max])}
       onClearFilters={() => {
         setActiveFilters({})
+        setPriceRange([99, 50000])
         updateUrl({ page: "", sort: "" })
       }}
       onSortChange={(sort) => updateUrl({ sort, page: "1" })}

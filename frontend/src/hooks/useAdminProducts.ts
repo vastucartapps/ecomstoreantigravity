@@ -177,6 +177,7 @@ function mapMedusaProductDetail(p: any): ProductDetail {
     tags: (p.tags || []).map((t: any) => t.value || t),
     hsnCode: p.metadata?.hsn_code || "",
     gstRate: p.metadata?.gst_rate || 0,
+    variantImageMap: p.metadata?.variant_image_map || {},
   }
 }
 
@@ -209,6 +210,9 @@ function buildBasePayload(data: Partial<ProductDetail>): any {
     ...(data.merchantCentre ? { merchant_centre: data.merchantCentre } : {}),
     ...(data.hsnCode ? { hsn_code: data.hsnCode } : {}),
     ...(data.gstRate != null && data.gstRate > 0 ? { gst_rate: data.gstRate } : {}),
+    ...(data.variantImageMap && Object.keys(data.variantImageMap).length > 0
+      ? { variant_image_map: data.variantImageMap }
+      : {}),
   }
 
   const payload: any = {

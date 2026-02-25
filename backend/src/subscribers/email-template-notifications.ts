@@ -1,15 +1,50 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
-import {
-  getNotificationsConfig,
-  findActiveTemplate,
-  renderTemplate,
-} from "../lib/notification-utils"
+import { sendTransactional, isListmonkConfigured } from "../lib/listmonk-client"
 
-const EVENT_TRIGGER_MAP: Record<string, string> = {
-  "order.placed": "order.placed",
-  "order.fulfillment_created": "order.fulfillment_created",
-  "order.delivery_created": "order.delivery_created",
-  "order.cancelled": "order.cancelled",
+function fmt(n: number): string {
+  return `₹${(n / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function fmtDate(d: string | Date): string {
+  return new Date(d).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" })
+}
+
+function addDays(d: Date, n: number): string {
+  const dt = new Date(d)
+  dt.setDate(dt.getDate() + n)
+  return fmtDate(dt)
+}
+
+function buildOrderId(order: any): string {
+  if (order.display_id) {
+    const y = new Date(order.created_at).getFullYear()
+    const mmdd = new Date(order.created_at)
+      .toLocaleDateString("en-IN", { month: "2-digit", day: "2-digit" })
+      .replace(/\//g, "")
+    return `VC-${y}-${mmdd}-${String(order.display_id).padStart(4, "0")}`
+  }
+  return order.id?.slice(-8).toUpperCase() || "UNKNOWN"
+}
+
+function buildItemsSummary(items: any[]): { count: string; summary: string } {
+  if (!items?.length) return { count: "0 items", summary: "No items" }
+  const count = `${items.length} item${items.length !== 1 ? "s" : ""}`
+  const names = items
+    .slice(0, 3)
+    .map((i: any) => `${i.title || i.variant_title || "Product"} (×${i.quantity || 1})`)
+  const summary =
+    names.join(", ") + (items.length > 3 ? ` +${items.length - 3} more` : "")
+  return { count, summary }
+}
+
+function buildShipping(order: any): { name: string; address: string } {
+  const a = order.shipping_address
+  if (!a) return { name: "Not specified", address: "Not specified" }
+  const name = [a.first_name, a.last_name].filter(Boolean).join(" ") || "Customer"
+  const address = [a.address_1, a.address_2, a.city, a.province, a.postal_code]
+    .filter(Boolean)
+    .join(", ")
+  return { name, address }
 }
 
 export default async function emailTemplateNotificationsHandler({
@@ -20,72 +55,139 @@ export default async function emailTemplateNotificationsHandler({
   const orderId = event.data?.id
   if (!orderId) return
 
-  const triggerEvent = EVENT_TRIGGER_MAP[event.name]
-  if (!triggerEvent) return
-
-  const cfg = await getNotificationsConfig(container)
-  if (!cfg) return
-
-  const templates: any[] = cfg.emailTemplates ?? []
-  const tpl = findActiveTemplate(templates, triggerEvent)
-  if (!tpl) return
-
-  // Require SMTP configuration via environment variables
-  const smtpHost = process.env.SMTP_HOST
-  const smtpUser = process.env.SMTP_USER
-  const smtpPass = process.env.SMTP_PASS
-  const smtpFrom = process.env.SMTP_FROM || smtpUser
-
-  if (!smtpHost || !smtpUser || !smtpPass) {
-    // SMTP not configured — skip silently
+  if (!isListmonkConfigured()) {
+    logger.debug("Listmonk not configured – skipping email notification")
     return
   }
 
   try {
     const orderService = container.resolve("orderModuleService") as any
     const order = await orderService.retrieveOrder(orderId, {
-      relations: ["customer"],
+      relations: ["items", "shipping_address", "billing_address", "fulfillments"],
     })
-    if (!order?.customer_id) return
+    if (!order) return
 
-    const customerName = order.billing_address?.first_name
-      ? `${order.billing_address.first_name} ${order.billing_address.last_name || ""}`.trim()
-      : "Valued Customer"
-
-    const displayId = order.display_id || orderId.slice(-6).toUpperCase()
-
-    const vars: Record<string, string> = {
-      customer_name: customerName,
-      order_id: String(displayId),
-      store_name: process.env.STORE_NAME || "VastuCart",
+    const customerEmail = order.email
+    if (!customerEmail) {
+      logger.warn(`[email-notifications] No email on order ${orderId}`)
+      return
     }
 
-    const subject = renderTemplate(tpl.subject, vars)
-    const body = renderTemplate(tpl.body || tpl.name, vars)
+    const billing = order.billing_address
+    const customerName = billing?.first_name
+      ? [billing.first_name, billing.last_name].filter(Boolean).join(" ")
+      : "Valued Customer"
 
-    // Get customer email from order
-    const customerEmail = order.email
-    if (!customerEmail) return
+    const orderId2 = buildOrderId(order)
+    const orderDate = fmtDate(order.created_at)
+    const orderTotal = fmt(order.total || 0)
+    const { count: itemsCount, summary: itemsSummary } = buildItemsSummary(order.items || [])
+    const { name: shippingName, address: shippingAddress } = buildShipping(order)
 
-    // Dynamic import to avoid loading nodemailer unless actually needed
-    const nodemailer = await import("nodemailer")
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: process.env.SMTP_SECURE === "true",
-      auth: { user: smtpUser, pass: smtpPass },
-    })
+    const storeUrl = process.env.STORE_URL || "https://store.vastucart.in"
+    const orderUrl = `${storeUrl}/account/orders/${orderId}`
+    const supportEmail = process.env.SUPPORT_EMAIL || "support@vastucart.in"
 
-    await transporter.sendMail({
-      from: smtpFrom,
-      to: customerEmail,
-      subject,
-      html: body,
-    })
+    const base = {
+      customer_name: customerName,
+      order_id: orderId2,
+      order_date: orderDate,
+      order_total: orderTotal,
+      items_count: itemsCount,
+      items_summary: itemsSummary,
+      store_url: storeUrl,
+      order_url: orderUrl,
+      support_email: supportEmail,
+    }
 
-    logger.info(`Email sent to ${customerEmail} for ${triggerEvent}`)
+    // ── ORDER PLACED ──────────────────────────────────────────────────────────
+    if (event.name === "order.placed") {
+      const paymentMethod = "Online Payment" // simplified; provider can be added later
+      await sendTransactional({
+        email: customerEmail,
+        name: customerName,
+        templateName: "VC Order Confirmed",
+        subject: `Order #${orderId2} confirmed – thank you, ${customerName}!`,
+        data: {
+          ...base,
+          shipping_name: shippingName,
+          shipping_address: shippingAddress,
+          payment_method: paymentMethod,
+        },
+      })
+      logger.info(`[email-notifications] Order confirmed email → ${customerEmail}`)
+      return
+    }
+
+    // ── ORDER SHIPPED (fulfillment_created) ───────────────────────────────────
+    if (event.name === "order.fulfillment_created") {
+      const fulfillment = (order.fulfillments || [])[0]
+      const trackingLink = (fulfillment?.tracking_links || [])[0]
+      const trackingNumber = trackingLink?.tracking_number || "Tracking update coming soon"
+      const trackingUrl = trackingLink?.url || orderUrl
+      const carrier = (fulfillment?.provider_id || "our courier partner")
+        .replace("fp_", "")
+        .replace(/_/g, " ")
+      const estimatedDelivery = addDays(new Date(), 5)
+
+      await sendTransactional({
+        email: customerEmail,
+        name: customerName,
+        templateName: "VC Order Shipped",
+        subject: `Your VastuCart order #${orderId2} is on its way! 🚚`,
+        data: {
+          ...base,
+          tracking_number: trackingNumber,
+          tracking_url: trackingUrl,
+          carrier: carrier,
+          estimated_delivery: estimatedDelivery,
+        },
+      })
+      logger.info(`[email-notifications] Order shipped email → ${customerEmail}`)
+      return
+    }
+
+    // ── ORDER DELIVERED ───────────────────────────────────────────────────────
+    if (event.name === "order.delivery_created") {
+      const loyaltyPoints = String(Math.floor((order.total || 0) / 10000))
+      const reviewUrl = `${storeUrl}/account/orders/${orderId}?review=1`
+
+      await sendTransactional({
+        email: customerEmail,
+        name: customerName,
+        templateName: "VC Order Delivered",
+        subject: `Your VastuCart order #${orderId2} has arrived! ✦`,
+        data: {
+          ...base,
+          loyalty_points: loyaltyPoints,
+          review_url: reviewUrl,
+        },
+      })
+      logger.info(`[email-notifications] Order delivered email → ${customerEmail}`)
+      return
+    }
+
+    // ── ORDER CANCELLED ───────────────────────────────────────────────────────
+    if (event.name === "order.cancelled") {
+      const refundAmount = fmt(order.total || 0)
+      const refundTimeline = "5–7 business days to your original payment method"
+
+      await sendTransactional({
+        email: customerEmail,
+        name: customerName,
+        templateName: "VC Order Cancelled",
+        subject: `Your VastuCart order #${orderId2} has been cancelled`,
+        data: {
+          ...base,
+          refund_amount: refundAmount,
+          refund_timeline: refundTimeline,
+        },
+      })
+      logger.info(`[email-notifications] Order cancelled email → ${customerEmail}`)
+      return
+    }
   } catch (err: any) {
-    logger.warn(`Email notification error for ${triggerEvent}: ${err.message}`)
+    logger.warn(`[email-notifications] Failed for ${event.name} / ${orderId}: ${err.message}`)
   }
 }
 

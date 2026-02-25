@@ -186,6 +186,7 @@ export function ProductWizard({
       faqs: [],
       seo: { metaTitle: "", metaDescription: "", urlSlug: "", canonicalUrl: "" },
       merchantCentre: { gtin: "", mpn: "", brand: "", condition: "new", ageGroup: "", gender: "", googleCategory: "" },
+      variantImageMap: {},
     }
   )
 
@@ -652,6 +653,69 @@ export function ProductWizard({
                         />
                         <span style={{ color: c.earth600, fontFamily: fonts.body }}>Set as primary</span>
                       </label>
+                      {/* Variant assignment chips */}
+                      {formData.variants && formData.variants.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-[10px] font-semibold mb-1.5 uppercase tracking-wide" style={{ color: c.earth400, fontFamily: fonts.body }}>
+                            Show on
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {/* "All Variants" chip */}
+                            {(() => {
+                              const map = (formData as any).variantImageMap || {}
+                              const tags: string[] = map[img.url] || ["all"]
+                              const isAll = tags.includes("all")
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const current = { ...((formData as any).variantImageMap || {}) }
+                                    current[img.url] = ["all"]
+                                    updateField("variantImageMap", current)
+                                  }}
+                                  className="px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all"
+                                  style={{
+                                    background: isAll ? c.primary500 : c.primary50,
+                                    color: isAll ? c.card : c.primary500,
+                                    border: `1px solid ${c.primary200}`,
+                                  }}
+                                >
+                                  All
+                                </button>
+                              )
+                            })()}
+                            {/* Per-variant chips */}
+                            {formData.variants.map((v) => {
+                              const map = (formData as any).variantImageMap || {}
+                              const tags: string[] = map[img.url] || ["all"]
+                              const isActive = tags.includes(v.label)
+                              return (
+                                <button
+                                  key={v.id}
+                                  type="button"
+                                  onClick={() => {
+                                    const current = { ...((formData as any).variantImageMap || {}) }
+                                    const prev: string[] = (current[img.url] || ["all"]).filter((t: string) => t !== "all")
+                                    const next = prev.includes(v.label)
+                                      ? prev.filter((t) => t !== v.label)
+                                      : [...prev, v.label]
+                                    current[img.url] = next.length > 0 ? next : ["all"]
+                                    updateField("variantImageMap", current)
+                                  }}
+                                  className="px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all"
+                                  style={{
+                                    background: isActive ? c.secondary500 : c.secondary50,
+                                    color: isActive ? c.card : c.secondary500,
+                                    border: `1px solid ${isActive ? c.secondary500 : c.subtle}`,
+                                  }}
+                                >
+                                  {v.label || `V${formData.variants!.indexOf(v) + 1}`}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

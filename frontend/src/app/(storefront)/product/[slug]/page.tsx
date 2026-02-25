@@ -301,6 +301,7 @@ export default function ProductPage() {
   const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([])
   const [rawProductId, setRawProductId] = useState("")
   const [merchantMeta, setMerchantMeta] = useState<Record<string, string>>({})
+  const [variantImageMap, setVariantImageMap] = useState<Record<string, string[]>>({})
 
 
   const fetchProductData = useCallback(async () => {
@@ -328,6 +329,7 @@ export default function ProductPage() {
 
       setRawProductId(rawProduct.id)
       setMerchantMeta(rawProduct.metadata?.merchant_centre || {})
+      setVariantImageMap(rawProduct.metadata?.variant_image_map || {})
 
       // 3. Fetch reviews, questions, and related products in parallel
       const categoryIds = (rawProduct.categories || []).map((c: any) => c.id)
@@ -622,6 +624,7 @@ export default function ProductPage() {
         relatedProducts={relatedProducts}
         breadcrumbs={breadcrumbs}
         isWishlisted={!!rawProductId && isInWishlist(rawProductId)}
+        variantImageMap={variantImageMap}
         onAddToCart={handleAddToCart}
         onToggleWishlist={handleToggleWishlist}
         onShare={handleShare}

@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState, useEffect, useCallback } from "react"
+import { Suspense, useState, useEffect, useCallback, useMemo } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { CategoryListing } from "@/components/storefront/CategoryListing"
 import { useWishlist } from "@/providers/wishlist-provider"
@@ -26,6 +26,25 @@ const SORT_OPTIONS: SortOption[] = [
   { label: "Price: Low to High", value: "price-asc" },
   { label: "Price: High to Low", value: "price-desc" },
   { label: "Newest First", value: "newest" },
+]
+
+const DEFAULT_FILTERS: FilterGroup[] = [
+  {
+    id: "filter-price",
+    label: "Price Range",
+    type: "range",
+    min: 99,
+    max: 50000,
+    options: [],
+  },
+  {
+    id: "filter-availability",
+    label: "Availability",
+    type: "toggle",
+    min: 0,
+    max: 0,
+    options: [{ label: "In Stock Only", value: "in-stock", count: 0 }],
+  },
 ]
 
 function mapProduct(p: any): StorefrontProduct {
@@ -76,6 +95,7 @@ function SearchContent() {
   const [products, setProducts] = useState<StorefrontProduct[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({})
+  const [priceRange, setPriceRange] = useState<[number, number]>([99, 50000])
 
   const currentPage = Number(searchParams.get("page")) || 1
   const currentSort = searchParams.get("sort") || "relevance"
@@ -112,6 +132,17 @@ function SearchContent() {
   useEffect(() => {
     searchProducts()
   }, [searchProducts])
+
+  const filteredProducts = useMemo(() => {
+    let result = products
+    if (priceRange[0] > 99 || priceRange[1] < 50000) {
+      result = result.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1])
+    }
+    if (activeFilters["filter-availability"]?.includes("in-stock")) {
+      result = result.filter((p) => p.inStock)
+    }
+    return result
+  }, [products, priceRange, activeFilters])
 
   const categoryHero: CategoryHero = {
     name: query ? `Search: "${query}"` : "Shop All Products",
@@ -226,11 +257,11 @@ function SearchContent() {
     <CategoryListing
       categoryHero={categoryHero}
       breadcrumbs={breadcrumbs}
-      products={products}
+      products={filteredProducts}
       totalCount={totalCount}
       currentPage={currentPage}
       totalPages={totalPages}
-      filterGroups={[]}
+      filterGroups={DEFAULT_FILTERS}
       activeFilters={activeFilters}
       sortOptions={SORT_OPTIONS}
       currentSort={currentSort}
@@ -242,8 +273,8 @@ function SearchContent() {
       onFilterChange={(filterId, values) => {
         setActiveFilters((prev) => ({ ...prev, [filterId]: values }))
       }}
-      onPriceRangeChange={() => {}}
-      onClearFilters={() => setActiveFilters({})}
+      onPriceRangeChange={(min, max) => setPriceRange([min, max])}
+      onClearFilters={() => { setActiveFilters({}); setPriceRange([99, 50000]) }}
       onSortChange={(sort) => updateUrl({ sort, page: "1" })}
       onPageChange={(page) => updateUrl({ page: String(page) })}
       isWishlisted={isInWishlist}
