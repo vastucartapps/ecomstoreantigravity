@@ -2,26 +2,44 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: always
+    # Custom entrypoint: patches pg_hba.conf in the data volume on every startup,
+    # then hands off to the official docker-entrypoint.sh. This fixes the
+    # scram-sha-256/musl incompatibility permanently — on both existing volumes
+    # (patched before postgres reads it) and fresh volumes (POSTGRES_HOST_AUTH_METHOD
+    # handles init, then this overwrites with the canonical trust config).
+    entrypoint:
+      - "sh"
+      - "-c"
+      - |
+        DATA=/var/lib/postgresql/data
+        HBA=$DATA/pg_hba.conf
+        if [ -f "$HBA" ]; then
+          printf '%s\n' \
+            'local   all  all               trust' \
+            'host    all  all  127.0.0.1/32  trust' \
+            'host    all  all  ::1/128       trust' \
+            'host    all  all  10.0.0.0/8    trust' \
+            'host    all  all  172.16.0.0/12 trust' \
+            'local   replication all              trust' \
+            'host    replication all 127.0.0.1/32 trust' \
+            'host    replication all ::1/128      trust' \
+            > "$HBA"
+        fi
+        exec docker-entrypoint.sh "$@"
+      - "sh"
     environment:
       POSTGRES_USER: medusa
       POSTGRES_PASSWORD: medusa
       POSTGRES_DB: medusa
-      # Trust for internal networks — avoids SCRAM-SHA-256/musl incompatibility.
-      # pg_hba.conf is mounted via --hba-file so this only affects fresh-volume init.
+      # For fresh-volume init: use trust so initdb writes a trust pg_hba.conf
       POSTGRES_HOST_AUTH_METHOD: trust
       POSTGRES_INITDB_ARGS: "--auth-host=trust"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      # Mounted pg_hba.conf overrides whatever is in the volume — permanent fix
-      # that survives redeploys, volume upgrades, and container recreates.
-      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
     # shm_size prevents shared memory issues on heavy queries
     shm_size: 256m
     command:
       - "postgres"
-      # Use our version-controlled pg_hba.conf regardless of volume state
-      - "-c"
-      - "hba_file=/etc/postgresql/pg_hba.conf"
       - "-c"
       - "password_encryption=md5"
       - "-c"
