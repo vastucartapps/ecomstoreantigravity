@@ -6,14 +6,17 @@ services:
       POSTGRES_USER: medusa
       POSTGRES_PASSWORD: medusa
       POSTGRES_DB: medusa
-      # Tuning for production (4GB server)
-      POSTGRES_INITDB_ARGS: "--data-checksums"
+      # md5 auth — compatible with all Node.js pg driver versions (avoids SCRAM-SHA-256 Alpine/musl issue)
+      POSTGRES_HOST_AUTH_METHOD: md5
+      POSTGRES_INITDB_ARGS: "--auth-host=md5 --data-checksums"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     # shm_size prevents shared memory issues on heavy queries
     shm_size: 256m
     command:
       - "postgres"
+      - "-c"
+      - "password_encryption=md5"
       - "-c"
       - "shared_buffers=256MB"
       - "-c"
