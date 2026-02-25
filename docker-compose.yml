@@ -6,15 +6,22 @@ services:
       POSTGRES_USER: medusa
       POSTGRES_PASSWORD: medusa
       POSTGRES_DB: medusa
-      # md5 auth — compatible with all Node.js pg driver versions (avoids SCRAM-SHA-256 Alpine/musl issue)
-      POSTGRES_HOST_AUTH_METHOD: md5
-      POSTGRES_INITDB_ARGS: "--auth-host=md5 --data-checksums"
+      # Trust for internal networks — avoids SCRAM-SHA-256/musl incompatibility.
+      # pg_hba.conf is mounted via --hba-file so this only affects fresh-volume init.
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_INITDB_ARGS: "--auth-host=trust"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Mounted pg_hba.conf overrides whatever is in the volume — permanent fix
+      # that survives redeploys, volume upgrades, and container recreates.
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
     # shm_size prevents shared memory issues on heavy queries
     shm_size: 256m
     command:
       - "postgres"
+      # Use our version-controlled pg_hba.conf regardless of volume state
+      - "-c"
+      - "hba_file=/etc/postgresql/pg_hba.conf"
       - "-c"
       - "password_encryption=md5"
       - "-c"
