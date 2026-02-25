@@ -36,6 +36,7 @@ export interface RichContentBlock {
   title: string
   content: string
   imageUrl?: string
+  imagePosition?: "left" | "right"
 }
 
 /** Product specification */

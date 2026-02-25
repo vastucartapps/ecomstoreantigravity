@@ -58,6 +58,7 @@ export interface RichContentImageText {
   title: string
   content: string
   imageUrl: string
+  imagePosition?: "left" | "right"
 }
 
 /** A+ text-only block */

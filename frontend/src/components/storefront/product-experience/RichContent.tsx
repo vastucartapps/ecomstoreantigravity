@@ -219,8 +219,8 @@ export function RichContent({ blocks }: RichContentProps) {
               <div key={block.id}>
                 {blockIdx > 0 && divider}
                 {block.title && <SectionTitle title={block.title} />}
-                {/* Desktop: image left ~55% | text right ~45%. Mobile: stacked. */}
-                <div className="flex flex-col sm:flex-row gap-6 sm:gap-10 items-start">
+                {/* Desktop: image left ~55% | text right ~45%. Mobile: stacked. imagePosition controls side. */}
+                <div className={`flex flex-col gap-6 sm:gap-10 items-start ${block.imagePosition === "right" ? "sm:flex-row-reverse" : "sm:flex-row"}`}>
                   {block.imageUrl && (
                     <div className="w-full sm:w-[55%] flex-shrink-0">
                       {/* Exact 970:600 ratio — no crop, no letterbox, no padding gaps */}
