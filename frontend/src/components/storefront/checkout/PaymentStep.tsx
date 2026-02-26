@@ -29,8 +29,7 @@ function loadRazorpayScript(): Promise<boolean> {
       s.onerror = () => fb ? fb() : resolve(false)
       document.body.appendChild(s)
     }
-    tryLoad("https://checkout.razorpay.com/v1/razorpay.js",
-      () => tryLoad("https://checkout.razorpay.com/v1/checkout.js"))
+    tryLoad("https://checkout.razorpay.com/v1/checkout.js")
   })
 }
 
