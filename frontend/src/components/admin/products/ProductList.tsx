@@ -318,55 +318,90 @@ export function ProductList({
       </div>
 
       {/* Bulk Actions Bar */}
-      {selectedIds.size > 0 && (
-        <div
-          className="flex flex-wrap items-center gap-4 rounded-lg p-4"
-          style={{ backgroundColor: c.primary50, borderLeft: `4px solid ${c.primary500}` }}
-        >
-          <span className="text-sm font-medium" style={{ color: c.primary500 }}>
-            {selectedIds.size} selected
-          </span>
+      {selectedIds.size > 0 && (() => {
+        const selectedProducts = products.filter((p) => selectedIds.has(p.id))
+        const activeCount = selectedProducts.filter((p) => p.status === "active").length
+        const inactiveCount = selectedProducts.filter((p) => p.status !== "active").length
+        const isSingle = selectedIds.size === 1
+        const singleProduct = isSingle ? selectedProducts[0] : null
 
-          <div className="flex flex-wrap gap-2">
+        return (
+          <div
+            className="flex flex-wrap items-center gap-3 rounded-lg p-3 sm:p-4"
+            style={{ backgroundColor: c.primary50, borderLeft: `4px solid ${c.primary500}` }}
+          >
+            <span className="text-sm font-medium" style={{ color: c.primary500 }}>
+              {selectedIds.size} selected
+            </span>
+
+            <div className="flex flex-wrap gap-2">
+              {/* Single selection: context-aware toggle */}
+              {isSingle && singleProduct && (
+                singleProduct.status === "active" ? (
+                  <button
+                    onClick={() => handleBulkAction("deactivate")}
+                    className="rounded-lg px-3 py-1.5 text-sm font-medium transition-all hover:opacity-80"
+                    style={{ backgroundColor: c.warning, color: "white" }}
+                  >
+                    Deactivate
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleBulkAction("activate")}
+                    className="rounded-lg px-3 py-1.5 text-sm font-medium transition-all hover:opacity-80"
+                    style={{ backgroundColor: c.success, color: "white" }}
+                  >
+                    Activate
+                  </button>
+                )
+              )}
+
+              {/* Multiple selection: show each button only when it applies */}
+              {!isSingle && inactiveCount > 0 && (
+                <button
+                  onClick={() => handleBulkAction("activate")}
+                  className="rounded-lg px-3 py-1.5 text-sm font-medium transition-all hover:opacity-80"
+                  style={{ backgroundColor: c.success, color: "white" }}
+                >
+                  Activate ({inactiveCount})
+                </button>
+              )}
+              {!isSingle && activeCount > 0 && (
+                <button
+                  onClick={() => handleBulkAction("deactivate")}
+                  className="rounded-lg px-3 py-1.5 text-sm font-medium transition-all hover:opacity-80"
+                  style={{ backgroundColor: c.warning, color: "white" }}
+                >
+                  Deactivate ({activeCount})
+                </button>
+              )}
+
+              <button
+                onClick={() => handleBulkAction("delete")}
+                className="rounded-lg px-3 py-1.5 text-sm font-medium transition-all hover:opacity-80"
+                style={{ backgroundColor: c.error, color: "white" }}
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => showToast("CSV export coming soon")}
+                className="rounded-lg border px-3 py-1.5 text-sm font-medium transition-all hover:opacity-80"
+                style={{ borderColor: c.primary500, backgroundColor: c.card, color: c.primary500 }}
+              >
+                Export
+              </button>
+            </div>
+
             <button
-              onClick={() => handleBulkAction("activate")}
-              className="rounded-lg px-3 py-1.5 text-sm font-medium transition-all hover:opacity-80"
-              style={{ backgroundColor: c.success, color: "white" }}
+              onClick={handleSelectAll}
+              className="ml-auto text-sm font-medium underline"
+              style={{ color: c.primary500 }}
             >
-              Activate
-            </button>
-            <button
-              onClick={() => handleBulkAction("deactivate")}
-              className="rounded-lg px-3 py-1.5 text-sm font-medium transition-all hover:opacity-80"
-              style={{ backgroundColor: c.warning, color: "white" }}
-            >
-              Deactivate
-            </button>
-            <button
-              onClick={() => handleBulkAction("delete")}
-              className="rounded-lg px-3 py-1.5 text-sm font-medium transition-all hover:opacity-80"
-              style={{ backgroundColor: c.error, color: "white" }}
-            >
-              Delete
-            </button>
-            <button
-              onClick={() => showToast("CSV export coming soon")}
-              className="rounded-lg border px-3 py-1.5 text-sm font-medium transition-all hover:opacity-80"
-              style={{ borderColor: c.primary500, backgroundColor: c.card, color: c.primary500 }}
-            >
-              Export CSV
+              {selectedIds.size === products.length ? "Deselect All" : "Select All"}
             </button>
           </div>
-
-          <button
-            onClick={handleSelectAll}
-            className="ml-auto text-sm font-medium underline"
-            style={{ color: c.primary500 }}
-          >
-            {selectedIds.size === products.length ? "Deselect All" : "Select All"}
-          </button>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Grid View */}
       {viewMode === "grid" && (
@@ -427,8 +462,8 @@ export function ProductList({
                         </span>
                       </div>
 
-                      {/* Action Buttons on Hover */}
-                      <div className="absolute inset-x-0 bottom-0 flex justify-center gap-2 bg-gradient-to-t from-black/50 to-transparent p-3 opacity-0 transition-opacity group-hover:opacity-100">
+                      {/* Action Buttons — always visible on mobile, hover-only on desktop */}
+                      <div className="absolute inset-x-0 bottom-0 flex justify-center gap-2 bg-gradient-to-t from-black/60 to-transparent p-3 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                         <button
                           onClick={() => onEditProduct?.(product.id)}
                           className="rounded-lg bg-white/90 p-2 backdrop-blur-sm transition-all hover:bg-white"
@@ -544,8 +579,12 @@ export function ProductList({
                     {["Image", "Name & SKU", "Category", "Price", "Stock", "Status", "Rating", "Actions"].map((col) => (
                       <th
                         key={col}
-                        className="p-4 text-left text-xs font-semibold uppercase tracking-wide"
-                        style={{ color: c.earth600, textAlign: col === "Actions" ? "right" : "left" }}
+                        className={`p-4 text-left text-xs font-semibold uppercase tracking-wide${col === "Actions" ? " sticky right-0 z-10" : ""}`}
+                        style={{
+                          color: c.earth600,
+                          textAlign: col === "Actions" ? "right" : "left",
+                          backgroundColor: col === "Actions" ? c.bg : undefined,
+                        }}
                       >
                         {col}
                       </th>
@@ -615,7 +654,10 @@ export function ProductList({
                             <span className="text-xs" style={{ color: c.earth400 }}>({product.reviewCount || 0})</span>
                           </div>
                         </td>
-                        <td className="p-4">
+                        <td
+                          className="p-4 sticky right-0 z-10"
+                          style={{ backgroundColor: index % 2 === 0 ? c.card : "#faf8f5" }}
+                        >
                           <div className="flex justify-end gap-1">
                             <button
                               onClick={() => onEditProduct?.(product.id)}
