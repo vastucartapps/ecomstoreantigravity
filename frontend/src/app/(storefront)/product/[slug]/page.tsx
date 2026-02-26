@@ -303,6 +303,7 @@ export default function ProductPage() {
   const [rawProductId, setRawProductId] = useState("")
   const [merchantMeta, setMerchantMeta] = useState<Record<string, string>>({})
   const [variantImageMap, setVariantImageMap] = useState<Record<string, string[]>>({})
+  const [productTags, setProductTags] = useState<string[]>([])
 
 
   const fetchProductData = useCallback(async () => {
@@ -313,7 +314,7 @@ export default function ProductPage() {
       const regionId = await getRegionId()
       const regionParam = regionId ? `&region_id=${regionId}` : ""
       const productFields =
-        "id,title,handle,subtitle,description,thumbnail,created_at,metadata,status,options.id,options.title,options.values.id,options.values.value,variants.id,variants.title,variants.sku,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity,variants.options.id,variants.options.value,variants.options.option_id,images.id,images.url,categories.id,categories.name,categories.handle"
+        "id,title,handle,subtitle,description,thumbnail,created_at,metadata,status,options.id,options.title,options.values.id,options.values.value,variants.id,variants.title,variants.sku,variants.calculated_price,variants.manage_inventory,variants.inventory_quantity,variants.options.id,variants.options.value,variants.options.option_id,images.id,images.url,categories.id,categories.name,categories.handle,tags.id,tags.value"
 
       // 2. Fetch product by handle
       const prodRes = await fetch(
@@ -402,6 +403,7 @@ export default function ProductPage() {
       setReviews(reviewData)
       setRatingBreakdown(ratingData)
       setRelatedProducts(relatedData)
+      setProductTags((rawProduct.tags || []).map((t: any) => t.value || "").filter(Boolean))
     } catch (err) {
       console.error("Failed to fetch product:", err)
     } finally {
@@ -522,6 +524,7 @@ export default function ProductPage() {
         "@type": "Product",
         name: product.name,
         description: product.description,
+        ...(productTags.length ? { keywords: productTags.join(", ") } : {}),
         url: typeof window !== "undefined" ? window.location.href : `${BACKEND_URL.replace("sapi.", "store.")}/product/${product.slug}`,
         image: images.map((img) => img.url).filter(Boolean),
         sku: product.sku,

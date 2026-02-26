@@ -444,10 +444,19 @@ export function useAdminProducts() {
     async (rawTags: string[]): Promise<Array<{ id: string }>> => {
       if (rawTags.length === 0) return []
       try {
-        // Fetch existing tags
-        const res = await adminFetch("/admin/product-tags?limit=200&fields=id,value")
-        const existing: Array<{ id: string; value: string }> = res.product_tags || []
-        const byValue = new Map(existing.map((t) => [t.value.toLowerCase(), t.id]))
+        // Fetch ALL existing tags via pagination to prevent duplicate creation
+        // when the store has more than any single page limit
+        const allTags: Array<{ id: string; value: string }> = []
+        const PAGE = 200
+        let offset = 0
+        while (true) {
+          const res = await adminFetch(`/admin/product-tags?limit=${PAGE}&offset=${offset}&fields=id,value`)
+          const page: Array<{ id: string; value: string }> = res.product_tags || []
+          allTags.push(...page)
+          if (page.length < PAGE) break
+          offset += PAGE
+        }
+        const byValue = new Map(allTags.map((t) => [t.value.toLowerCase(), t.id]))
 
         const tagIds: Array<{ id: string }> = []
         for (const val of rawTags) {

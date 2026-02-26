@@ -14,7 +14,7 @@ export async function generateMetadata({
 
   try {
     const res = await fetch(
-      `${BACKEND_URL}/store/products?handle=${encodeURIComponent(slug)}&fields=id,title,description,thumbnail,metadata,variants.id,variants.sku,variants.inventory_quantity,variants.manage_inventory,variants.prices.amount,variants.prices.currency_code`,
+      `${BACKEND_URL}/store/products?handle=${encodeURIComponent(slug)}&fields=id,title,description,thumbnail,metadata,tags.id,tags.value,variants.id,variants.sku,variants.inventory_quantity,variants.manage_inventory,variants.prices.amount,variants.prices.currency_code`,
       {
         headers: { "x-publishable-api-key": PUB_KEY },
         next: { revalidate: 3600 },
@@ -45,9 +45,14 @@ export async function generateMetadata({
       (firstVariant?.inventory_quantity ?? 1) > 0
     const retailerItemId = firstVariant?.sku || product.id
 
+    const keywords = product.tags?.length
+      ? product.tags.map((t: { value: string }) => t.value).join(", ")
+      : undefined
+
     return {
       title,
       description,
+      ...(keywords ? { keywords } : {}),
       alternates: { canonical: url },
       openGraph: {
         title,

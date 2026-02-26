@@ -194,8 +194,13 @@ export function ProductWizard({
   useEffect(() => {
     if (product) {
       setFormData(product)
+      setTagsRaw((product.tags || []).join(", "))
     }
   }, [product])
+
+  // Raw string state for tags input — avoids React controlled-input eating
+  // spaces and commas on every keystroke. Parsed to array only on blur.
+  const [tagsRaw, setTagsRaw] = useState((product?.tags || []).join(", "))
 
   const [previewCollapsed, setPreviewCollapsed] = useState(false)
   const [completedSteps, setCompletedSteps] = useState<Set<WizardStep>>(new Set())
@@ -323,13 +328,24 @@ export function ProductWizard({
               ]}
               required
             />
-            <InputField
-              label="Tags"
-              value={formData.tags?.join(", ") || ""}
-              onChange={(v) => updateField("tags", v.split(",").map((t) => t.trim()).filter(Boolean))}
-              placeholder="e.g., organic, handmade, eco-friendly"
-              help="Comma-separated keywords for search and filtering"
-            />
+            {/* Tags — local raw state prevents spaces/commas being eaten on each keystroke */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1" style={{ color: c.earth700, fontFamily: fonts.body }}>
+                Tags
+              </label>
+              <input
+                type="text"
+                value={tagsRaw}
+                onChange={(e) => setTagsRaw(e.target.value)}
+                onBlur={() => updateField("tags", tagsRaw.split(",").map((t) => t.trim()).filter(Boolean))}
+                placeholder="e.g., organic, handmade, eco-friendly"
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all"
+                style={{ borderColor: c.earth300, fontFamily: fonts.body }}
+              />
+              <p className="text-xs mt-1" style={{ color: c.earth400, fontFamily: fonts.body }}>
+                Comma-separated keywords for search and SEO
+              </p>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <InputField
                 label="HSN Code"
