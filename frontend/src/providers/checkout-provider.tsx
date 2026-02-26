@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useCallback, type ReactNode } from
 import { medusa } from "@/lib/medusa"
 import { useCart } from "./cart-provider"
 import type { CheckoutStepId, AddressPayload, SavedAddress, ShippingOption } from "@/types/checkout"
+import type { AppliedGiftCard } from "./cart-provider"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
@@ -43,10 +44,10 @@ interface CheckoutContextValue {
   stripePublishableKey: string | null
   initPayment: () => Promise<void>
   completeCheckout: () => Promise<{ orderId: string }>
-  // Tracks when an order has been placed in this session so the empty-cart guard
-  // in the checkout page does not redirect to /cart while the route transition is
-  // still in progress (the cart becomes null before the old page unmounts).
   completedOrderId: string | null
+  // Gift card (passed through from cart provider for use in PaymentStep)
+  appliedGiftCard: AppliedGiftCard | null
+  giftCardDiscount: number
   // State
   isProcessing: boolean
   error: string | null
@@ -58,7 +59,7 @@ const STEPS: CheckoutStepId[] = ["contact", "address", "shipping", "payment"]
 const CheckoutContext = createContext<CheckoutContextValue | null>(null)
 
 export function CheckoutProvider({ children }: { children: ReactNode }) {
-  const { cart, cartId, refreshCart, clearCart } = useCart()
+  const { cart, cartId, refreshCart, clearCart, appliedGiftCard, giftCardDiscount } = useCart()
 
   const [step, setStepState] = useState<CheckoutStepId>("contact")
   const [contactEmail, setContactEmail] = useState("")
@@ -371,6 +372,20 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     try {
       const id = cart?.id || cartId
       if (!id) throw new Error("No cart found")
+
+      // Store gift card info in cart metadata so the order-gift-card subscriber
+      // can deduct the balance after order.placed fires.
+      if (appliedGiftCard && giftCardDiscount > 0) {
+        await medusa.store.cart.update(id, {
+          metadata: {
+            ...(cart?.metadata || {}),
+            gift_card_code: appliedGiftCard.code,
+            gift_card_id: appliedGiftCard.id,
+            gift_card_deduct_amount: giftCardDiscount,
+          },
+        })
+      }
+
       const result = await medusa.store.cart.complete(id) as any
 
       // Medusa v2 returns { type: "order", order: { id, ... } }
@@ -402,6 +417,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         codEnabled, codConfig, toggleCod,
         paymentMethod, setPaymentMethod, razorpayKeyId, stripePublishableKey, initPayment, completeCheckout,
         completedOrderId,
+        appliedGiftCard, giftCardDiscount,
         isProcessing, error, setError,
       }}
     >

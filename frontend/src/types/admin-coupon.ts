@@ -88,7 +88,6 @@ export interface AdminCouponsGiftCardsProps {
   onCreateGiftCard?: (
     balance: number,
     currency: "INR" | "USD",
-    expiresAt?: string,
     code?: string
   ) => Promise<void>
   onViewGiftCard?: (giftCardId: string) => void

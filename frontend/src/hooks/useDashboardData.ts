@@ -1,7 +1,7 @@
 import { useCallback } from "react"
 import { medusa } from "@/lib/medusa"
 import { normalizeImageUrl } from "@/lib/image-url"
-import type { Order, Address, LoyaltyBalance, Booking, CustomerNotification, Coupon } from "@/types/dashboard"
+import type { Order, Address, LoyaltyBalance, Booking, CustomerNotification, Coupon, GiftCard } from "@/types/dashboard"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
@@ -219,6 +219,28 @@ export function useDashboardData() {
     })
   }, [])
 
+  const fetchGiftCards = useCallback(async (): Promise<GiftCard[]> => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/store/customers/me/gift-cards`, {
+        headers: authHeaders(),
+        credentials: "include",
+      })
+      if (!res.ok) return []
+      const data = await res.json()
+      return (data.gift_cards || []).map((gc: any): GiftCard => ({
+        id: gc.id,
+        code: gc.code,
+        value: gc.value || gc.balance || 0,
+        balance: gc.balance || 0,
+        currency: (gc.currency_code || "INR").toUpperCase(),
+        status: gc.status || "active",
+        expiresAt: gc.ends_at || undefined,
+      }))
+    } catch {
+      return []
+    }
+  }, [])
+
   const fetchCoupons = useCallback(async (): Promise<Coupon[]> => {
     try {
       const res = await fetch(`${BACKEND_URL}/store/promotions`, {
@@ -256,5 +278,6 @@ export function useDashboardData() {
     fetchNotifications,
     markNotificationRead,
     fetchCoupons,
+    fetchGiftCards,
   }
 }

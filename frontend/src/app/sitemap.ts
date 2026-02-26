@@ -49,6 +49,12 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
     changeFrequency: "yearly",
     priority: 0.3,
   },
+  {
+    url: `${SITE_URL}/gift-cards`,
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: 0.7,
+  },
 ]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

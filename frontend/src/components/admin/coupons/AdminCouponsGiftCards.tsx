@@ -1467,7 +1467,6 @@ interface CreateGiftCardModalProps {
   onCreate: (
     balance: number,
     currency: "INR" | "USD",
-    expiresAt?: string,
     code?: string
   ) => Promise<void>
 }
@@ -1476,13 +1475,12 @@ function CreateGiftCardModal({ onClose, onCreate }: CreateGiftCardModalProps) {
   const [code, setCode] = useState(generateGiftCardCode())
   const [balance, setBalance] = useState(1000)
   const [currency, setCurrency] = useState<"INR" | "USD">("INR")
-  const [expiresAt, setExpiresAt] = useState("")
   const [isSaving, setIsSaving] = useState(false)
 
   const handleCreate = async () => {
     setIsSaving(true)
     try {
-      await onCreate(balance, currency, expiresAt || undefined, code)
+      await onCreate(balance, currency, code)
       onClose()
     } finally {
       setIsSaving(false)
@@ -1634,24 +1632,16 @@ function CreateGiftCardModal({ onClose, onCreate }: CreateGiftCardModalProps) {
             </div>
           </div>
 
-          <div>
-            <label
-              style={{
-                display: "block",
-                fontSize: "14px",
-                fontWeight: 500,
-                color: c.earth600,
-                marginBottom: "6px",
-              }}
-            >
-              Expiry Date (Optional)
-            </label>
-            <input
-              type="date"
-              value={expiresAt}
-              onChange={(e) => setExpiresAt(e.target.value)}
-              style={inputStyle}
-            />
+          <div
+            style={{
+              padding: "10px 12px",
+              background: "#F0FDF4",
+              borderRadius: "6px",
+              fontSize: "12px",
+              color: "#065F46",
+            }}
+          >
+            Expiry is automatically set to 1 year from today.
           </div>
         </div>
 

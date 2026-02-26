@@ -130,7 +130,27 @@ VastuCart® is a registered trademark (Class 21) owned and operated by **Prashan
 
 ---
 
-## 9. Consultation & Booking Services
+## 9. Gift Cards
+
+9.1 VastuCart Gift Cards are prepaid digital vouchers available for purchase on the Platform in Indian Rupees (INR) or US Dollars (USD), depending on your region.
+
+9.2 All Gift Cards have a **fixed validity of one (1) year from the date of purchase**. There are no exceptions to this expiry term. Gift Cards that expire before redemption are permanently forfeited. VastuCart shall have no liability for any unexpired balance that lapses due to non-use.
+
+9.3 **Gift Cards are non-refundable, non-exchangeable, and non-encashable** under any circumstances, including but not limited to: change of mind, account closure, service discontinuation, or cessation of business operations by VastuCart. If VastuCart ceases operations for any reason before a Gift Card is redeemed, no refund or compensation will be provided for unused Gift Card balances.
+
+9.4 Gift Cards may be used for partial payment of an order. Any remaining balance after a purchase stays on the Gift Card and can be used in future transactions, subject to the expiry terms in 9.2.
+
+9.5 Gift Cards cannot be combined with Cash on Delivery (COD). If a Gift Card is applied at checkout, the COD payment option will not be available for that order.
+
+9.6 Gift Cards are issued in the same currency as the customer's region. INR Gift Cards cannot be used on USD carts and vice versa.
+
+9.7 VastuCart is not responsible for lost, stolen, or unauthorised use of Gift Card codes. Keep your Gift Card code confidential. VastuCart will not replace lost or stolen Gift Cards.
+
+9.8 VastuCart reserves the right to void any Gift Card where fraud, abuse, or technical error is suspected, without notice or liability.
+
+---
+
+## 10. Consultation & Booking Services
 
 9.1 VastuCart offers consultation and booking services through the Platform. Use of these services is additionally governed by the **Consultation & Booking Terms**, which form part of these Terms.
 
@@ -138,7 +158,7 @@ VastuCart® is a registered trademark (Class 21) owned and operated by **Prashan
 
 ---
 
-## 10. Intellectual Property
+## 11. Intellectual Property
 
 10.1 VastuCart® is a registered trademark (Class 21) exclusively owned by Prashant Kumar, Sole Proprietor. Unauthorised use, imitation, or misrepresentation of the VastuCart® trademark, logo, trade dress, or any confusingly similar variation is strictly prohibited and constitutes an offence under the Trade Marks Act, 1999, subject to civil and criminal penalties.
 
@@ -150,7 +170,7 @@ VastuCart® is a registered trademark (Class 21) owned and operated by **Prashan
 
 ---
 
-## 11. User Conduct
+## 12. User Conduct
 
 11.1 You agree to use this Platform only for lawful purposes and in a manner consistent with these Terms. Refer to our **Acceptable Use Policy** for complete prohibited conduct guidelines.
 
@@ -158,7 +178,7 @@ VastuCart® is a registered trademark (Class 21) owned and operated by **Prashan
 
 ---
 
-## 12. Third-Party Links & Services
+## 13. Third-Party Links & Services
 
 12.1 The Platform may contain links to third-party websites, services, or platforms. These links are provided for convenience only. VastuCart does not endorse, control, or take responsibility for the content, privacy practices, or terms of any third-party site or service.
 
@@ -166,7 +186,7 @@ VastuCart® is a registered trademark (Class 21) owned and operated by **Prashan
 
 ---
 
-## 13. Disclaimer of Warranties
+## 14. Disclaimer of Warranties
 
 13.1 The Platform and all products and services offered are provided on an "as is" and "as available" basis. VastuCart makes no representations or warranties of any kind, express or implied, including but not limited to merchantability, fitness for a particular purpose, or non-infringement.
 
@@ -176,7 +196,7 @@ VastuCart® is a registered trademark (Class 21) owned and operated by **Prashan
 
 ---
 
-## 14. Limitation of Liability
+## 15. Limitation of Liability
 
 14.1 To the fullest extent permitted by applicable law, VastuCart, its proprietor, employees, agents, and representatives shall not be liable for any indirect, incidental, special, consequential, exemplary, or punitive damages, including loss of profit, goodwill, data, or business opportunity, arising out of or related to your use of or inability to use the Platform.
 
@@ -186,19 +206,19 @@ VastuCart® is a registered trademark (Class 21) owned and operated by **Prashan
 
 ---
 
-## 15. Indemnification
+## 16. Indemnification
 
 15.1 You agree to indemnify, defend, and hold harmless VastuCart, its proprietor, employees, and agents from and against any and all claims, damages, losses, liabilities, costs, and expenses (including legal fees) arising out of or relating to your violation of these Terms, your use of the Platform, or your infringement of any third-party rights.
 
 ---
 
-## 16. Privacy & Cookies
+## 17. Privacy & Cookies
 
 16.1 Your use of this Platform is governed by our **Privacy Policy** and **Cookie Policy**, both of which form part of these Terms. By using the Platform, you consent to the data practices described therein.
 
 ---
 
-## 17. Modifications to Terms
+## 18. Modifications to Terms
 
 17.1 VastuCart reserves the absolute right to update, modify, replace, or remove any part of these Terms at any time and without prior notice. Changes take effect immediately upon posting on the Platform.
 
@@ -206,7 +226,7 @@ VastuCart® is a registered trademark (Class 21) owned and operated by **Prashan
 
 ---
 
-## 18. Dispute Resolution & Governing Law
+## 19. Dispute Resolution & Governing Law
 
 18.1 In the event of any dispute, controversy, or claim arising out of or relating to these Terms, the use of the Platform, or any transaction made through it, both parties agree to first attempt resolution through good-faith written negotiation. The aggrieved party must send written notice to vastucartcare@gmail.com specifying the nature and details of the dispute.
 
@@ -220,19 +240,19 @@ VastuCart® is a registered trademark (Class 21) owned and operated by **Prashan
 
 ---
 
-## 19. Severability
+## 20. Severability
 
 If any provision of these Terms is held to be invalid, unlawful, or unenforceable by a court of competent jurisdiction, that provision shall be deemed modified to the minimum extent necessary to make it enforceable, and all remaining provisions shall continue in full force and effect.
 
 ---
 
-## 20. Entire Agreement
+## 21. Entire Agreement
 
 These Terms, together with the Privacy Policy, Return & Refund Policy, Shipping Policy, Disclaimer, Cookie Policy, Consultation & Booking Terms, Intellectual Property & DMCA Policy, and Acceptable Use Policy, constitute the complete and entire agreement between you and VastuCart with respect to your use of the Platform and supersede all prior communications, representations, or agreements.
 
 ---
 
-## 21. Grievance Officer
+## 22. Grievance Officer
 
 Pursuant to the Consumer Protection (E-Commerce) Rules, 2020 and the Information Technology Act, 2000, and the rules made thereunder, VastuCart has designated the following Grievance Officer:
 

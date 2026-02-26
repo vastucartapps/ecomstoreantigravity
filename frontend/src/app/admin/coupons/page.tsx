@@ -216,10 +216,9 @@ export default function CouponsPage() {
     async (
       balance: number,
       currency: "INR" | "USD",
-      expiresAt?: string,
       code?: string
     ) => {
-      const ok = await createGiftCard(balance, currency, expiresAt, code)
+      const ok = await createGiftCard(balance, currency, code)
       if (ok) {
         await loadGiftCards()
         showToast("Gift card created")

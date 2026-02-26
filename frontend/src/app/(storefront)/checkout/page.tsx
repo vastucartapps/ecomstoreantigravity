@@ -27,7 +27,7 @@ const STEP_META: { id: CheckoutStepId; label: string }[] = [
 function CheckoutContent() {
   const router = useRouter()
   const { cart, isLoading } = useCart()
-  const { step, goToStep, completedOrderId } = useCheckout()
+  const { step, goToStep, completedOrderId, appliedGiftCard, giftCardDiscount } = useCheckout()
 
   const items = cart?.items || []
   const hasItems = items.length > 0
@@ -148,6 +148,8 @@ function CheckoutContent() {
                 grandTotal={grandTotal}
                 currency="INR"
                 itemCount={itemCount}
+                giftCardDiscount={giftCardDiscount / 100}
+                giftCardCode={appliedGiftCard?.code}
                 showCheckoutButton={false}
                 showTrustBadges={false}
               />

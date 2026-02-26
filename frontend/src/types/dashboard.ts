@@ -124,8 +124,10 @@ export interface Booking {
 export interface GiftCard {
   id: string
   code: string
-  balance: number
+  value: number     // original face value in minor units
+  balance: number   // remaining balance in minor units
   currency: string
+  status?: "active" | "depleted" | "expired" | "inactive"
   expiresAt?: string
 }
 

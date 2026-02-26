@@ -61,13 +61,17 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       return
     }
 
+    // Always 1-year expiry — no custom expiry allowed per business policy
+    const oneYearFromNow = new Date()
+    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1)
+
     const gc = await service.createGiftCards({
       code: String(code).toUpperCase(),
       value: Math.round(Number(value)),
       balance: Math.round(Number(value)),
       currency_code: String(currency_code).toLowerCase(),
       is_disabled: Boolean(is_disabled),
-      ends_at: ends_at ? new Date(ends_at) : null,
+      ends_at: oneYearFromNow,
       metadata_json: metadata ? JSON.stringify(metadata) : null,
     })
 

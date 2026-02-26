@@ -158,7 +158,19 @@ The following categories of products are **strictly non-returnable and non-refun
 
 ---
 
-## 12. Policy Changes
+## 12. Gift Cards — Non-Refundable
+
+12.1 **VastuCart Gift Cards are strictly non-refundable and non-encashable** under all circumstances. Once purchased, a Gift Card cannot be returned, refunded, or exchanged for cash, regardless of the reason.
+
+12.2 Gift Cards expire one (1) year from the date of purchase. Unused balances upon expiry are permanently forfeited. VastuCart accepts no liability for expired balances.
+
+12.3 If VastuCart ceases operations for any reason before a Gift Card is redeemed or expires, VastuCart shall not be liable for any refund or compensation for unused Gift Card balances.
+
+12.4 Gift Cards are not covered by VastuCart's standard return or refund process. The terms of the Gift Card are governed exclusively by Section 9 of the Terms & Conditions.
+
+---
+
+## 13. Policy Changes
 
 VastuCart reserves the right to modify this Return & Refund Policy at any time without prior notice. The revised Policy will take effect immediately upon posting. It is your responsibility to review this Policy before each purchase.
 

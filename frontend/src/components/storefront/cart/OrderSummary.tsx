@@ -13,6 +13,8 @@ interface OrderSummaryProps {
   currency: "INR" | "USD"
   itemCount: number
   promoCode?: string | null
+  giftCardDiscount?: number
+  giftCardCode?: string | null
   onProceedToCheckout?: () => void
   showCheckoutButton?: boolean
   showTrustBadges?: boolean
@@ -35,12 +37,15 @@ export function OrderSummary({
   currency,
   itemCount,
   promoCode,
+  giftCardDiscount = 0,
+  giftCardCode,
   onProceedToCheckout,
   showCheckoutButton = true,
   showTrustBadges = true,
   isProcessing = false,
 }: OrderSummaryProps) {
-  const totalSavings = (mrpTotal || subtotal) - subtotal + discountTotal
+  const totalSavings = (mrpTotal || subtotal) - subtotal + discountTotal + giftCardDiscount
+  const payTotal = Math.max(0, grandTotal - giftCardDiscount)
 
   return (
     <div
@@ -82,6 +87,18 @@ export function OrderSummary({
             </div>
           )}
 
+          {/* Gift Card */}
+          {giftCardDiscount > 0 && (
+            <div className="flex justify-between text-sm">
+              <span style={{ color: "#16A34A" }}>
+                Gift Card{giftCardCode ? ` (${giftCardCode})` : ""}
+              </span>
+              <span className="font-medium" style={{ color: "#16A34A" }}>
+                -{fmt(giftCardDiscount, currency)}
+              </span>
+            </div>
+          )}
+
           {/* Shipping */}
           <div className="flex justify-between text-sm">
             <span style={{ color: earth[400] }}>Shipping</span>
@@ -105,10 +122,10 @@ export function OrderSummary({
         {/* Grand Total */}
         <div className="flex justify-between items-center">
           <span className="text-base font-bold" style={{ color: earth[700], fontFamily: fonts.heading }}>
-            Grand Total
+            {giftCardDiscount > 0 ? "You Pay" : "Grand Total"}
           </span>
           <span className="text-xl font-bold" style={{ color: primary[500], fontFamily: fonts.heading }}>
-            {fmt(grandTotal, currency)}
+            {fmt(payTotal, currency)}
           </span>
         </div>
 

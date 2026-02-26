@@ -9,6 +9,7 @@ import {
 import { useRouter } from "next/navigation"
 import { useCart } from "@/providers/cart-provider"
 import { useCheckout } from "@/providers/checkout-provider"
+import { Gift, X, CheckCircle2 } from "lucide-react"
 import { primary, earth, bg, fonts, secondary } from "@/lib/theme"
 import { normalizeImageUrl } from "@/lib/image-url"
 
@@ -398,21 +399,28 @@ const inputStyle = (valid: boolean | null): React.CSSProperties => ({
 
 export function PaymentStep() {
   const router = useRouter()
-  const { cart } = useCart()
+  const { cart, applyGiftCard, removeGiftCard } = useCart()
   const {
     contactEmail, paymentMethod, setPaymentMethod,
     razorpayKeyId, stripePublishableKey, codEnabled, codConfig,
     shippingOptions, selectedShippingId,
     initPayment, completeCheckout, goBack,
     isProcessing, error, setError,
+    appliedGiftCard, giftCardDiscount,
   } = useCheckout()
 
   const currency = (cart as any)?.currency_code || "inr"
   const isIntl = currency !== "inr"
   const RZP_KEY = razorpayKeyId || ""
   const showRzp = !isIntl && Boolean(RZP_KEY)
-  const showCod = !isIntl && codEnabled
+  // COD is disabled when a gift card is applied
+  const showCod = !isIntl && codEnabled && !appliedGiftCard
   const showStripe = isIntl && Boolean(stripePublishableKey)
+
+  // Gift card input state
+  const [gcInput, setGcInput] = useState("")
+  const [gcLoading, setGcLoading] = useState(false)
+  const [gcErr, setGcErr] = useState<string | null>(null)
 
   const [localErr, setLocalErr] = useState<string | null>(null)
   const [rzpLoading, setRzpLoading] = useState(false)
@@ -488,6 +496,13 @@ export function PaymentStep() {
   const shippingAddr = cart?.shipping_address
   const selOption = shippingOptions.find((o) => o.id === selectedShippingId)
 
+  // Gift card discount in major units
+  const gcDiscount = giftCardDiscount / 100
+  // Amount the customer actually needs to pay (after gift card deduction)
+  const paymentAmount = Math.max(0, grandTotal - gcDiscount)
+  // True when gift card fully covers the order
+  const gcCoversAll = appliedGiftCard !== null && paymentAmount === 0
+
   // Card validation
   const digits = cardNum.replace(/\D/g, "")
   const brand = cardBrand(cardNum)
@@ -517,7 +532,7 @@ export function PaymentStep() {
       const res = await fetch(`${BACKEND_URL}/store/razorpay/create-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-publishable-api-key": PUB_KEY },
-        body: JSON.stringify({ amount: (cart?.total || 0) / 100, currency: "INR" }),
+        body: JSON.stringify({ amount: paymentAmount, currency: "INR" }),
       })
       const data = await res.json()
       if (!res.ok || !data.order_id) throw new Error(data.error || "Payment init failed. Please try again.")
@@ -537,7 +552,7 @@ export function PaymentStep() {
         const [expM, expY] = cardExp.split("/").map((s) => s.trim())
         if (typeof rzp.createPayment === "function") {
           rzp.createPayment({
-            amount: cart?.total || 0, currency: "INR", order_id,
+            amount: Math.round(paymentAmount * 100), currency: "INR", order_id,
             email: contactEmail, contact: shippingAddr?.phone || "",
             method: "card",
             "card[name]": cardName.trim(), "card[number]": digits,
@@ -546,7 +561,7 @@ export function PaymentStep() {
         } else {
           // Fallback: Standard Checkout, card-only
           const rzpStd = new (window as any).Razorpay({
-            key: key_id || RZP_KEY, amount: cart?.total || 0, currency: "INR",
+            key: key_id || RZP_KEY, amount: Math.round(paymentAmount * 100), currency: "INR",
             order_id, name: "VastuCart",
             prefill: { name: cardName.trim(), email: contactEmail, contact: shippingAddr?.phone || "", method: "card" },
             config: { display: { blocks: { c: { name: "Card", instruments: [{ method: "card" }] } }, sequence: ["block.c"], preferences: { show_default_blocks: false } } },
@@ -577,7 +592,7 @@ export function PaymentStep() {
       const res = await fetch(`${BACKEND_URL}/store/razorpay/create-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-publishable-api-key": PUB_KEY },
-        body: JSON.stringify({ amount: (cart?.total || 0) / 100, currency: "INR" }),
+        body: JSON.stringify({ amount: paymentAmount, currency: "INR" }),
       })
       const data = await res.json()
       if (!res.ok || !data.order_id) throw new Error(data.error || "Payment init failed.")
@@ -590,7 +605,7 @@ export function PaymentStep() {
 
         const labels: Record<string, string> = { upi: "UPI", netbanking: "Net Banking", wallet: "Wallet" }
         const rzp = new (window as any).Razorpay({
-          key: key_id || RZP_KEY, amount: cart?.total || 0, currency: "INR", order_id,
+          key: key_id || RZP_KEY, amount: Math.round(paymentAmount * 100), currency: "INR", order_id,
           name: "VastuCart", description: "Secure Checkout",
           prefill: { email: contactEmail, contact: shippingAddr?.phone || "", method },
           config: {
@@ -624,7 +639,7 @@ export function PaymentStep() {
       const res = await fetch(`${BACKEND_URL}/store/stripe/create-payment-intent`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-publishable-api-key": PUB_KEY },
-        body: JSON.stringify({ amount: (cart?.total || 0) / 100, currency: "USD" }),
+        body: JSON.stringify({ amount: paymentAmount, currency: "USD" }),
       })
       const d = await res.json()
       if (!res.ok || !d.client_secret) throw new Error(d.error || "Failed to initialize payment.")
@@ -647,8 +662,32 @@ export function PaymentStep() {
 
   // ─── Place order dispatcher ──────────────────────────────────────────────
 
+  const handleApplyGiftCard = async () => {
+    const code = gcInput.trim().toUpperCase()
+    if (!code) return
+    setGcLoading(true); setGcErr(null)
+    try {
+      await applyGiftCard(code)
+      setGcInput("")
+    } catch (e: any) {
+      setGcErr(e?.message || "Invalid gift card")
+    } finally {
+      setGcLoading(false)
+    }
+  }
+
   const handlePay = async () => {
     setLocalErr(null); setError(null)
+
+    // Gift card fully covers order — no external payment needed
+    if (gcCoversAll) {
+      try {
+        const { orderId } = await completeCheckout()
+        router.push(`/order-confirmation/${orderId}?clear=1`)
+      } catch (e: any) { setLocalErr(e?.message || "Failed to place order.") }
+      return
+    }
+
     if (paymentMethod === "stripe") { await handleStripe(); return }
     if (paymentMethod === "razorpay") {
       if (rzpM === "card") await handleRzpCard()
@@ -692,7 +731,9 @@ export function PaymentStep() {
       if (stripeLoading) return "Processing..."
       return "Placing Order..."
     }
+    if (gcCoversAll) return "Place Order (Paid by Gift Card)"
     if (paymentMethod === "cod") return `Place Order · ₹${(grandTotal + (codConfig?.fee || 0)).toLocaleString("en-IN")} (COD)`
+    if (appliedGiftCard && paymentAmount > 0) return `Pay ${formatPrice(paymentAmount, currency)} Securely`
     return `Pay ${formatPrice(grandTotal, currency)} Securely`
   }
 
@@ -743,8 +784,74 @@ export function PaymentStep() {
         ))}
       </div>
 
-      {/* ── Payment methods ── */}
-      <div>
+      {/* ── Gift Card ── */}
+      <div style={{ borderRadius: 14, border: "1px solid #e8e0d8", overflow: "hidden" }}>
+        <div style={{ background: "#f9f6f2", padding: "10px 16px", borderBottom: "1px solid #e8e0d8", display: "flex", alignItems: "center", gap: 8 }}>
+          <Gift size={14} style={{ color: primary[500] }} />
+          <p style={{ fontSize: 11, fontWeight: 700, color: earth[500], letterSpacing: "0.08em", fontFamily: fonts.body }}>GIFT CARD</p>
+        </div>
+        <div style={{ padding: "14px 16px" }}>
+          {appliedGiftCard ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 10, background: "#ECFDF5", border: "1px solid #D1FAE5" }}>
+              <CheckCircle2 size={18} style={{ color: "#10B981", flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 13, fontWeight: 700, color: "#065F46", fontFamily: fonts.body }}>
+                  Gift Card Applied: <span style={{ fontFamily: "monospace" }}>{appliedGiftCard.code}</span>
+                </p>
+                <p style={{ fontSize: 12, color: "#047857", fontFamily: fonts.body }}>
+                  -{formatPrice(gcDiscount, currency)} deducted
+                  {paymentAmount > 0 && <> · Remaining to pay: <strong>{formatPrice(paymentAmount, currency)}</strong></>}
+                  {gcCoversAll && <> · <strong>Order fully covered!</strong></>}
+                </p>
+              </div>
+              <button
+                onClick={removeGiftCard}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: 4, borderRadius: 6, color: "#6B7280" }}
+                title="Remove gift card"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type="text"
+                  value={gcInput}
+                  onChange={(e) => { setGcInput(e.target.value.toUpperCase()); setGcErr(null) }}
+                  onKeyDown={(e) => e.key === "Enter" && handleApplyGiftCard()}
+                  placeholder="Enter gift card code (e.g. GC-XXXX-XXXX-XXXX)"
+                  style={{
+                    flex: 1, padding: "10px 14px", borderRadius: 10,
+                    border: `1.5px solid ${gcErr ? "#FCA5A5" : "#e8e0d8"}`,
+                    fontSize: 13, fontFamily: "monospace", outline: "none",
+                    background: "#fafafa", color: earth[700],
+                  }}
+                />
+                <button
+                  onClick={handleApplyGiftCard}
+                  disabled={gcLoading || !gcInput.trim()}
+                  style={{
+                    padding: "10px 18px", borderRadius: 10, fontSize: 13, fontWeight: 600,
+                    background: primary[500], color: "white", border: "none", cursor: "pointer",
+                    opacity: gcLoading || !gcInput.trim() ? 0.5 : 1, flexShrink: 0,
+                    fontFamily: fonts.body,
+                  }}
+                >
+                  {gcLoading ? "..." : "Apply"}
+                </button>
+              </div>
+              {gcErr && <p style={{ fontSize: 12, color: "#EF4444", marginTop: 6, fontFamily: fonts.body }}>{gcErr}</p>}
+              <p style={{ fontSize: 11, color: earth[400], marginTop: 6, fontFamily: fonts.body }}>
+                COD is not available when a gift card is applied.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Payment methods (hidden when gift card covers full amount) ── */}
+      {!gcCoversAll && <div>
         {/* Secure checkout header */}
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -1052,7 +1159,7 @@ export function PaymentStep() {
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* ── Price breakdown ── */}
       <div style={{ borderRadius: 16, padding: 16, background: "#f9f6f2", border: "1px solid #f0ebe4" }}>
@@ -1060,7 +1167,8 @@ export function PaymentStep() {
           { label: "Subtotal", value: subtotal },
           ...(shippingFee > 0 ? [{ label: "Shipping", value: shippingFee }] : []),
           ...(taxAmt > 0 ? [{ label: "Tax (GST)", value: taxAmt }] : []),
-          ...(discountAmt > 0 ? [{ label: "Discount", value: -discountAmt, green: true }] : []),
+          ...(discountAmt > 0 ? [{ label: "Coupon Discount", value: -discountAmt, green: true }] : []),
+          ...(gcDiscount > 0 ? [{ label: `Gift Card (${appliedGiftCard?.code})`, value: -gcDiscount, green: true }] : []),
         ].map(({ label, value, green }: any) => (
           <div key={label} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 13 }}>
             <span style={{ color: earth[500], fontFamily: fonts.body }}>{label}</span>
@@ -1070,8 +1178,8 @@ export function PaymentStep() {
           </div>
         ))}
         <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 10, borderTop: "1px solid #e8e0d8", fontSize: 17, fontWeight: 800 }}>
-          <span style={{ color: earth[700], fontFamily: fonts.heading }}>Total</span>
-          <span style={{ color: primary[500], fontFamily: fonts.heading }}>{formatPrice(grandTotal, currency)}</span>
+          <span style={{ color: earth[700], fontFamily: fonts.heading }}>{appliedGiftCard ? "You Pay" : "Total"}</span>
+          <span style={{ color: primary[500], fontFamily: fonts.heading }}>{formatPrice(paymentAmount, currency)}</span>
         </div>
       </div>
 

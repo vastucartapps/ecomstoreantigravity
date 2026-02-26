@@ -370,7 +370,6 @@ export function useAdminCoupons() {
     async (
       balance: number,
       currency: "INR" | "USD",
-      expiresAt?: string,
       code?: string
     ): Promise<boolean> => {
       try {
@@ -394,7 +393,7 @@ export function useAdminCoupons() {
             value: valueInMinor,
             currency_code: currency.toLowerCase(),
             is_disabled: false,
-            ends_at: expiresAt ? new Date(expiresAt).toISOString() : undefined,
+            // ends_at is always set to 1 year from now by the backend
             metadata: {
               initial_value: valueInMinor,
               transactions: [initTransaction],

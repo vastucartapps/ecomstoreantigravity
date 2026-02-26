@@ -12,6 +12,15 @@ import { medusa } from "@/lib/medusa"
 import { getRegionId } from "@/lib/region"
 
 const CART_ID_KEY = "vastucart_cart_id"
+const GC_APPLIED_KEY = "vastucart_gc_applied"
+
+export interface AppliedGiftCard {
+  id: string
+  code: string
+  balance: number       // remaining balance in minor units BEFORE this order
+  deductAmount: number  // amount to deduct from this order (minor units)
+  currency: string      // "inr" | "usd"
+}
 
 interface CartContextValue {
   cart: any | null
@@ -25,13 +34,25 @@ interface CartContextValue {
   clearCart: () => void
   applyPromoCode: (code: string) => Promise<void>
   removePromoCode: (code: string) => Promise<void>
+  // Gift card
+  appliedGiftCard: AppliedGiftCard | null
+  giftCardDiscount: number  // amount deducted in minor units
+  applyGiftCard: (code: string) => Promise<void>
+  removeGiftCard: () => void
 }
 
 const CartContext = createContext<CartContextValue | null>(null)
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
+const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<any | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [appliedGiftCard, setAppliedGiftCard] = useState<AppliedGiftCard | null>(() => {
+    if (typeof window === "undefined") return null
+    try { return JSON.parse(localStorage.getItem(GC_APPLIED_KEY) || "null") } catch { return null }
+  })
 
   const itemCount = cart?.items?.reduce(
     (sum: number, item: any) => sum + item.quantity,
@@ -114,8 +135,49 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }
 
   const clearCart = () => {
-    if (typeof window !== "undefined") localStorage.removeItem(CART_ID_KEY)
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(CART_ID_KEY)
+      localStorage.removeItem(GC_APPLIED_KEY)
+    }
     setCart(null)
+    setAppliedGiftCard(null)
+  }
+
+  const applyGiftCard = async (code: string) => {
+    const trimmed = code.trim().toUpperCase()
+    if (!trimmed) throw new Error("Please enter a gift card code")
+
+    const res = await fetch(
+      `${BACKEND_URL}/store/gift-cards/validate?code=${encodeURIComponent(trimmed)}`,
+      { headers: { "x-publishable-api-key": PUB_KEY } }
+    )
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.message || "Invalid gift card")
+
+    const gc = data.gift_card
+    const cartTotal = cart?.total || 0
+    const cartCurrency = (cart?.currency_code || "inr").toLowerCase()
+
+    if (gc.currency_code.toLowerCase() !== cartCurrency) {
+      throw new Error(`This gift card is in ${gc.currency_code.toUpperCase()} but your cart is in ${cartCurrency.toUpperCase()}`)
+    }
+
+    const deductAmount = Math.min(gc.balance, cartTotal)
+    const applied: AppliedGiftCard = {
+      id: gc.id,
+      code: gc.code,
+      balance: gc.balance,
+      deductAmount,
+      currency: gc.currency_code,
+    }
+
+    setAppliedGiftCard(applied)
+    if (typeof window !== "undefined") localStorage.setItem(GC_APPLIED_KEY, JSON.stringify(applied))
+  }
+
+  const removeGiftCard = () => {
+    setAppliedGiftCard(null)
+    if (typeof window !== "undefined") localStorage.removeItem(GC_APPLIED_KEY)
   }
 
   const applyPromoCode = async (code: string) => {
@@ -163,6 +225,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const cartId =
     typeof window !== "undefined" ? localStorage.getItem(CART_ID_KEY) : null
 
+  // Recalculate deductAmount whenever cart total changes (e.g., after adding items)
+  const giftCardDiscount = appliedGiftCard
+    ? Math.min(appliedGiftCard.balance, cart?.total || 0)
+    : 0
+
   return (
     <CartContext.Provider
       value={{
@@ -177,6 +244,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         applyPromoCode,
         removePromoCode,
+        appliedGiftCard,
+        giftCardDiscount,
+        applyGiftCard,
+        removeGiftCard,
       }}
     >
       {children}

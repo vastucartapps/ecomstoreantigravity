@@ -13,7 +13,7 @@ import { normalizeImageUrl } from "@/lib/image-url"
 
 export default function CartPage() {
   const router = useRouter()
-  const { cart, updateItem, removeItem, applyPromoCode, removePromoCode, isLoading } = useCart()
+  const { cart, updateItem, removeItem, applyPromoCode, removePromoCode, isLoading, appliedGiftCard, giftCardDiscount } = useCart()
   const [couponError, setCouponError] = useState<string | null>(null)
   const [couponLoading, setCouponLoading] = useState(false)
 
@@ -173,6 +173,8 @@ export default function CartPage() {
                 currency={currency}
                 itemCount={itemCount}
                 promoCode={appliedCoupon?.code}
+                giftCardDiscount={giftCardDiscount / 100}
+                giftCardCode={appliedGiftCard?.code}
                 onProceedToCheckout={() => router.push("/checkout")}
                 showCheckoutButton
                 showTrustBadges
