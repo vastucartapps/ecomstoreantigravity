@@ -16,9 +16,7 @@ import {
 } from "lucide-react"
 import { primary, earth, bg, fonts } from "@/lib/theme"
 import { useAuth } from "@/providers/auth-provider"
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
-const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+import { medusa } from "@/lib/medusa"
 
 const CATEGORIES = [
   "Order Issue",
@@ -157,13 +155,10 @@ export function SupportSection() {
 
   const loadTickets = useCallback(async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/store/customers/me/support-tickets`, {
-        headers: { "x-publishable-api-key": PUB_KEY },
-        credentials: "include",
-      })
-      if (!res.ok) return
-      const data = await res.json()
-      setTickets(data.tickets || [])
+      const data = await medusa.client.fetch<{ tickets: Ticket[] }>(
+        "/store/customers/me/support-tickets"
+      )
+      setTickets((data as any).tickets || [])
     } catch {
       // fail silently — tickets are not critical to page render
     } finally {
@@ -186,25 +181,24 @@ export function SupportSection() {
     setSubmitting(true)
     setSubmitError(null)
     try {
-      const res = await fetch(`${BACKEND_URL}/store/customers/me/support-tickets`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-publishable-api-key": PUB_KEY },
-        credentials: "include",
-        body: JSON.stringify({
-          category,
-          message: message.trim(),
-          customer_email: user.email,
-          customer_name: user.name || "Customer",
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.message || "Failed to submit")
+      const data = await medusa.client.fetch<{ ticket: Ticket }>(
+        "/store/customers/me/support-tickets",
+        {
+          method: "POST",
+          body: {
+            category,
+            message: message.trim(),
+            customer_email: user.email,
+            customer_name: user.name || "Customer",
+          },
+        }
+      )
 
       setSubmitSuccess(true)
       setCategory("")
       setMessage("")
       // Add new ticket to list immediately (optimistic)
-      setTickets((prev) => [data.ticket, ...prev])
+      setTickets((prev) => [(data as any).ticket, ...prev])
       setTimeout(() => setSubmitSuccess(false), 4000)
     } catch (err: any) {
       setSubmitError(err.message || "Failed to submit. Please try again.")
