@@ -989,9 +989,34 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
 
           {/* Bottom bar */}
           <div
-            className="mt-10 pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-4"
+            className="mt-10 pt-6 border-t flex flex-col gap-4"
             style={{ borderColor: "rgba(255,255,255,0.12)" }}
           >
+            {/* Legal links row */}
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+              {[
+                { label: "Terms & Conditions", href: "/terms" },
+                { label: "Privacy Policy", href: "/privacy-policy" },
+                { label: "Return & Refund", href: "/refund-policy" },
+                { label: "Shipping Policy", href: "/shipping-policy" },
+                { label: "Disclaimer", href: "/disclaimer" },
+                { label: "Cookie Policy", href: "/cookie-policy" },
+                { label: "Consultation Terms", href: "/consultation-terms" },
+                { label: "Intellectual Property", href: "/intellectual-property" },
+                { label: "Acceptable Use", href: "/acceptable-use" },
+              ].map((lnk) => (
+                <Link
+                  key={lnk.href}
+                  href={lnk.href}
+                  className="text-xs opacity-55 hover:opacity-90 transition-opacity"
+                  style={{ fontFamily: fonts.body }}
+                >
+                  {lnk.label}
+                </Link>
+              ))}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <p
               className="text-sm opacity-60 text-center sm:text-left"
               style={{ fontFamily: fonts.body }}
@@ -1045,6 +1070,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
               >
                 Razorpay
               </div>
+            </div>
             </div>
           </div>
         </div>
