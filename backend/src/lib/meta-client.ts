@@ -61,6 +61,7 @@ export interface MetaProduct {
 
 export interface MetaBatchRequest {
   allow_upsert: boolean
+  item_type: "PRODUCT_ITEM"
   requests: Array<{
     method: "UPDATE" | "DELETE"
     retailer_id: string
@@ -103,6 +104,7 @@ export class MetaClient {
 
       const body: MetaBatchRequest = {
         allow_upsert: true,
+        item_type: "PRODUCT_ITEM",
         requests: chunk.map((p) => ({
           method: "UPDATE",
           retailer_id: p.retailer_id,
@@ -142,6 +144,7 @@ export class MetaClient {
   async deleteProduct(retailerId: string): Promise<void> {
     const body: MetaBatchRequest = {
       allow_upsert: false,
+      item_type: "PRODUCT_ITEM",
       requests: [
         { method: "DELETE", retailer_id: retailerId },
       ],
