@@ -101,6 +101,7 @@ function mapVariants(p: any): ProductVariant[] {
       inStock,
       stockCount: v.inventory_quantity ?? 999,
       colorSwatch: null,
+      details: (v.metadata?.variant_details as Record<string, string> | undefined) || undefined,
     }
   })
 }

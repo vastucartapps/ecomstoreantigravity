@@ -525,6 +525,92 @@ export function ProductWizard({
               </div>
             )}
 
+            {/* Per-variant key details editor */}
+            {formData.variants && formData.variants.length > 0 && (
+              <div className="mt-6 rounded-xl overflow-hidden" style={{ border: `1px solid ${c.primary100}` }}>
+                <div className="px-4 py-3" style={{ background: c.primary50, borderBottom: `1px solid ${c.primary100}` }}>
+                  <p className="text-sm font-semibold" style={{ color: c.earth700, fontFamily: fonts.heading }}>
+                    Variant Key Details
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: c.earth400, fontFamily: fonts.body }}>
+                    Facts that differ per variant — shown to customers when they select a variant (e.g. Bead Size: 8mm, Drop Length: 18 inches, Weight: 14g)
+                  </p>
+                </div>
+                {formData.variants.map((variant, vIdx) => {
+                  const details: Array<{ key: string; value: string }> = (variant as any).details || []
+                  return (
+                    <div
+                      key={variant.id}
+                      className="px-4 py-3"
+                      style={{ borderBottom: vIdx < (formData.variants?.length || 0) - 1 ? `1px solid ${c.primary100}` : "none", background: "#fff" }}
+                    >
+                      <p className="text-xs font-bold mb-2" style={{ color: c.primary500, fontFamily: fonts.body }}>
+                        {variant.label || `Variant ${vIdx + 1}`}
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        {details.map((pair, pIdx) => (
+                          <div key={pIdx} className="flex gap-2 items-center">
+                            <input
+                              type="text"
+                              value={pair.key}
+                              onChange={(e) => {
+                                const updated = [...(formData.variants || [])]
+                                const newDetails = details.map((d, i) =>
+                                  i === pIdx ? { key: e.target.value, value: d.value } : d
+                                )
+                                updated[vIdx] = { ...updated[vIdx], details: newDetails } as any
+                                updateField("variants", updated)
+                              }}
+                              placeholder="Label (e.g. Bead Size)"
+                              className="px-2 py-1 border rounded text-xs"
+                              style={{ borderColor: c.earth300, fontFamily: fonts.body, width: "160px" }}
+                            />
+                            <input
+                              type="text"
+                              value={pair.value}
+                              onChange={(e) => {
+                                const updated = [...(formData.variants || [])]
+                                const newDetails = details.map((d, i) =>
+                                  i === pIdx ? { key: d.key, value: e.target.value } : d
+                                )
+                                updated[vIdx] = { ...updated[vIdx], details: newDetails } as any
+                                updateField("variants", updated)
+                              }}
+                              placeholder="Value (e.g. 8mm)"
+                              className="flex-1 px-2 py-1 border rounded text-xs"
+                              style={{ borderColor: c.earth300, fontFamily: fonts.body }}
+                            />
+                            <button
+                              onClick={() => {
+                                const updated = [...(formData.variants || [])]
+                                updated[vIdx] = { ...updated[vIdx], details: details.filter((_, i) => i !== pIdx) } as any
+                                updateField("variants", updated)
+                              }}
+                              className="p-1 rounded hover:bg-red-50 transition-all flex-shrink-0"
+                              style={{ color: c.error }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        ))}
+                        <button
+                          onClick={() => {
+                            const updated = [...(formData.variants || [])]
+                            updated[vIdx] = { ...updated[vIdx], details: [...details, { key: "", value: "" }] } as any
+                            updateField("variants", updated)
+                          }}
+                          className="text-xs flex items-center gap-1 mt-1 self-start"
+                          style={{ color: c.primary500, fontFamily: fonts.body }}
+                        >
+                          <Plus size={12} /> Add detail
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
             {(!formData.variants || formData.variants.length === 0) && (
               <div className="mt-6 p-4 rounded-lg" style={{ background: c.primary50 }}>
                 <h4 className="font-semibold mb-2" style={{ color: c.primary500, fontFamily: fonts.heading }}>

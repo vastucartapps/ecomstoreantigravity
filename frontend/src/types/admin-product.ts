@@ -16,6 +16,8 @@ export interface ProductVariant {
   stockLevel: StockLevel
   priceUSD?: number  // USD selling price (display units)
   mrpUSD?: number    // USD MRP (display units)
+  /** Key facts that differ per variant, shown dynamically on PDP */
+  details?: Array<{ key: string; value: string }>
 }
 
 /** Product image */

@@ -128,6 +128,12 @@ function mapMedusaProductDetail(p: any): ProductDetail {
     // Stock: treat manage_inventory=false as always in stock
     const stock = v.manage_inventory === false ? 999 : (v.inventory_quantity || 0)
 
+    // Convert variant_details Record → array of {key,value} pairs for wizard
+    const rawDetails = v.metadata?.variant_details as Record<string, string> | undefined
+    const details: Array<{ key: string; value: string }> = rawDetails
+      ? Object.entries(rawDetails).map(([key, value]) => ({ key, value }))
+      : []
+
     return {
       id: v.id,
       sku: v.sku || "",
@@ -139,6 +145,7 @@ function mapMedusaProductDetail(p: any): ProductDetail {
       currency: "INR",
       stock,
       stockLevel: computeStockLevel(stock),
+      details,
     }
   })
 
@@ -258,12 +265,20 @@ function buildVariantPrices(v: ProductVariant): Array<{ amount: number; currency
 }
 
 /**
- * Build variant metadata (MRP values stored as minor units).
+ * Build variant metadata (MRP values stored as minor units, plus variant_details).
  */
-function buildVariantMetadata(v: ProductVariant): Record<string, number> | undefined {
-  const meta: Record<string, number> = {}
+function buildVariantMetadata(v: ProductVariant): Record<string, any> | undefined {
+  const meta: Record<string, any> = {}
   if (v.mrp > 0) meta.mrp_inr = Math.round(v.mrp * 100)
   if (v.mrpUSD && v.mrpUSD > 0) meta.mrp_usd = Math.round(v.mrpUSD * 100)
+  // Convert details array → Record, filtering blank keys
+  if (v.details && v.details.length > 0) {
+    const detailsRecord: Record<string, string> = {}
+    for (const { key, value } of v.details) {
+      if (key.trim()) detailsRecord[key.trim()] = value
+    }
+    if (Object.keys(detailsRecord).length > 0) meta.variant_details = detailsRecord
+  }
   return Object.keys(meta).length > 0 ? meta : undefined
 }
 

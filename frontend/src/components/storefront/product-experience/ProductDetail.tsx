@@ -196,6 +196,31 @@ export function ProductDetail({
               </div>
             )}
 
+            {/* Variant-specific key details — updates on variant selection */}
+            {selectedVariant?.details && Object.keys(selectedVariant.details).length > 0 && (
+              <div
+                className="mt-4 rounded-xl px-4 py-3 flex flex-wrap gap-x-6 gap-y-3"
+                style={{ background: "#f0faf8", border: "1px solid #c5e8e2" }}
+              >
+                {Object.entries(selectedVariant.details).map(([key, value]) => (
+                  <div key={key} className="flex flex-col min-w-0">
+                    <span
+                      className="text-[10px] font-bold tracking-wider uppercase"
+                      style={{ color: "#2a7a72", fontFamily: "'Open Sans', sans-serif" }}
+                    >
+                      {key}
+                    </span>
+                    <span
+                      className="text-sm font-semibold mt-0.5"
+                      style={{ color: "#433b35", fontFamily: "'Open Sans', sans-serif" }}
+                    >
+                      {value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Stock status */}
             {selectedVariant && (
               <p

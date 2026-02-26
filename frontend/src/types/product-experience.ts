@@ -17,6 +17,8 @@ export interface ProductVariant {
   inStock: boolean
   stockCount: number
   colorSwatch: string | null
+  /** Key facts that differ per variant, shown dynamically on PDP */
+  details?: Record<string, string>
 }
 
 /** Variant attribute definition for the selector UI */
