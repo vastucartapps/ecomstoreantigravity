@@ -22,12 +22,12 @@ function SectionTitle({ title }: { title: string }) {
   return (
     <div className="flex items-center gap-4 mb-6">
       <div className="flex-1 h-px" style={{ background: gradients.accentBorder }} />
-      <h3
+      <h2
         className="text-xl sm:text-2xl font-bold text-center px-4"
         style={{ color: earth[700], fontFamily: fonts.heading }}
       >
         {title}
-      </h3>
+      </h2>
       <div className="flex-1 h-px" style={{ background: gradients.accentBorder }} />
     </div>
   )
@@ -63,12 +63,12 @@ export function RichContent({ blocks }: RichContentProps) {
                   />
                   {block.headline && (
                     <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
-                      <h4
+                      <h3
                         className="text-xl sm:text-2xl font-bold text-white"
                         style={{ fontFamily: fonts.heading }}
                       >
                         {block.headline}
-                      </h4>
+                      </h3>
                       {block.description && (
                         <p
                           className="mt-2 text-sm text-white/80 leading-relaxed"
@@ -99,12 +99,12 @@ export function RichContent({ blocks }: RichContentProps) {
                 {blockIdx > 0 && divider}
                 <div className="flex items-center gap-4 mb-10">
                   <div className="flex-1 h-px" style={{ background: gradients.accentBorder }} />
-                  <h3
+                  <h2
                     className="text-xl sm:text-2xl font-bold text-center px-4"
                     style={{ color: earth[700], fontFamily: fonts.heading }}
                   >
                     {block.title}
-                  </h3>
+                  </h2>
                   <div className="flex-1 h-px" style={{ background: gradients.accentBorder }} />
                 </div>
 
@@ -233,12 +233,12 @@ export function RichContent({ blocks }: RichContentProps) {
                   </div>
                 )}
                 {block.headline && (
-                  <h4
+                  <h3
                     className="text-lg sm:text-xl font-bold mt-5"
                     style={{ color: earth[700], fontFamily: fonts.heading }}
                   >
                     {block.headline}
-                  </h4>
+                  </h3>
                 )}
                 {block.content && (
                   <p
@@ -261,12 +261,12 @@ export function RichContent({ blocks }: RichContentProps) {
               <div key={block.id}>
                 {blockIdx > 0 && divider}
                 {block.title && (
-                  <h3
+                  <h2
                     className="text-xl sm:text-2xl font-bold mb-4"
                     style={{ color: earth[700], fontFamily: fonts.heading }}
                   >
                     {block.title}
-                  </h3>
+                  </h2>
                 )}
                 {block.content && (
                   <p
@@ -290,12 +290,12 @@ export function RichContent({ blocks }: RichContentProps) {
               <div key={block.id}>
                 {blockIdx > 0 && divider}
                 {block.title && (
-                  <h3
+                  <h2
                     className="text-xl sm:text-2xl font-bold mb-6"
                     style={{ color: earth[700], fontFamily: fonts.heading }}
                   >
                     {block.title}
-                  </h3>
+                  </h2>
                 )}
                 {block.imageUrl && (
                   /* Full-width at exact 970:600 ratio — designed for this size */
@@ -335,7 +335,7 @@ export function RichContent({ blocks }: RichContentProps) {
                           className="absolute inset-0 flex items-center justify-center"
                           style={{ background: "rgba(1,63,71,0.52)" }}
                         >
-                          <h3
+                          <h2
                             className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white text-center px-6"
                             style={{
                               fontFamily: fonts.heading,
@@ -343,7 +343,7 @@ export function RichContent({ blocks }: RichContentProps) {
                             }}
                           >
                             {block.title}
-                          </h3>
+                          </h2>
                         </div>
                       )}
                     </>
@@ -354,12 +354,12 @@ export function RichContent({ blocks }: RichContentProps) {
                         background: "linear-gradient(135deg, #013f47, #c85103)",
                       }}
                     >
-                      <h3
+                      <h2
                         className="text-2xl font-bold text-white text-center px-6"
                         style={{ fontFamily: fonts.heading }}
                       >
                         {block.title}
-                      </h3>
+                      </h2>
                     </div>
                   )}
                 </div>
