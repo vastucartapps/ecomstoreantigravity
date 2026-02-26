@@ -566,6 +566,10 @@ export function OrdersTable({
                         color: c.earth600,
                         textTransform: "uppercase",
                         letterSpacing: "0.5px",
+                        position: "sticky",
+                        right: 0,
+                        zIndex: 2,
+                        backgroundColor: c.bg,
                       }}
                     >
                       Actions
@@ -724,7 +728,7 @@ export function OrdersTable({
                             {formatDate(order.date)}
                           </span>
                         </td>
-                        <td style={{ padding: "16px", textAlign: "right" }}>
+                        <td style={{ padding: "16px", textAlign: "right", position: "sticky", right: 0, zIndex: 1, backgroundColor: c.card }}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()

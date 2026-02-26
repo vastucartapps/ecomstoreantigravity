@@ -288,7 +288,7 @@ function CouponRowComp({ coupon, onEdit, onRequestDelete, onToggle }: CouponRowC
       <td style={{ padding: "16px 12px" }}>
         <StatusBadge status={coupon.status} />
       </td>
-      <td style={{ padding: "16px 12px" }}>
+      <td style={{ padding: "16px 12px", position: "sticky", right: 0, zIndex: 1, backgroundColor: "#ffffff" }}>
         <div style={{ display: "flex", gap: "8px" }}>
           <button
             onClick={() => onEdit(coupon.id)}
@@ -1175,7 +1175,7 @@ function GiftCardRowComp({ giftCard, onView, onToggle }: GiftCardRowCompProps) {
       >
         {formatDate(giftCard.createdAt)}
       </td>
-      <td style={{ padding: "16px 12px" }}>
+      <td style={{ padding: "16px 12px", position: "sticky", right: 0, zIndex: 1, backgroundColor: "#ffffff" }}>
         <div style={{ display: "flex", gap: "8px" }}>
           <button
             onClick={() => onView(giftCard.id)}
@@ -2109,7 +2109,7 @@ export function AdminCouponsGiftCards(props: AdminCouponsGiftCardsProps) {
                       <th style={thStyle}>Valid Period</th>
                       <th style={thStyle}>Usage</th>
                       <th style={thStyle}>Status</th>
-                      <th style={thStyle}>Actions</th>
+                      <th style={{ ...thStyle, position: "sticky", right: 0, zIndex: 2, backgroundColor: "#ffffff" }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -2246,7 +2246,7 @@ export function AdminCouponsGiftCards(props: AdminCouponsGiftCardsProps) {
                       <th style={thStyle}>Status</th>
                       <th style={thStyle}>Expires</th>
                       <th style={thStyle}>Created</th>
-                      <th style={thStyle}>Actions</th>
+                      <th style={{ ...thStyle, position: "sticky", right: 0, zIndex: 2, backgroundColor: "#ffffff" }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>

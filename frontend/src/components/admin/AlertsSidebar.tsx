@@ -141,7 +141,7 @@ export function AlertsSidebar({
                         e.stopPropagation()
                         onDismissAlert?.(alert.id)
                       }}
-                      className="absolute right-2 top-2 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100"
+                      className="absolute right-2 top-2 rounded p-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                       style={{ color: c.earth500 }}
                       aria-label="Dismiss alert"
                     >

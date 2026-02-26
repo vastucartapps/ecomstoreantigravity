@@ -329,6 +329,7 @@ const BookingsTable = ({
               fontSize: "13px",
               fontWeight: "700",
               color: c.earth600,
+              ...(h === "Actions" ? { position: "sticky", right: 0, zIndex: 2, backgroundColor: c.subtle } : {}),
             }}
           >
             {h}
@@ -372,7 +373,7 @@ const BookingsTable = ({
           <span style={{ fontSize: "13px", color: c.earth300 }}>—</span>
         )}
       </td>
-      <td style={{ padding: "16px 12px" }}>
+      <td style={{ padding: "16px 12px", position: "sticky", right: 0, zIndex: 1, backgroundColor: "#ffffff" }}>
         <button
           onClick={() => onViewBooking(booking.id)}
           style={{

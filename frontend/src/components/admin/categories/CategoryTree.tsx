@@ -126,7 +126,7 @@ export function CategoryNode({
             e.stopPropagation()
             onToggleStatus?.(category.id)
           }}
-          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white rounded transition-all flex-shrink-0"
+          className="sm:opacity-0 sm:group-hover:opacity-100 p-1 hover:bg-white rounded transition-all flex-shrink-0"
           title={category.status === "active" ? "Deactivate" : "Activate"}
         >
           {category.status === "active" ? (

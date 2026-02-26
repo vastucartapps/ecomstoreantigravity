@@ -365,6 +365,10 @@ export function CustomerList({ customers, filters, totalCount, isLoading, onChan
                     color: c.earth700,
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
+                    position: "sticky",
+                    right: 0,
+                    zIndex: 2,
+                    backgroundColor: c.bg,
                   }}
                 >
                   Actions
@@ -475,7 +479,7 @@ export function CustomerList({ customers, filters, totalCount, isLoading, onChan
                   <td style={{ padding: "16px", color: c.earth600, fontSize: "14px" }}>
                     {formatDate(customer.joinedAt)}
                   </td>
-                  <td style={{ padding: "16px", textAlign: "right" }}>
+                  <td style={{ padding: "16px", textAlign: "right", position: "sticky", right: 0, zIndex: 1, backgroundColor: c.card }}>
                     <button
                       onClick={e => {
                         e.stopPropagation()
