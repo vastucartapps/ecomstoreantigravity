@@ -8,15 +8,30 @@ let cacheUsdTimestamp = 0
 const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
 /**
+ * Reads the vc-region cookie set by the middleware (from Cloudflare CF-IPCountry).
+ * Returns true if the visitor is outside India (should see USD pricing).
+ */
+function detectInternational(): boolean {
+  if (typeof window === "undefined") return false
+  const cookie = document.cookie.split("; ").find((c) => c.startsWith("vc-region="))
+  return cookie?.split("=")[1] === "international"
+}
+
+/**
  * Fetches region IDs from Medusa, with separate per-currency in-memory caches.
  *
- * Pass preferInternational=true to get the USD region (for non-India visitors).
- * Default (false) returns the INR region (for India visitors).
+ * When called without arguments, automatically reads the vc-region cookie set
+ * by the middleware (geo-IP via Cloudflare CF-IPCountry header).
+ * Pass preferInternational explicitly to override the auto-detection.
  *
  * Falls back to the first available region if the requested currency is not found,
  * and falls back to stale cache on network errors rather than throwing.
  */
 export async function getRegionId(preferInternational?: boolean): Promise<string> {
+  // Auto-detect from geo-IP cookie if not explicitly specified
+  if (preferInternational === undefined) {
+    preferInternational = detectInternational()
+  }
   const now = Date.now()
 
   if (preferInternational) {
