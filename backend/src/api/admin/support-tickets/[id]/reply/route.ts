@@ -25,15 +25,13 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     if (!ticket) return res.status(404).json({ message: "Ticket not found" })
 
     // Update ticket — reply + close
-    const updated = await service.updateSupportTickets(
-      { id },
-      {
-        admin_reply: reply.trim(),
-        admin_reply_at: new Date(),
-        admin_reply_by: replied_by,
-        status: "closed",
-      }
-    )
+    const updated = await service.updateSupportTickets({
+      id,
+      admin_reply: reply.trim(),
+      admin_reply_at: new Date(),
+      admin_reply_by: replied_by,
+      status: "closed",
+    })
 
     // Email customer (fail-open)
     try {
