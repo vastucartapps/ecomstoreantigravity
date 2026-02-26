@@ -20,6 +20,7 @@ import {
   Bell,
   Award,
   Megaphone,
+  Headphones,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -58,6 +59,7 @@ const navItems: NavItem[] = [
   { id: "notifications", label: "Notifications", icon: Bell, href: "/admin/notifications" },
   { id: "loyalty", label: "Loyalty & Rewards", icon: Award, href: "/admin/loyalty" },
   { id: "ecosystem-ads", label: "Ecosystem Ads", icon: Megaphone, href: "/admin/ecosystem-ads" },
+  { id: "support", label: "Support Tickets", icon: Headphones, href: "/admin/support" },
   { id: "settings", label: "Settings", icon: Settings, href: "/admin/settings" },
 ]
 

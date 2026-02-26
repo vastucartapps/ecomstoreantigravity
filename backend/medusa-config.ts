@@ -268,6 +268,11 @@ const modules: any[] = [
   {
     resolve: "./src/modules/gift-cards",
   },
+
+  // Support Tickets (customer → admin helpdesk)
+  {
+    resolve: "./src/modules/support-tickets",
+  },
 ]
 
 // Analytics (only if PostHog key is set)
