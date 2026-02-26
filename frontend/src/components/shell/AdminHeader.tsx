@@ -4,11 +4,16 @@ import { useState, useRef, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ChevronDown, Settings, ExternalLink, LogOut } from "lucide-react"
+import { ChevronDown, Settings, ExternalLink, LogOut, Menu, X } from "lucide-react"
 import { useAuth } from "@/providers/auth-provider"
 import { primary, secondary, gradients, fonts } from "./theme"
 
-export default function AdminHeader() {
+interface AdminHeaderProps {
+  onMenuClick?: () => void
+  drawerOpen?: boolean
+}
+
+export default function AdminHeader({ onMenuClick, drawerOpen }: AdminHeaderProps) {
   const { user, logout } = useAuth()
   const router = useRouter()
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -65,8 +70,32 @@ export default function AdminHeader() {
         zIndex: 50,
       }}
     >
-      {/* Left: Logo + Admin badge */}
+      {/* Left: Hamburger (mobile) + Logo + Admin badge */}
       <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+        {/* Mobile hamburger */}
+        {onMenuClick && (
+          <button
+            onClick={onMenuClick}
+            className="lg:hidden"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "2.25rem",
+              height: "2.25rem",
+              borderRadius: "0.5rem",
+              background: "rgba(255,255,255,0.12)",
+              border: "1px solid rgba(255,255,255,0.18)",
+              cursor: "pointer",
+              color: "#ffffff",
+              flexShrink: 0,
+              transition: "background 0.15s",
+            }}
+            aria-label={drawerOpen ? "Close menu" : "Open menu"}
+          >
+            {drawerOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        )}
         <Link href="/admin" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
           <Image
             src="/VastuCartLogo.png"

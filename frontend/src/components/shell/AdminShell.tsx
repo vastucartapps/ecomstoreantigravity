@@ -25,9 +25,11 @@ import {
   ChevronRight,
   LogOut,
   ExternalLink,
+  X,
 } from "lucide-react"
 import { useAuth } from "@/providers/auth-provider"
 import { primary, earth, gradients, fonts, bg } from "./theme"
+import AdminHeader from "./AdminHeader"
 
 interface AdminShellProps {
   children: React.ReactNode
@@ -77,6 +79,7 @@ export default function AdminShell({ children }: AdminShellProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
 
   const handleLogout = async () => {
     await logout()
@@ -196,37 +199,196 @@ export default function AdminShell({ children }: AdminShellProps) {
   }
 
   return (
-    <div className="flex" style={{ minHeight: "calc(100vh - 56px)", backgroundColor: c.bg }}>
-      {/* Desktop Sidebar */}
-      <aside
-        className="hidden lg:flex flex-col flex-shrink-0 border-r transition-all duration-300"
-        style={{
-          width: collapsed ? 72 : 260,
-          backgroundColor: c.card,
-          borderColor: "#f0ebe4",
-        }}
-      >
-        {/* Gradient accent strip */}
-        <div className="h-1 flex-shrink-0" style={{ background: c.gradient }} />
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: c.bg }}>
+      {/* Sticky header — includes hamburger trigger on mobile */}
+      <AdminHeader onMenuClick={() => setDrawerOpen(true)} drawerOpen={drawerOpen} />
 
-        {/* Sidebar header */}
-        <div
-          className="flex items-center justify-between px-3 py-3 border-b flex-shrink-0"
-          style={{ borderColor: "#f0ebe4" }}
+      <div className="flex flex-1">
+        {/* ── Desktop Sidebar ─────────────────────────────────────────────────── */}
+        <aside
+          className="hidden lg:flex flex-col flex-shrink-0 border-r transition-all duration-300"
+          style={{
+            width: collapsed ? 72 : 260,
+            backgroundColor: c.card,
+            borderColor: "#f0ebe4",
+          }}
         >
-          {!collapsed && (
-            <Link
-              href="/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors"
-              style={{ textDecoration: "none" }}
+          {/* Gradient accent strip */}
+          <div className="h-1 flex-shrink-0" style={{ background: c.gradient }} />
+
+          {/* Sidebar header */}
+          <div
+            className="flex items-center justify-between px-3 py-3 border-b flex-shrink-0"
+            style={{ borderColor: "#f0ebe4" }}
+          >
+            {!collapsed && (
+              <Link
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors"
+                style={{ textDecoration: "none" }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = c.bg
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent"
+                }}
+              >
+                <ExternalLink size={13} color={c.primary500} />
+                <span
+                  className="text-xs font-medium"
+                  style={{ fontFamily: fonts.body, color: c.primary500 }}
+                >
+                  View Storefront
+                </span>
+              </Link>
+            )}
+            {collapsed && (
+              <Link href="/" target="_blank" rel="noopener noreferrer" className="p-1.5">
+                <ExternalLink size={16} color={c.earth400} />
+              </Link>
+            )}
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="p-1.5 rounded-md transition-colors flex-shrink-0"
+              style={{ color: c.earth400 }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = c.bg
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = "transparent"
               }}
+            >
+              {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            </button>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 py-2 px-2 overflow-y-auto">
+            <ul className="space-y-0.5">
+              {navItems.map((item) => {
+                const Icon = item.icon
+                const isActive =
+                  item.href === "/admin"
+                    ? pathname === "/admin"
+                    : pathname === item.href || pathname.startsWith(item.href + "/")
+
+                return (
+                  <li key={item.id}>
+                    <Link
+                      href={item.href}
+                      className="w-full flex items-center gap-3 rounded-lg transition-all duration-150"
+                      style={{
+                        padding: collapsed ? "10px" : "9px 12px",
+                        justifyContent: collapsed ? "center" : "flex-start",
+                        backgroundColor: isActive ? c.primary50 : "transparent",
+                        color: isActive ? c.primary500 : c.earth600,
+                        fontFamily: fonts.body,
+                        textDecoration: "none",
+                        borderLeft: collapsed
+                          ? "none"
+                          : isActive
+                            ? `3px solid ${c.primary500}`
+                            : "3px solid transparent",
+                      }}
+                      title={collapsed ? item.label : undefined}
+                      onMouseEnter={(e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.backgroundColor = c.bg
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.backgroundColor = "transparent"
+                        }
+                      }}
+                    >
+                      <Icon
+                        size={19}
+                        strokeWidth={isActive ? 2.2 : 1.8}
+                        style={{ flexShrink: 0 }}
+                      />
+                      {!collapsed && (
+                        <span className="flex-1 text-left text-sm font-medium truncate">
+                          {item.label}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
+
+          {/* Logout */}
+          <div
+            className="px-2 py-3 border-t flex-shrink-0"
+            style={{ borderColor: "#f0ebe4" }}
+          >
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 rounded-lg transition-colors"
+              style={{
+                padding: collapsed ? "10px" : "9px 12px",
+                justifyContent: collapsed ? "center" : "flex-start",
+                color: c.earth400,
+                fontFamily: fonts.body,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+              title={collapsed ? "Logout" : undefined}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = c.bg
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent"
+              }}
+            >
+              <LogOut size={19} />
+              {!collapsed && <span className="text-sm font-medium">Logout</span>}
+            </button>
+          </div>
+        </aside>
+
+        {/* ── Mobile Drawer Overlay ────────────────────────────────────────────── */}
+        {drawerOpen && (
+          <div
+            className="lg:hidden fixed inset-0 z-40"
+            style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+            onClick={() => setDrawerOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* ── Mobile Drawer ────────────────────────────────────────────────────── */}
+        <aside
+          className="lg:hidden fixed inset-y-0 left-0 z-50 flex flex-col border-r"
+          style={{
+            width: 280,
+            backgroundColor: c.card,
+            borderColor: "#f0ebe4",
+            transform: drawerOpen ? "translateX(0)" : "translateX(-100%)",
+            transition: "transform 0.25s cubic-bezier(0.4,0,0.2,1)",
+            boxShadow: drawerOpen ? "4px 0 24px rgba(0,0,0,0.12)" : "none",
+          }}
+        >
+          {/* Gradient strip */}
+          <div className="h-1 flex-shrink-0" style={{ background: c.gradient }} />
+
+          {/* Drawer header */}
+          <div
+            className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0"
+            style={{ borderColor: "#f0ebe4" }}
+          >
+            <Link
+              href="/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 py-1 rounded-md transition-colors"
+              style={{ textDecoration: "none" }}
+              onClick={() => setDrawerOpen(false)}
             >
               <ExternalLink size={13} color={c.primary500} />
               <span
@@ -236,154 +398,88 @@ export default function AdminShell({ children }: AdminShellProps) {
                 View Storefront
               </span>
             </Link>
-          )}
-          {collapsed && (
-            <Link href="/" target="_blank" rel="noopener noreferrer" className="p-1.5">
-              <ExternalLink size={16} color={c.earth400} />
-            </Link>
-          )}
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="p-1.5 rounded-md transition-colors flex-shrink-0"
-            style={{ color: c.earth400 }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = c.bg
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "transparent"
-            }}
-          >
-            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
-        </div>
+            <button
+              onClick={() => setDrawerOpen(false)}
+              className="p-1.5 rounded-md transition-colors"
+              style={{ color: c.earth400 }}
+              aria-label="Close menu"
+            >
+              <X size={18} />
+            </button>
+          </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 py-2 px-2 overflow-y-auto">
-          <ul className="space-y-0.5">
-            {navItems.map((item) => {
-              const Icon = item.icon
-              const isActive =
-                item.href === "/admin"
-                  ? pathname === "/admin"
-                  : pathname === item.href || pathname.startsWith(item.href + "/")
+          {/* Navigation */}
+          <nav className="flex-1 py-2 px-2 overflow-y-auto">
+            <ul className="space-y-0.5">
+              {navItems.map((item) => {
+                const Icon = item.icon
+                const isActive =
+                  item.href === "/admin"
+                    ? pathname === "/admin"
+                    : pathname === item.href || pathname.startsWith(item.href + "/")
 
-              return (
-                <li key={item.id}>
-                  <Link
-                    href={item.href}
-                    className="w-full flex items-center gap-3 rounded-lg transition-all duration-150"
-                    style={{
-                      padding: collapsed ? "10px" : "9px 12px",
-                      justifyContent: collapsed ? "center" : "flex-start",
-                      backgroundColor: isActive ? c.primary50 : "transparent",
-                      color: isActive ? c.primary500 : c.earth600,
-                      fontFamily: fonts.body,
-                      textDecoration: "none",
-                      borderLeft: collapsed
-                        ? "none"
-                        : isActive
+                return (
+                  <li key={item.id}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setDrawerOpen(false)}
+                      className="w-full flex items-center gap-3 rounded-lg transition-all duration-150"
+                      style={{
+                        padding: "10px 12px",
+                        backgroundColor: isActive ? c.primary50 : "transparent",
+                        color: isActive ? c.primary500 : c.earth600,
+                        fontFamily: fonts.body,
+                        textDecoration: "none",
+                        borderLeft: isActive
                           ? `3px solid ${c.primary500}`
                           : "3px solid transparent",
-                    }}
-                    title={collapsed ? item.label : undefined}
-                    onMouseEnter={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.backgroundColor = c.bg
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.backgroundColor = "transparent"
-                      }
-                    }}
-                  >
-                    <Icon
-                      size={19}
-                      strokeWidth={isActive ? 2.2 : 1.8}
-                      style={{ flexShrink: 0 }}
-                    />
-                    {!collapsed && (
+                      }}
+                    >
+                      <Icon
+                        size={19}
+                        strokeWidth={isActive ? 2.2 : 1.8}
+                        style={{ flexShrink: 0 }}
+                      />
                       <span className="flex-1 text-left text-sm font-medium truncate">
                         {item.label}
                       </span>
-                    )}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </nav>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
 
-        {/* Logout */}
-        <div
-          className="px-2 py-3 border-t flex-shrink-0"
-          style={{ borderColor: "#f0ebe4" }}
-        >
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 rounded-lg transition-colors"
-            style={{
-              padding: collapsed ? "10px" : "9px 12px",
-              justifyContent: collapsed ? "center" : "flex-start",
-              color: c.earth400,
-              fontFamily: fonts.body,
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-            }}
-            title={collapsed ? "Logout" : undefined}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = c.bg
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "transparent"
-            }}
+          {/* Logout */}
+          <div
+            className="px-2 py-3 border-t flex-shrink-0"
+            style={{ borderColor: "#f0ebe4" }}
           >
-            <LogOut size={19} />
-            {!collapsed && <span className="text-sm font-medium">Logout</span>}
-          </button>
+            <button
+              onClick={() => {
+                setDrawerOpen(false)
+                handleLogout()
+              }}
+              className="w-full flex items-center gap-3 rounded-lg transition-colors"
+              style={{
+                padding: "10px 12px",
+                color: c.earth400,
+                fontFamily: fonts.body,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+              }}
+            >
+              <LogOut size={19} />
+              <span className="text-sm font-medium">Logout</span>
+            </button>
+          </div>
+        </aside>
+
+        {/* ── Main Content ─────────────────────────────────────────────────────── */}
+        <div className="flex-1 min-w-0 overflow-x-hidden">
+          <div className="p-4 sm:p-6 lg:p-8">{children}</div>
         </div>
-      </aside>
-
-      {/* Mobile top nav — horizontal scrollable */}
-      <div
-        className="lg:hidden fixed top-14 left-0 right-0 z-30 border-b"
-        style={{ backgroundColor: c.card, borderColor: "#f0ebe4" }}
-      >
-        <div className="h-0.5" style={{ background: c.gradient }} />
-        <div className="flex gap-0.5 px-2 py-1.5 overflow-x-auto">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            const isActive =
-              item.href === "/admin"
-                ? pathname === "/admin"
-                : pathname === item.href || pathname.startsWith(item.href + "/")
-
-            return (
-              <Link
-                key={item.id}
-                href={item.href}
-                className="flex flex-col items-center gap-1 px-2.5 py-1.5 rounded-lg transition-colors min-w-[58px] flex-shrink-0"
-                style={{
-                  backgroundColor: isActive ? c.primary50 : "transparent",
-                  color: isActive ? c.primary500 : c.earth400,
-                  fontFamily: fonts.body,
-                  textDecoration: "none",
-                }}
-              >
-                <Icon size={17} strokeWidth={isActive ? 2.2 : 1.8} />
-                <span className="text-[9px] font-medium whitespace-nowrap leading-tight">
-                  {item.label.split(" ")[0]}
-                </span>
-              </Link>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Content area — pushed down on mobile for the top nav */}
-      <div className="flex-1 min-w-0 pt-[58px] lg:pt-0 overflow-x-hidden">
-        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
       </div>
     </div>
   )
