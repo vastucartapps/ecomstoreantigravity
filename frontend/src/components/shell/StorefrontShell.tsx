@@ -873,8 +873,8 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* 4-column grid: Brand | Link cols from admin | Newsletter */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+          {/* 3-column grid: Brand | Link cols from admin */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
             {/* Column 1: Brand — dynamic from admin branding settings */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -985,55 +985,6 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
               </div>
             ))}
 
-            {/* Column 4: Newsletter — always shown */}
-            <div className="space-y-4">
-              <h3
-                className="font-semibold text-base"
-                style={{ fontFamily: fonts.heading }}
-              >
-                Stay Connected
-              </h3>
-              <p
-                className="text-sm opacity-75 leading-relaxed"
-                style={{ fontFamily: fonts.body }}
-              >
-                Subscribe for spiritual insights, exclusive offers, and new arrivals.
-              </p>
-              <form
-                onSubmit={(e) => e.preventDefault()}
-                className="space-y-2"
-              >
-                <input
-                  type="email"
-                  placeholder="Your email address"
-                  className="w-full px-4 py-2.5 rounded-lg text-sm outline-none border"
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.1)",
-                    borderColor: "rgba(255,255,255,0.2)",
-                    color: "#ffffff",
-                    fontFamily: fonts.body,
-                  }}
-                  onFocus={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.5)"
-                    e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)"
-                  }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)"
-                    e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"
-                  }}
-                />
-                <button
-                  type="submit"
-                  className="w-full py-2.5 rounded-lg text-white text-sm font-semibold transition-opacity hover:opacity-90"
-                  style={{
-                    background: gradients.secondaryButton,
-                    fontFamily: fonts.body,
-                  }}
-                >
-                  Join
-                </button>
-              </form>
-            </div>
           </div>
 
           {/* Bottom bar */}
