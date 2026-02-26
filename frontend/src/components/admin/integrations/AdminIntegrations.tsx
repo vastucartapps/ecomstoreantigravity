@@ -37,6 +37,7 @@ import type {
   OpenGraphDefaults,
   MarketingTag,
   GmcStatusResponse,
+  MetaStatusResponse,
 } from "@/types/admin-integrations"
 
 const c = {
@@ -1262,6 +1263,261 @@ function GmcStatusPanel({
   )
 }
 
+/* ─── Meta Status Panel ─── */
+function MetaStatusPanel({
+  metaStatus,
+  onSync,
+}: {
+  metaStatus: MetaStatusResponse | null | undefined
+  onSync?: () => Promise<void>
+}) {
+  const [syncing, setSyncing] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const handleSync = async () => {
+    setSyncing(true)
+    try {
+      await onSync?.()
+    } finally {
+      setSyncing(false)
+    }
+  }
+
+  const handleCopy = () => {
+    if (metaStatus?.feedUrl) {
+      navigator.clipboard?.writeText(metaStatus.feedUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  if (!metaStatus) return null
+
+  const { syncStatus, errorReport, feedUrl, isConfigured } = metaStatus
+  const statusColor =
+    syncStatus?.status === "success"
+      ? c.success
+      : syncStatus?.status === "error"
+      ? c.error
+      : syncStatus?.status === "syncing"
+      ? c.warning
+      : c.earth300
+
+  const statusLabel =
+    syncStatus?.status === "success"
+      ? "Synced"
+      : syncStatus?.status === "error"
+      ? "Sync Error"
+      : syncStatus?.status === "syncing"
+      ? "Syncing\u2026"
+      : "Not synced"
+
+  return (
+    <div
+      className="rounded-xl overflow-hidden mb-6"
+      style={{ backgroundColor: c.card, boxShadow: c.shadow }}
+    >
+      <div className="h-1" style={{ background: "linear-gradient(90deg, #1877F2, #E1306C, #c85103)" }} />
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3
+            className="flex items-center gap-2 text-base font-semibold"
+            style={{ fontFamily: fonts.heading, color: c.earth700 }}
+          >
+            <Share2 size={18} style={{ color: "#1877F2" }} />
+            Meta Commerce Catalogue Status
+          </h3>
+          {isConfigured && (
+            <button
+              onClick={handleSync}
+              disabled={syncing}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-white"
+              style={{
+                backgroundColor: "#1877F2",
+                fontFamily: fonts.body,
+                opacity: syncing ? 0.7 : 1,
+              }}
+            >
+              {syncing ? (
+                <RefreshCw size={12} className="animate-spin" />
+              ) : (
+                <Zap size={12} />
+              )}
+              {syncing ? "Syncing\u2026" : "Sync Now"}
+            </button>
+          )}
+        </div>
+
+        {!isConfigured ? (
+          <div
+            className="flex items-center gap-3 p-3 rounded-lg"
+            style={{ backgroundColor: c.primary50 }}
+          >
+            <AlertCircle size={16} style={{ color: c.warning }} />
+            <p className="text-sm" style={{ color: c.earth600, fontFamily: fonts.body }}>
+              Meta Catalogue not configured. Enter your Catalog ID and System User Access Token in the Meta integration card above, then toggle it on.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Sync status bar */}
+            <div
+              className="flex items-center justify-between p-3 rounded-lg"
+              style={{ backgroundColor: c.primary50 }}
+            >
+              <div className="flex items-center gap-3">
+                <Circle size={10} fill={statusColor} style={{ color: statusColor }} />
+                <div>
+                  <p className="text-sm font-medium" style={{ color: c.earth700, fontFamily: fonts.body }}>
+                    {statusLabel}
+                  </p>
+                  {syncStatus?.lastSync && (
+                    <p className="text-xs" style={{ color: c.earth400, fontFamily: fonts.body }}>
+                      Last sync: {new Date(syncStatus.lastSync).toLocaleString("en-IN")}
+                      {syncStatus.lastSyncProducts
+                        ? ` \u2014 ${syncStatus.lastSyncProducts} variants`
+                        : ""}
+                      {syncStatus.lastSyncErrors
+                        ? `, ${syncStatus.lastSyncErrors} errors`
+                        : ""}
+                    </p>
+                  )}
+                </div>
+              </div>
+              {syncStatus?.lastSyncErrors != null && syncStatus.lastSyncErrors > 0 && (
+                <span
+                  className="text-xs font-medium px-2 py-0.5 rounded-full"
+                  style={{ backgroundColor: c.errorLight, color: c.error, fontFamily: fonts.body }}
+                >
+                  {syncStatus.lastSyncErrors} errors
+                </span>
+              )}
+            </div>
+
+            {/* TSV Feed URL */}
+            <div>
+              <p
+                className="text-xs font-medium mb-1"
+                style={{ color: c.earth500, fontFamily: fonts.body }}
+              >
+                TSV Feed URL — add as a scheduled data source in Meta Commerce Manager
+              </p>
+              <div
+                className="flex items-center gap-2 px-3 py-2 rounded-md border"
+                style={{ borderColor: c.primary100, backgroundColor: c.bg }}
+              >
+                <span
+                  className="flex-1 text-xs truncate"
+                  style={{ fontFamily: fonts.mono, color: c.earth600 }}
+                >
+                  {feedUrl}
+                </span>
+                <button
+                  onClick={handleCopy}
+                  className="shrink-0 p-1 rounded"
+                  style={{ color: copied ? c.success : "#1877F2" }}
+                  title="Copy URL"
+                >
+                  {copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+                </button>
+                <a
+                  href={feedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 p-1 rounded"
+                  style={{ color: "#1877F2" }}
+                  title="Open feed"
+                >
+                  <ExternalLink size={14} />
+                </a>
+              </div>
+            </div>
+
+            {/* Sync errors from last run */}
+            {syncStatus?.errors && syncStatus.errors.length > 0 && (
+              <div>
+                <p
+                  className="text-xs font-medium mb-2"
+                  style={{ color: c.error, fontFamily: fonts.body }}
+                >
+                  Last Sync Errors
+                </p>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {syncStatus.errors.map((err, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-2 px-3 py-1.5 rounded text-xs"
+                      style={{ backgroundColor: c.errorLight, color: c.error, fontFamily: fonts.body }}
+                    >
+                      <XCircle size={12} className="mt-0.5 shrink-0" />
+                      {err}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Catalogue diagnostics report */}
+            {errorReport && errorReport.errorCount > 0 && (
+              <div>
+                <p
+                  className="text-xs font-medium mb-2"
+                  style={{ color: c.error, fontFamily: fonts.body }}
+                >
+                  Catalogue Issues ({errorReport.errorCount} items affected)
+                </p>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {errorReport.warnings.slice(0, 10).map((item) => (
+                    <div
+                      key={item.productId}
+                      className="px-3 py-2 rounded-lg border"
+                      style={{ borderColor: "#fecaca", backgroundColor: c.errorLight }}
+                    >
+                      <p
+                        className="text-xs font-medium mb-1"
+                        style={{ color: c.earth700, fontFamily: fonts.body }}
+                      >
+                        {item.title}
+                      </p>
+                      {item.issues.map((issue, j) => (
+                        <p
+                          key={j}
+                          className="text-xs"
+                          style={{ color: c.error, fontFamily: fonts.body }}
+                        >
+                          &bull; {issue}
+                        </p>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+                <p
+                  className="text-xs mt-1"
+                  style={{ color: c.earth300, fontFamily: fonts.body }}
+                >
+                  Checked {new Date(errorReport.checkedAt).toLocaleString("en-IN")}
+                </p>
+              </div>
+            )}
+
+            {errorReport && errorReport.errorCount === 0 && (
+              <div
+                className="flex items-center gap-2 px-3 py-2 rounded-lg"
+                style={{ backgroundColor: c.successLight }}
+              >
+                <CheckCircle2 size={14} style={{ color: c.success }} />
+                <p className="text-xs" style={{ color: c.success, fontFamily: fonts.body }}>
+                  All {errorReport.totalItems} catalogue items healthy in Meta &mdash; no issues detected.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /* ─── Main Component ─── */
 export function AdminIntegrations({
   activeTab: initialTab,
@@ -1270,6 +1526,7 @@ export function AdminIntegrations({
   openGraph,
   marketingTags,
   gmcStatus,
+  metaStatus,
   onChangeTab,
   onToggleConnection,
   onTestConnection,
@@ -1280,6 +1537,7 @@ export function AdminIntegrations({
   onAddTag,
   onRemoveTag,
   onGmcSync,
+  onMetaSync,
 }: AdminIntegrationsProps) {
   const [tab, setTab] = useState<IntegrationTab>(initialTab)
 
@@ -1358,6 +1616,11 @@ export function AdminIntegrations({
             {/* GMC Status Panel — shown when GMC card exists */}
             {integrations.some((i) => i.id === "gmc") && (
               <GmcStatusPanel gmcStatus={gmcStatus} onSync={onGmcSync} />
+            )}
+
+            {/* Meta Status Panel — shown when Meta card exists */}
+            {integrations.some((i) => i.id === "meta") && (
+              <MetaStatusPanel metaStatus={metaStatus} onSync={onMetaSync} />
             )}
 
           {/* Card grid */}

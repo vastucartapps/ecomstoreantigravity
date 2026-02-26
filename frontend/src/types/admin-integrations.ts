@@ -86,6 +86,33 @@ export interface GmcStatusResponse {
   errorReport: GmcErrorReport | null
 }
 
+/** Meta sync status (stored in store.metadata.meta_sync_status) */
+export interface MetaSyncStatus {
+  lastSync: string | null
+  lastSyncProducts: number
+  lastSyncErrors: number
+  status: "success" | "error" | "syncing" | null
+  errors: string[]
+  syncStarted?: string
+}
+
+/** Meta error report (stored in store.metadata.meta_error_report) */
+export interface MetaErrorReport {
+  checkedAt: string
+  totalItems: number
+  errorCount: number
+  warnings: { productId: string; title: string; issues: string[] }[]
+}
+
+/** Full Meta status response from /admin/integrations/meta/status */
+export interface MetaStatusResponse {
+  isConfigured: boolean
+  catalogId: string | null
+  feedUrl: string
+  syncStatus: MetaSyncStatus | null
+  errorReport: MetaErrorReport | null
+}
+
 /** Props for the AdminIntegrations component */
 export interface AdminIntegrationsProps {
   activeTab: IntegrationTab
@@ -94,6 +121,7 @@ export interface AdminIntegrationsProps {
   openGraph: OpenGraphDefaults
   marketingTags: MarketingTag[]
   gmcStatus?: GmcStatusResponse | null
+  metaStatus?: MetaStatusResponse | null
   onChangeTab?: (tab: IntegrationTab) => void
   onToggleConnection?: (integrationId: string) => Promise<void>
   onTestConnection?: (integrationId: string) => Promise<void>
@@ -107,4 +135,5 @@ export interface AdminIntegrationsProps {
   onAddTag?: (tag: Omit<MarketingTag, "id">) => Promise<void>
   onRemoveTag?: (tagId: string) => Promise<void>
   onGmcSync?: () => Promise<void>
+  onMetaSync?: () => Promise<void>
 }

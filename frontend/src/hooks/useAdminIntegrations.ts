@@ -6,6 +6,7 @@ import type {
   OpenGraphDefaults,
   MarketingTag,
   GmcStatusResponse,
+  MetaStatusResponse,
 } from "@/types/admin-integrations"
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
@@ -31,6 +32,20 @@ const DEFAULT_INTEGRATIONS: Integration[] = [
     isConnected: false,
     status: "inactive",
     configFields: { pixelId: "", conversionApiToken: "" },
+    lastSynced: null,
+  },
+  {
+    id: "meta",
+    name: "Meta Product Catalogue",
+    icon: "share-2",
+    description:
+      "Sync product catalogue to Meta Commerce Manager for Facebook and Instagram Shopping. Supports real-time Graph API push + TSV feed.",
+    isConnected: false,
+    status: "inactive",
+    configFields: {
+      catalogId: "",
+      accessToken: "",
+    },
     lastSynced: null,
   },
   {
@@ -116,6 +131,12 @@ function validateIntegration(
       return /^G-[A-Z0-9]{4,}$/i.test(fields.measurementId || "")
     case "meta-pixel":
       return /^\d{13,16}$/.test(fields.pixelId || "")
+    case "meta":
+      // catalogId must be 13-16 digits; accessToken must be present
+      return (
+        /^\d{13,16}$/.test(fields.catalogId || "") &&
+        (fields.accessToken || "").length > 10
+      )
     case "gmc":
       // merchantId required; serviceAccountKey optional (needed for Content API push)
       return /^\d{5,}$/.test(fields.merchantId || "")
@@ -372,6 +393,22 @@ export function useAdminIntegrations() {
     await adminFetch("/admin/integrations/gmc/sync", { method: "POST" })
   }
 
+  /**
+   * Fetch real-time Meta catalogue sync status + diagnostics from the backend.
+   * Reads from store.metadata.meta_sync_status and meta_error_report.
+   */
+  async function fetchMetaStatus(): Promise<MetaStatusResponse> {
+    return adminFetch<MetaStatusResponse>("/admin/integrations/meta/status")
+  }
+
+  /**
+   * Trigger an immediate full catalog sync to Meta Commerce Catalogue.
+   * The backend runs this asynchronously — poll fetchMetaStatus to track progress.
+   */
+  async function triggerMetaSync(): Promise<void> {
+    await adminFetch("/admin/integrations/meta/sync", { method: "POST" })
+  }
+
   return {
     fetchConfig,
     toggleConnection,
@@ -384,5 +421,7 @@ export function useAdminIntegrations() {
     removeTag,
     fetchGmcStatus,
     triggerGmcSync,
+    fetchMetaStatus,
+    triggerMetaSync,
   }
 }

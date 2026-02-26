@@ -11,6 +11,7 @@ import type {
   OpenGraphDefaults,
   MarketingTag,
   GmcStatusResponse,
+  MetaStatusResponse,
 } from "@/types/admin-integrations"
 
 export default function IntegrationsSEOPage() {
@@ -23,6 +24,8 @@ export default function IntegrationsSEOPage() {
   const [toast, setToast] = useState<string | null>(null)
   const [gmcStatus, setGmcStatus] = useState<GmcStatusResponse | null>(null)
   const gmcPollRef = useRef<NodeJS.Timeout | null>(null)
+  const [metaStatus, setMetaStatus] = useState<MetaStatusResponse | null>(null)
+  const metaPollRef = useRef<NodeJS.Timeout | null>(null)
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -52,10 +55,21 @@ export default function IntegrationsSEOPage() {
     }
   }, [])
 
+  const refreshMetaStatus = useCallback(async () => {
+    try {
+      const status = await hook.fetchMetaStatus()
+      setMetaStatus(status)
+      return status
+    } catch {
+      return null
+    }
+  }, [])
+
   useEffect(() => {
     loadConfig()
     refreshGmcStatus()
-  }, [loadConfig, refreshGmcStatus])
+    refreshMetaStatus()
+  }, [loadConfig, refreshGmcStatus, refreshMetaStatus])
 
   // Poll GMC status every 10s while a sync is in progress
   useEffect(() => {
@@ -73,6 +87,23 @@ export default function IntegrationsSEOPage() {
       if (gmcPollRef.current) clearInterval(gmcPollRef.current)
     }
   }, [gmcStatus?.syncStatus?.status, refreshGmcStatus])
+
+  // Poll Meta status every 10s while a sync is in progress
+  useEffect(() => {
+    if (metaStatus?.syncStatus?.status === "syncing") {
+      metaPollRef.current = setInterval(async () => {
+        const updated = await refreshMetaStatus()
+        if (updated?.syncStatus?.status !== "syncing") {
+          if (metaPollRef.current) clearInterval(metaPollRef.current)
+        }
+      }, 10_000)
+    } else {
+      if (metaPollRef.current) clearInterval(metaPollRef.current)
+    }
+    return () => {
+      if (metaPollRef.current) clearInterval(metaPollRef.current)
+    }
+  }, [metaStatus?.syncStatus?.status, refreshMetaStatus])
 
   // ─── Handlers ────────────────────────────────────────────────────────────
 
@@ -210,6 +241,34 @@ export default function IntegrationsSEOPage() {
     }
   }
 
+  const handleMetaSync = async () => {
+    try {
+      await hook.triggerMetaSync()
+      showToast("Meta catalogue sync started — checking status…")
+      // Optimistically mark as syncing, then start polling
+      setMetaStatus((prev) =>
+        prev
+          ? {
+              ...prev,
+              syncStatus: {
+                ...(prev.syncStatus || {}),
+                status: "syncing",
+                syncStarted: new Date().toISOString(),
+                lastSync: prev.syncStatus?.lastSync || null,
+                lastSyncProducts: prev.syncStatus?.lastSyncProducts || 0,
+                lastSyncErrors: prev.syncStatus?.lastSyncErrors || 0,
+                errors: prev.syncStatus?.errors || [],
+              },
+            }
+          : prev
+      )
+      // Refresh status after 3s to see initial progress
+      setTimeout(refreshMetaStatus, 3000)
+    } catch {
+      showToast("Failed to trigger Meta sync — check configuration")
+    }
+  }
+
   // ─── Render ───────────────────────────────────────────────────────────────
 
   if (isLoading) {
@@ -269,6 +328,7 @@ export default function IntegrationsSEOPage() {
         openGraph={config.openGraph}
         marketingTags={config.marketingTags}
         gmcStatus={gmcStatus}
+        metaStatus={metaStatus}
         onChangeTab={setActiveTab}
         onToggleConnection={handleToggleConnection}
         onTestConnection={handleTestConnection}
@@ -279,6 +339,7 @@ export default function IntegrationsSEOPage() {
         onAddTag={handleAddTag}
         onRemoveTag={handleRemoveTag}
         onGmcSync={handleGmcSync}
+        onMetaSync={handleMetaSync}
       />
 
       {/* Toast */}
