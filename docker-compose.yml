@@ -15,7 +15,9 @@ services:
     image: postgres:16-alpine
     restart: always
     networks:
-      - ecomstore-internal
+      ecomstore-internal:
+        aliases:
+          - ecomstore-postgres
     # Custom entrypoint: patches pg_hba.conf in the data volume on every startup,
     # then hands off to the official docker-entrypoint.sh. This ensures trust auth
     # for both IPv4 and IPv6 connections on every start — even on existing volumes.
@@ -82,7 +84,9 @@ services:
     image: redis:7-alpine
     restart: always
     networks:
-      - ecomstore-internal
+      ecomstore-internal:
+        aliases:
+          - ecomstore-redis
     # AOF persistence for crash recovery + memory cap
     command: >
       redis-server
@@ -103,7 +107,9 @@ services:
     image: minio/minio:latest
     restart: always
     networks:
-      - ecomstore-internal
+      ecomstore-internal:
+        aliases:
+          - ecomstore-minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -130,7 +136,7 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      mc alias set local http://minio:9000 minioadmin minioadmin;
+      mc alias set local http://ecomstore-minio:9000 minioadmin minioadmin;
       mc mb local/medusa-uploads --ignore-existing;
       mc anonymous set download local/medusa-uploads;
       exit 0;
@@ -142,8 +148,10 @@ services:
       dockerfile: Dockerfile
     restart: always
     networks:
-      - ecomstore-internal  # reaches postgres/redis/minio
-      - coolify             # Traefik proxies HTTPS to this
+      ecomstore-internal:
+        aliases:
+          - ecomstore-backend
+      coolify: {}  # Traefik proxies HTTPS to this
     depends_on:
       postgres:
         condition: service_healthy
@@ -151,8 +159,8 @@ services:
         condition: service_healthy
     environment:
       # Core
-      - DATABASE_URL=postgres://medusa:medusa@postgres:5432/medusa?sslmode=disable
-      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgres://medusa:medusa@ecomstore-postgres:5432/medusa?sslmode=disable
+      - REDIS_URL=redis://ecomstore-redis:6379
       - JWT_SECRET=${JWT_SECRET:-supersecret-change-in-production}
       - COOKIE_SECRET=${COOKIE_SECRET:-supersecret-change-in-production}
       - NODE_ENV=production
@@ -168,7 +176,7 @@ services:
       - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY:-minioadmin}
       - S3_REGION=${S3_REGION:-us-east-1}
       - S3_BUCKET=${S3_BUCKET:-medusa-uploads}
-      - S3_ENDPOINT=http://minio:9000
+      - S3_ENDPOINT=http://ecomstore-minio:9000
       # Payments
       - STRIPE_API_KEY=${STRIPE_API_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
@@ -229,8 +237,8 @@ services:
         - NEXT_PUBLIC_GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID:-}
     restart: always
     networks:
-      - ecomstore-internal  # reaches backend/minio
-      - coolify             # Traefik proxies HTTPS to this
+      ecomstore-internal: {}  # reaches ecomstore-backend/ecomstore-minio
+      coolify: {}             # Traefik proxies HTTPS to this
     depends_on:
       backend:
         condition: service_healthy
@@ -239,8 +247,8 @@ services:
     environment:
       - HOSTNAME=0.0.0.0
       - NODE_ENV=production
-      - MEDUSA_INTERNAL_URL=http://backend:9000
-      - S3_INTERNAL_URL=http://minio:9000
+      - MEDUSA_INTERNAL_URL=http://ecomstore-backend:9000
+      - S3_INTERNAL_URL=http://ecomstore-minio:9000
       - NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=${MEDUSA_PUBLISHABLE_KEY:-}
       - NEXT_PUBLIC_ALGOLIA_APP_ID=${ALGOLIA_APP_ID:-}
       - NEXT_PUBLIC_ALGOLIA_SEARCH_KEY=${ALGOLIA_SEARCH_KEY:-}
