@@ -1,12 +1,24 @@
+networks:
+  # Private network: postgres, redis, minio NEVER join the shared coolify network.
+  # This prevents DNS collision with identically-named services from other Coolify
+  # projects (e.g. two "postgres" containers resolving to random IPs) and removes
+  # the IPv6 ULA round-robin issue that caused KnexTimeoutError.
+  ecomstore-internal:
+    driver: bridge
+  # Coolify's shared proxy network — only backend and frontend join this so
+  # Traefik can route HTTPS traffic to them.
+  coolify:
+    external: true
+
 services:
   postgres:
     image: postgres:16-alpine
     restart: always
+    networks:
+      - ecomstore-internal
     # Custom entrypoint: patches pg_hba.conf in the data volume on every startup,
-    # then hands off to the official docker-entrypoint.sh. This fixes the
-    # scram-sha-256/musl incompatibility permanently — on both existing volumes
-    # (patched before postgres reads it) and fresh volumes (POSTGRES_HOST_AUTH_METHOD
-    # handles init, then this overwrites with the canonical trust config).
+    # then hands off to the official docker-entrypoint.sh. This ensures trust auth
+    # for both IPv4 and IPv6 connections on every start — even on existing volumes.
     entrypoint:
       - "sh"
       - "-c"
@@ -18,11 +30,11 @@ services:
             'local   all  all               trust' \
             'host    all  all  127.0.0.1/32  trust' \
             'host    all  all  ::1/128       trust' \
-            'host    all  all  10.0.0.0/8    trust' \
-            'host    all  all  172.16.0.0/12 trust' \
+            'host    all  all  0.0.0.0/0     trust' \
+            'host    all  all  ::/0          trust' \
             'local   replication all              trust' \
-            'host    replication all 127.0.0.1/32 trust' \
-            'host    replication all ::1/128      trust' \
+            'host    replication all 0.0.0.0/0    trust' \
+            'host    replication all ::/0          trust' \
             > "$HBA"
         fi
         exec docker-entrypoint.sh "$@"
@@ -69,6 +81,8 @@ services:
   redis:
     image: redis:7-alpine
     restart: always
+    networks:
+      - ecomstore-internal
     # AOF persistence for crash recovery + memory cap
     command: >
       redis-server
@@ -88,6 +102,8 @@ services:
   minio:
     image: minio/minio:latest
     restart: always
+    networks:
+      - ecomstore-internal
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -107,6 +123,8 @@ services:
   minio-init:
     image: minio/mc:latest
     restart: "no"
+    networks:
+      - ecomstore-internal
     depends_on:
       minio:
         condition: service_healthy
@@ -123,6 +141,9 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: always
+    networks:
+      - ecomstore-internal  # reaches postgres/redis/minio
+      - coolify             # Traefik proxies HTTPS to this
     depends_on:
       postgres:
         condition: service_healthy
@@ -207,6 +228,9 @@ services:
         - NEXT_PUBLIC_POSTHOG_HOST=${POSTHOG_HOST:-https://eu.i.posthog.com}
         - NEXT_PUBLIC_GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID:-}
     restart: always
+    networks:
+      - ecomstore-internal  # reaches backend/minio
+      - coolify             # Traefik proxies HTTPS to this
     depends_on:
       backend:
         condition: service_healthy
