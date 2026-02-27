@@ -87,6 +87,13 @@ export function AdminOverviewDashboard({
         </div>
       </div>
 
+      {/* Marketing Channels — top, always visible */}
+      {marketingHealth && (
+        <div className="mb-6">
+          <MarketingHealthPanel data={marketingHealth} />
+        </div>
+      )}
+
       {/* Stat Cards */}
       <StatCards stats={stats} isLoading={isLoading} onStatClick={onStatClick} />
 
@@ -111,13 +118,6 @@ export function AdminOverviewDashboard({
           onDismissAlert={onDismissAlert}
         />
       </div>
-
-      {/* Marketing Channels */}
-      {marketingHealth && (
-        <div className="mt-6">
-          <MarketingHealthPanel data={marketingHealth} />
-        </div>
-      )}
     </div>
   )
 }

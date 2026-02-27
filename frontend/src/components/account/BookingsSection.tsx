@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Calendar, Clock, Video, Phone, CheckCircle2, XCircle, Loader2, Plus, X } from "lucide-react"
+import { Calendar, Clock, Video, Loader2, Plus, X } from "lucide-react"
 import { useDashboardData } from "@/hooks/useDashboardData"
 import { primary, earth, bg, fonts } from "@/lib/theme"
-import type { Booking } from "@/types/dashboard"
+import type { Booking, BookingServiceType } from "@/types/dashboard"
 
 const STATUS_CONFIG = {
   pending: { label: "Pending Confirmation", color: "#F59E0B", bg: "#FFFBEB" },
@@ -13,59 +13,57 @@ const STATUS_CONFIG = {
   cancelled: { label: "Cancelled", color: "#EF4444", bg: "#FEF2F2" },
 }
 
-const CONSULTATION_TYPES = [
-  { id: "vastu_home", title: "Home Vastu Consultation", price: 1999, description: "Complete home energy analysis" },
-  { id: "vastu_office", title: "Office Vastu Consultation", price: 2999, description: "Workplace prosperity analysis" },
-  { id: "crystal_healing", title: "Crystal Healing Session", price: 999, description: "Personal crystal prescription" },
-  { id: "numerology", title: "Numerology Reading", price: 699, description: "Life path & destiny analysis" },
-]
-
 const TIME_SLOTS = ["09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM"]
 
 interface BookingFormData {
-  consultationType: string
+  serviceTypeId: string
   date: string
   time: string
   notes: string
 }
 
 export function BookingsSection() {
-  const { fetchBookings, createBooking } = useDashboardData()
+  const { fetchBookings, createBooking, fetchBookingServiceTypes } = useDashboardData()
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [serviceTypes, setServiceTypes] = useState<BookingServiceType[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState<BookingFormData>({ consultationType: "", date: "", time: "", notes: "" })
+  const [form, setForm] = useState<BookingFormData>({ serviceTypeId: "", date: "", time: "", notes: "" })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchBookings().then((b) => {
+    Promise.all([
+      fetchBookings(),
+      fetchBookingServiceTypes(),
+    ]).then(([b, types]) => {
       setBookings(b)
+      setServiceTypes(types)
       setIsLoading(false)
     }).catch(() => setIsLoading(false))
   }, [])
 
   const handleBook = async () => {
-    if (!form.consultationType || !form.date || !form.time) {
+    if (!form.serviceTypeId || !form.date || !form.time) {
       setError("Please fill in all required fields")
       return
     }
     setSaving(true)
     setError(null)
     try {
-      const selectedType = CONSULTATION_TYPES.find((t) => t.id === form.consultationType)
+      const selectedType = serviceTypes.find((t) => t.id === form.serviceTypeId)
       const newBooking = await createBooking({
-        title: selectedType?.title || form.consultationType,
+        title: selectedType?.title || form.serviceTypeId,
         consultant_name: selectedType?.title || "",
         date: form.date,
         time: form.time,
         notes: form.notes,
         price: selectedType?.price || 0,
-        currency: "INR",
+        currency: selectedType?.currency || "INR",
       })
       setBookings((prev) => [newBooking, ...prev])
       setShowForm(false)
-      setForm({ consultationType: "", date: "", time: "", notes: "" })
+      setForm({ serviceTypeId: "", date: "", time: "", notes: "" })
     } catch (err: any) {
       setError(err?.message || "Failed to create booking")
     } finally {
@@ -96,14 +94,16 @@ export function BookingsSection() {
             Vastu & spiritual consultations
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-          style={{ background: primary[500] }}
-        >
-          <Plus className="w-4 h-4" />
-          Book Now
-        </button>
+        {serviceTypes.length > 0 && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
+            style={{ background: primary[500] }}
+          >
+            <Plus className="w-4 h-4" />
+            Book Now
+          </button>
+        )}
       </div>
 
       {/* Booking Form Modal */}
@@ -125,23 +125,33 @@ export function BookingsSection() {
                   Consultation Type *
                 </label>
                 <div className="space-y-2">
-                  {CONSULTATION_TYPES.map((type) => (
+                  {serviceTypes.map((type) => (
                     <button
                       key={type.id}
-                      onClick={() => setForm({ ...form, consultationType: type.id })}
+                      onClick={() => setForm({ ...form, serviceTypeId: type.id })}
                       className="w-full flex items-center justify-between p-3 rounded-xl text-left transition-all"
                       style={{
-                        border: `1.5px solid ${form.consultationType === type.id ? primary[500] : "#e8e0d8"}`,
-                        background: form.consultationType === type.id ? `${primary[50]}` : bg.card,
+                        border: `1.5px solid ${form.serviceTypeId === type.id ? primary[500] : "#e8e0d8"}`,
+                        background: form.serviceTypeId === type.id ? `${primary[50]}` : bg.card,
                       }}
                     >
                       <div>
                         <p className="text-sm font-semibold" style={{ color: earth[700] }}>{type.title}</p>
-                        <p className="text-xs mt-0.5" style={{ color: earth[400] }}>{type.description}</p>
+                        {type.description && (
+                          <p className="text-xs mt-0.5" style={{ color: earth[400] }}>{type.description}</p>
+                        )}
+                        {type.duration_minutes > 0 && (
+                          <p className="text-xs mt-0.5 flex items-center gap-1" style={{ color: earth[300] }}>
+                            <Clock className="w-3 h-3" />
+                            {type.duration_minutes} min
+                          </p>
+                        )}
                       </div>
-                      <p className="text-sm font-bold flex-shrink-0 ml-3" style={{ color: primary[500] }}>
-                        ₹{type.price}
-                      </p>
+                      {type.price > 0 && (
+                        <p className="text-sm font-bold flex-shrink-0 ml-3" style={{ color: primary[500] }}>
+                          ₹{type.price.toLocaleString("en-IN")}
+                        </p>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -228,15 +238,19 @@ export function BookingsSection() {
           <Calendar className="w-12 h-12 mx-auto mb-3" style={{ color: earth[200] }} />
           <p className="text-sm font-medium" style={{ color: earth[500] }}>No bookings yet</p>
           <p className="text-xs mt-1 mb-4" style={{ color: earth[300] }}>
-            Book a Vastu consultation with our experts
+            {serviceTypes.length > 0
+              ? "Book a Vastu consultation with our experts"
+              : "No consultation services are currently available"}
           </p>
-          <button
-            onClick={() => setShowForm(true)}
-            className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
-            style={{ background: primary[500] }}
-          >
-            Book a Consultation
-          </button>
+          {serviceTypes.length > 0 && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
+              style={{ background: primary[500] }}
+            >
+              Book a Consultation
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

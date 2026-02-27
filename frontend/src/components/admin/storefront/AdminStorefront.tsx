@@ -1355,6 +1355,36 @@ export function AdminStorefront({
               />
             </div>
 
+            {/* Social Links */}
+            <div>
+              <label style={{ ...labelStyle, marginBottom: "10px", display: "block" }}>
+                Social Profile URLs
+              </label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                {(["instagram", "facebook", "youtube", "twitter", "pinterest"] as const).map((platform) => (
+                  <div key={platform}>
+                    <label style={{ ...labelStyle, fontSize: "11px", textTransform: "capitalize" }}>
+                      {platform}
+                    </label>
+                    <input
+                      type="url"
+                      value={(branding as any).socialLinks?.[platform] || ""}
+                      onChange={(e) =>
+                        setBranding({
+                          ...branding,
+                          socialLinks: { ...((branding as any).socialLinks || {}), [platform]: e.target.value },
+                        })
+                      }
+                      placeholder={`https://${platform}.com/yourhandle`}
+                      style={{ ...inputStyle, fontFamily: fonts.mono, fontSize: "12px" }}
+                      onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                      onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Logo + Favicon */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
               <div>

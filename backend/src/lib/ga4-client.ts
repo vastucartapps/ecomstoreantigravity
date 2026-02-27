@@ -97,9 +97,12 @@ export interface GA4Report {
     users: number
     pageviews: number
     eventCount: number
+    newUsers: number
+    engagementRate: number
   }
   topPages: { page: string; sessions: number }[]
   deviceBreakdown: { device: string; sessions: number }[]
+  trafficSources: { channel: string; sessions: number }[]
   dateRange: { startDate: string; endDate: string }
   propertyId: string
 }
@@ -162,6 +165,8 @@ export class GA4Client {
           { name: "totalUsers" },
           { name: "screenPageViews" },
           { name: "eventCount" },
+          { name: "newUsers" },
+          { name: "engagementRate" },
         ],
       }),
     })
@@ -180,6 +185,8 @@ export class GA4Client {
       users: parseInt(totalsRow[1]?.value || "0", 10),
       pageviews: parseInt(totalsRow[2]?.value || "0", 10),
       eventCount: parseInt(totalsRow[3]?.value || "0", 10),
+      newUsers: parseInt(totalsRow[4]?.value || "0", 10),
+      engagementRate: parseFloat(totalsRow[5]?.value || "0"),
     }
 
     // ── 2. Top pages (by sessions) ─────────────────────────────
@@ -233,7 +240,34 @@ export class GA4Client {
       sessions: parseInt(r.metricValues[0]?.value || "0", 10),
     }))
 
-    return { totals, topPages, deviceBreakdown, dateRange, propertyId: pid }
+    // ── 4. Traffic sources (channel groups) ────────────────────
+    let trafficSources: { channel: string; sessions: number }[] = []
+    try {
+      const sourcesRes = await fetch(url, {
+        method: "POST",
+        headers: { ...auth, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          dateRanges: [dateRange],
+          dimensions: [{ name: "sessionDefaultChannelGroup" }],
+          metrics: [{ name: "sessions" }],
+          orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+          limit: 8,
+        }),
+      })
+      if (sourcesRes.ok) {
+        const sourcesData = (await sourcesRes.json()) as {
+          rows?: { dimensionValues: { value: string }[]; metricValues: { value: string }[] }[]
+        }
+        trafficSources = (sourcesData.rows || []).map((r) => ({
+          channel: r.dimensionValues[0]?.value || "Unknown",
+          sessions: parseInt(r.metricValues[0]?.value || "0", 10),
+        }))
+      }
+    } catch {
+      // Non-fatal — dashboard shows what it can
+    }
+
+    return { totals, topPages, deviceBreakdown, trafficSources, dateRange, propertyId: pid }
   }
 }
 

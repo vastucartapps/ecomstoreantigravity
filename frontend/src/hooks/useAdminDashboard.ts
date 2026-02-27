@@ -395,9 +395,10 @@ async function fetchGA4Health(): Promise<MarketingHealthData["ga4"]> {
     const res = await adminFetch<{
       isConfigured: boolean
       report: {
-        totals: { sessions: number; users: number; pageviews: number }
+        totals: { sessions: number; users: number; pageviews: number; newUsers: number; engagementRate: number; eventCount: number }
         deviceBreakdown: { device: string; sessions: number }[]
         topPages: { page: string; sessions: number }[]
+        trafficSources: { channel: string; sessions: number }[]
       } | null
       error: string | null
     }>("/admin/analytics/ga4?days=7")
@@ -405,10 +406,31 @@ async function fetchGA4Health(): Promise<MarketingHealthData["ga4"]> {
     if (!res.isConfigured) return { configured: false, snapshot: null, error: null }
     if (res.error || !res.report) return { configured: true, snapshot: null, error: res.error }
 
-    const { totals, deviceBreakdown, topPages } = res.report
-    const totalSessions = deviceBreakdown.reduce((s, d) => s + d.sessions, 0) || 1
+    const { totals, deviceBreakdown, topPages, trafficSources = [] } = res.report
+    const totalSessions = Math.max(totals.sessions, 1)
     const mobileSessions = deviceBreakdown.find((d) => d.device === "mobile")?.sessions || 0
     const desktopSessions = deviceBreakdown.find((d) => d.device === "desktop")?.sessions || 0
+
+    // Shorten GA4 channel group names for display
+    const channelShortName: Record<string, string> = {
+      "Organic Search": "Organic",
+      "Organic Social": "Social",
+      "Paid Search": "Paid Search",
+      "Paid Social": "Paid Social",
+      "Cross-network": "Cross-network",
+      "Unassigned": "Other",
+    }
+
+    const mappedSources = trafficSources.slice(0, 5).map((s) => ({
+      channel: channelShortName[s.channel] ?? s.channel,
+      sessions: s.sessions,
+      percent: Math.round((s.sessions / totalSessions) * 100),
+    }))
+
+    const mappedTopPages = topPages.slice(0, 5).map((p) => ({
+      path: p.page.length > 32 ? p.page.slice(0, 30) + "…" : p.page,
+      sessions: p.sessions,
+    }))
 
     const snapshot: GA4Snapshot = {
       sessions: totals.sessions,
@@ -417,6 +439,10 @@ async function fetchGA4Health(): Promise<MarketingHealthData["ga4"]> {
       mobilePercent: Math.round((mobileSessions / totalSessions) * 100),
       desktopPercent: Math.round((desktopSessions / totalSessions) * 100),
       topPage: topPages?.[0]?.page || null,
+      topPages: mappedTopPages,
+      newUserPercent: totals.users > 0 ? Math.round(((totals as any).newUsers / totals.users) * 100) : 0,
+      engagementRate: Math.round(((totals as any).engagementRate || 0) * 100),
+      trafficSources: mappedSources,
     }
     return { configured: true, snapshot, error: null }
   } catch {

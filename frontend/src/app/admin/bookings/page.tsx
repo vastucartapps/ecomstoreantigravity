@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { AdminBookings } from "@/components/admin/bookings"
+import { AdminBookings, ServiceTypesPanel, BookingStatsPanel } from "@/components/admin/bookings"
 import { useAdminBookings } from "@/hooks/useAdminBookings"
 import type {
   BookingRow,
@@ -10,6 +10,8 @@ import type {
   TimeSlotConfig,
   BlockedDate,
   BookingsViewMode,
+  AdminBookingServiceType,
+  BookingStats,
 } from "@/types/admin-booking"
 
 // ---------------------------------------------------------------------------
@@ -38,6 +40,14 @@ function computeCalendarDays(
   }))
 }
 
+type Tab = "bookings" | "services" | "stats"
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "bookings", label: "Bookings" },
+  { id: "services", label: "Consultation Services" },
+  { id: "stats", label: "Analytics" },
+]
+
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
@@ -54,8 +64,14 @@ export default function AdminBookingsPage() {
     fetchBlockedDates,
     blockDate,
     unblockDate,
+    fetchServiceTypes,
+    createServiceType,
+    updateServiceType,
+    deleteServiceType,
+    fetchBookingStats,
   } = useAdminBookings()
 
+  const [activeTab, setActiveTab] = useState<Tab>("bookings")
   const [bookings, setBookings] = useState<BookingRow[]>([])
   const [slotConfig, setSlotConfig] = useState<TimeSlotConfig>({
     enabledDays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
@@ -66,9 +82,12 @@ export default function AdminBookingsPage() {
     maxBookingsPerDay: 8,
   })
   const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([])
+  const [serviceTypes, setServiceTypes] = useState<AdminBookingServiceType[]>([])
+  const [bookingStats, setBookingStats] = useState<BookingStats | null>(null)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<BookingsViewMode>("list")
   const [isLoading, setIsLoading] = useState(true)
+  const [statsLoading, setStatsLoading] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
   const showToast = useCallback((msg: string) => {
@@ -79,35 +98,49 @@ export default function AdminBookingsPage() {
   const loadAll = useCallback(async () => {
     setIsLoading(true)
     try {
-      const [rows, cfg, blocked] = await Promise.all([
+      const [rows, cfg, blocked, types] = await Promise.all([
         fetchBookings(),
         fetchSlotConfig(),
         fetchBlockedDates(),
+        fetchServiceTypes(),
       ])
       setBookings(rows)
       setSlotConfig(cfg)
       setBlockedDates(blocked)
+      setServiceTypes(types)
     } finally {
       setIsLoading(false)
     }
-  }, [fetchBookings, fetchSlotConfig, fetchBlockedDates])
+  }, [fetchBookings, fetchSlotConfig, fetchBlockedDates, fetchServiceTypes])
+
+  const loadStats = useCallback(async () => {
+    if (bookingStats) return // already loaded
+    setStatsLoading(true)
+    const stats = await fetchBookingStats()
+    setBookingStats(stats)
+    setStatsLoading(false)
+  }, [fetchBookingStats, bookingStats])
 
   useEffect(() => {
     loadAll()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    if (activeTab === "stats") loadStats()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab])
+
   // ---------------------------------------------------------------------------
-  // Handlers
+  // Booking handlers
   // ---------------------------------------------------------------------------
 
   const handleUpdateStatus = useCallback(
     async (id: string, status: BookingStatus) => {
       const ok = await updateStatus(id, status)
       if (ok) {
-        setBookings((prev) =>
-          prev.map((b) => (b.id === id ? { ...b, status } : b))
-        )
+        setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)))
+        setBookingStats(null) // invalidate stats
         showToast(`Booking marked as ${status}`)
       } else {
         showToast("Failed to update status")
@@ -120,9 +153,7 @@ export default function AdminBookingsPage() {
     async (id: string, link: string) => {
       const ok = await setMeetingLink(id, link)
       if (ok) {
-        setBookings((prev) =>
-          prev.map((b) => (b.id === id ? { ...b, meetingLink: link } : b))
-        )
+        setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, meetingLink: link } : b)))
         showToast("Meeting link saved")
       } else {
         showToast("Failed to save meeting link")
@@ -135,9 +166,7 @@ export default function AdminBookingsPage() {
     async (id: string, notes: string) => {
       const ok = await addNotes(id, notes)
       if (ok) {
-        setBookings((prev) =>
-          prev.map((b) => (b.id === id ? { ...b, notes } : b))
-        )
+        setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, notes } : b)))
         showToast("Notes saved")
       } else {
         showToast("Failed to save notes")
@@ -149,13 +178,7 @@ export default function AdminBookingsPage() {
   const handleSendEmail = useCallback(
     async (id: string, type: "confirmation" | "reminder") => {
       const ok = await sendEmail(id, type)
-      if (ok) {
-        showToast(
-          `${type === "confirmation" ? "Confirmation" : "Reminder"} email sent`
-        )
-      } else {
-        showToast("Failed to send email")
-      }
+      showToast(ok ? `${type === "confirmation" ? "Confirmation" : "Reminder"} email sent` : "Failed to send email")
     },
     [sendEmail, showToast]
   )
@@ -199,6 +222,49 @@ export default function AdminBookingsPage() {
     [unblockDate, showToast]
   )
 
+  // ---------------------------------------------------------------------------
+  // Service type handlers
+  // ---------------------------------------------------------------------------
+
+  const handleAddServiceType = useCallback(
+    async (data: Omit<AdminBookingServiceType, "id" | "created_at">) => {
+      const result = await createServiceType(data)
+      if (result) {
+        setServiceTypes((prev) => [...prev, result])
+        showToast("Service type created")
+      } else {
+        showToast("Failed to create service type")
+      }
+    },
+    [createServiceType, showToast]
+  )
+
+  const handleUpdateServiceType = useCallback(
+    async (id: string, data: Partial<Omit<AdminBookingServiceType, "id" | "created_at">>) => {
+      const result = await updateServiceType(id, data)
+      if (result) {
+        setServiceTypes((prev) => prev.map((t) => (t.id === id ? result : t)))
+        showToast("Service type updated")
+      } else {
+        showToast("Failed to update service type")
+      }
+    },
+    [updateServiceType, showToast]
+  )
+
+  const handleDeleteServiceType = useCallback(
+    async (id: string) => {
+      const ok = await deleteServiceType(id)
+      if (ok) {
+        setServiceTypes((prev) => prev.filter((t) => t.id !== id))
+        showToast("Service type deleted")
+      } else {
+        showToast("Failed to delete service type")
+      }
+    },
+    [deleteServiceType, showToast]
+  )
+
   const calendarDays = computeCalendarDays(bookings, blockedDates)
 
   return (
@@ -224,24 +290,76 @@ export default function AdminBookingsPage() {
         </div>
       )}
 
-      <AdminBookings
-        bookings={bookings}
-        calendarDays={calendarDays}
-        slotConfig={slotConfig}
-        blockedDates={blockedDates}
-        selectedDate={selectedDate}
-        viewMode={viewMode}
-        isLoading={isLoading}
-        onChangeViewMode={setViewMode}
-        onSelectDate={setSelectedDate}
-        onUpdateStatus={handleUpdateStatus}
-        onSetMeetingLink={handleSetMeetingLink}
-        onAddNotes={handleAddNotes}
-        onSendEmail={handleSendEmail}
-        onUpdateSlotConfig={handleUpdateSlotConfig}
-        onBlockDate={handleBlockDate}
-        onUnblockDate={handleUnblockDate}
-      />
+      {/* Tab bar */}
+      <div
+        className="flex gap-1 mb-5 p-1 rounded-xl w-fit"
+        style={{ background: "#f0ebe4" }}
+      >
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className="px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+            style={{
+              background: activeTab === tab.id ? "#013f47" : "transparent",
+              color: activeTab === tab.id ? "#fff" : "#9a7c68",
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Bookings tab */}
+      {activeTab === "bookings" && (
+        <AdminBookings
+          bookings={bookings}
+          calendarDays={calendarDays}
+          slotConfig={slotConfig}
+          blockedDates={blockedDates}
+          selectedDate={selectedDate}
+          viewMode={viewMode}
+          isLoading={isLoading}
+          onChangeViewMode={setViewMode}
+          onSelectDate={setSelectedDate}
+          onUpdateStatus={handleUpdateStatus}
+          onSetMeetingLink={handleSetMeetingLink}
+          onAddNotes={handleAddNotes}
+          onSendEmail={handleSendEmail}
+          onUpdateSlotConfig={handleUpdateSlotConfig}
+          onBlockDate={handleBlockDate}
+          onUnblockDate={handleUnblockDate}
+        />
+      )}
+
+      {/* Consultation Services tab */}
+      {activeTab === "services" && (
+        <ServiceTypesPanel
+          serviceTypes={serviceTypes}
+          onAdd={handleAddServiceType}
+          onUpdate={handleUpdateServiceType}
+          onDelete={handleDeleteServiceType}
+          onToggleActive={(id, is_active) => handleUpdateServiceType(id, { is_active })}
+        />
+      )}
+
+      {/* Analytics tab */}
+      {activeTab === "stats" && (
+        <BookingStatsPanel
+          stats={bookingStats ?? {
+            total: 0,
+            pending: 0,
+            confirmed: 0,
+            completed: 0,
+            cancelled: 0,
+            totalRevenue: 0,
+            todayCount: 0,
+            thisWeekCount: 0,
+            byServiceType: [],
+          }}
+          isLoading={statsLoading}
+        />
+      )}
     </>
   )
 }

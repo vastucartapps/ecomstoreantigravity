@@ -1,7 +1,7 @@
 import { useCallback } from "react"
 import { medusa } from "@/lib/medusa"
 import { normalizeImageUrl } from "@/lib/image-url"
-import type { Order, Address, LoyaltyBalance, Booking, CustomerNotification, Coupon, GiftCard } from "@/types/dashboard"
+import type { Order, Address, LoyaltyBalance, Booking, BookingServiceType, CustomerNotification, Coupon, GiftCard } from "@/types/dashboard"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
@@ -194,6 +194,19 @@ export function useDashboardData() {
     return result.booking
   }, [])
 
+  const fetchBookingServiceTypes = useCallback(async (): Promise<BookingServiceType[]> => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/store/bookings/service-types`, {
+        headers: authHeaders(),
+      })
+      if (!res.ok) return []
+      const data = await res.json()
+      return data.service_types || []
+    } catch {
+      return []
+    }
+  }, [])
+
   const fetchNotifications = useCallback(async (
     filters: { type?: string; limit?: number; offset?: number } = {}
   ): Promise<{ notifications: CustomerNotification[]; unread_count: number }> => {
@@ -275,6 +288,7 @@ export function useDashboardData() {
     fetchLoyalty,
     fetchBookings,
     createBooking,
+    fetchBookingServiceTypes,
     fetchNotifications,
     markNotificationRead,
     fetchCoupons,

@@ -13,6 +13,14 @@ export interface Announcement {
   schedule: AnnouncementSchedule
 }
 
+export interface SocialLinks {
+  instagram?: string
+  facebook?: string
+  youtube?: string
+  twitter?: string
+  pinterest?: string
+}
+
 export interface Branding {
   storeName: string
   tagline: string
@@ -21,6 +29,7 @@ export interface Branding {
   address: string
   logoUrl: string
   faviconUrl: string
+  socialLinks: SocialLinks
 }
 
 export interface HomepageSection {

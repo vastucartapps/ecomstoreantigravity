@@ -2,6 +2,7 @@ import { MedusaService } from "@medusajs/framework/utils"
 import Booking from "./models/booking"
 import BlockedDate from "./models/blocked-date"
 import SlotConfig from "./models/slot-config"
+import BookingServiceType from "./models/booking-service-type"
 
 const DEFAULT_SLOT_CONFIG = {
   enabledDays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
@@ -12,7 +13,12 @@ const DEFAULT_SLOT_CONFIG = {
   maxBookingsPerDay: 8,
 }
 
-class BookingsModuleService extends MedusaService({ Booking, BlockedDate, SlotConfig }) {
+class BookingsModuleService extends MedusaService({ Booking, BlockedDate, SlotConfig, BookingServiceType }) {
+
+  // ---------------------------------------------------------------------------
+  // Customer booking operations
+  // ---------------------------------------------------------------------------
+
   async listByCustomer(customerId: string): Promise<any[]> {
     const [bookings] = await this.listAndCountBookings(
       { customer_id: customerId },
@@ -29,8 +35,9 @@ class BookingsModuleService extends MedusaService({ Booking, BlockedDate, SlotCo
     notes?: string
     price?: number
     currency?: string
+    service_type_id?: string
   }): Promise<any> {
-    return this.createBookings({
+    const payload: any = {
       customer_id: customerId,
       title: data.title,
       consultant_name: data.consultant_name || "",
@@ -40,7 +47,9 @@ class BookingsModuleService extends MedusaService({ Booking, BlockedDate, SlotCo
       notes: data.notes || "",
       price: data.price || 0,
       currency: data.currency || "INR",
-    })
+    }
+    if (data.service_type_id) payload.service_type_id = data.service_type_id
+    return this.createBookings(payload)
   }
 
   async updateBookingStatus(id: string, status: "pending" | "confirmed" | "completed" | "cancelled", meetingLink?: string): Promise<any> {
@@ -85,6 +94,130 @@ class BookingsModuleService extends MedusaService({ Booking, BlockedDate, SlotCo
 
   async removeBlockedDate(id: string): Promise<void> {
     await this.deleteBlockedDates(id)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Service Types (admin-managed consultation packages)
+  // ---------------------------------------------------------------------------
+
+  async listServiceTypes(): Promise<any[]> {
+    const [types] = await this.listAndCountBookingServiceTypes(
+      {},
+      { order: { display_order: "ASC" } }
+    )
+    return types
+  }
+
+  async listActiveServiceTypes(): Promise<any[]> {
+    const [types] = await this.listAndCountBookingServiceTypes(
+      { is_active: true },
+      { order: { display_order: "ASC" } }
+    )
+    return types
+  }
+
+  async createServiceType(data: {
+    title: string
+    description?: string
+    duration_minutes?: number
+    price?: number
+    currency?: string
+    is_active?: boolean
+    display_order?: number
+  }): Promise<any> {
+    return this.createBookingServiceTypes({
+      title: data.title,
+      description: data.description || "",
+      duration_minutes: data.duration_minutes ?? 45,
+      price: data.price ?? 0,
+      currency: data.currency || "INR",
+      is_active: data.is_active ?? true,
+      display_order: data.display_order ?? 0,
+    })
+  }
+
+  async updateServiceType(id: string, data: Partial<{
+    title: string
+    description: string
+    duration_minutes: number
+    price: number
+    currency: string
+    is_active: boolean
+    display_order: number
+  }>): Promise<any> {
+    return this.updateBookingServiceTypes({ id, ...data } as any)
+  }
+
+  async deleteServiceType(id: string): Promise<void> {
+    await this.deleteBookingServiceTypes(id)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Analytics / Stats
+  // ---------------------------------------------------------------------------
+
+  async getBookingStats(): Promise<{
+    total: number
+    pending: number
+    confirmed: number
+    completed: number
+    cancelled: number
+    totalRevenue: number
+    todayCount: number
+    thisWeekCount: number
+    byServiceType: { title: string; count: number; revenue: number }[]
+  }> {
+    const [bookings] = await this.listAndCountBookings(
+      {},
+      { take: 1000, order: { created_at: "DESC" } }
+    )
+
+    const today = new Date().toISOString().split("T")[0]
+    const weekAgo = new Date()
+    weekAgo.setDate(weekAgo.getDate() - 7)
+    const weekAgoStr = weekAgo.toISOString().split("T")[0]
+
+    let pending = 0, confirmed = 0, completed = 0, cancelled = 0
+    let totalRevenue = 0, todayCount = 0, thisWeekCount = 0
+    const byTitle: Record<string, { count: number; revenue: number }> = {}
+
+    for (const b of bookings) {
+      const status = b.status || "pending"
+      if (status === "pending") pending++
+      else if (status === "confirmed") confirmed++
+      else if (status === "completed") completed++
+      else if (status === "cancelled") cancelled++
+
+      if (status === "confirmed" || status === "completed") {
+        totalRevenue += b.price || 0
+      }
+
+      if (b.date === today) todayCount++
+      if (b.date && b.date >= weekAgoStr) thisWeekCount++
+
+      const title = b.title || "General Booking"
+      if (!byTitle[title]) byTitle[title] = { count: 0, revenue: 0 }
+      byTitle[title].count++
+      if (status === "confirmed" || status === "completed") {
+        byTitle[title].revenue += b.price || 0
+      }
+    }
+
+    const byServiceType = Object.entries(byTitle)
+      .map(([title, data]) => ({ title, ...data }))
+      .sort((a, b) => b.count - a.count)
+
+    return {
+      total: bookings.length,
+      pending,
+      confirmed,
+      completed,
+      cancelled,
+      totalRevenue,
+      todayCount,
+      thisWeekCount,
+      byServiceType,
+    }
   }
 }
 

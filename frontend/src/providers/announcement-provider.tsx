@@ -13,6 +13,14 @@ const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+export interface SocialLinks {
+  instagram?: string
+  facebook?: string
+  youtube?: string
+  twitter?: string
+  pinterest?: string
+}
+
 export interface BrandingValue {
   storeName: string
   tagline: string
@@ -21,6 +29,7 @@ export interface BrandingValue {
   contactEmail: string
   contactPhone: string
   address: string
+  socialLinks: SocialLinks
 }
 
 export interface FooterLink { label: string; url: string }
@@ -57,6 +66,11 @@ const DEFAULT_BRANDING: BrandingValue = {
   contactEmail: "support@vastucart.com",
   contactPhone: "+91 98765 43210",
   address: "42 Temple Lane, Varanasi, Uttar Pradesh 221001, India",
+  socialLinks: {
+    instagram: "https://instagram.com/vastucart",
+    facebook: "https://facebook.com/vastucart",
+    youtube: "https://youtube.com/vastucart",
+  },
 }
 
 const DEFAULT_FOOTER: FooterValue = {
@@ -145,7 +159,11 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
 
         // Branding
         if (config.branding) {
-          setBranding({ ...DEFAULT_BRANDING, ...config.branding })
+          setBranding({
+            ...DEFAULT_BRANDING,
+            ...config.branding,
+            socialLinks: { ...DEFAULT_BRANDING.socialLinks, ...(config.branding.socialLinks || {}) },
+          })
         }
 
         // Footer

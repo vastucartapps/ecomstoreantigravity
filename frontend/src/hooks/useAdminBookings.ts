@@ -9,6 +9,8 @@ import type {
   BlockedDate,
   ConsultationType,
   SlotDuration,
+  AdminBookingServiceType,
+  BookingStats,
 } from "@/types/admin-booking"
 import type { MedusaBooking, MedusaCustomer } from "@/types/medusa-api"
 
@@ -239,6 +241,73 @@ export function useAdminBookings() {
     }
   }, [])
 
+  // ---------------------------------------------------------------------------
+  // Service Types
+  // ---------------------------------------------------------------------------
+
+  const fetchServiceTypes = useCallback(async (): Promise<AdminBookingServiceType[]> => {
+    try {
+      const res = await adminFetch<{ service_types: AdminBookingServiceType[] }>(
+        "/admin/bookings/service-types"
+      )
+      return res.service_types || []
+    } catch {
+      return []
+    }
+  }, [])
+
+  const createServiceType = useCallback(
+    async (data: Omit<AdminBookingServiceType, "id" | "created_at">): Promise<AdminBookingServiceType | null> => {
+      try {
+        const res = await adminFetch<{ service_type: AdminBookingServiceType }>(
+          "/admin/bookings/service-types",
+          { method: "POST", body: data as unknown as Record<string, unknown> }
+        )
+        return res.service_type || null
+      } catch {
+        return null
+      }
+    },
+    []
+  )
+
+  const updateServiceType = useCallback(
+    async (id: string, data: Partial<Omit<AdminBookingServiceType, "id" | "created_at">>): Promise<AdminBookingServiceType | null> => {
+      try {
+        const res = await adminFetch<{ service_type: AdminBookingServiceType }>(
+          `/admin/bookings/service-types/${id}`,
+          { method: "PATCH", body: data as unknown as Record<string, unknown> }
+        )
+        return res.service_type || null
+      } catch {
+        return null
+      }
+    },
+    []
+  )
+
+  const deleteServiceType = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      await adminFetch(`/admin/bookings/service-types/${id}`, { method: "DELETE" })
+      return true
+    } catch {
+      return false
+    }
+  }, [])
+
+  // ---------------------------------------------------------------------------
+  // Stats
+  // ---------------------------------------------------------------------------
+
+  const fetchBookingStats = useCallback(async (): Promise<BookingStats | null> => {
+    try {
+      const res = await adminFetch<{ stats: BookingStats }>("/admin/bookings/stats")
+      return res.stats || null
+    } catch {
+      return null
+    }
+  }, [])
+
   return {
     fetchBookings,
     updateStatus,
@@ -250,5 +319,10 @@ export function useAdminBookings() {
     fetchBlockedDates,
     blockDate,
     unblockDate,
+    fetchServiceTypes,
+    createServiceType,
+    updateServiceType,
+    deleteServiceType,
+    fetchBookingStats,
   }
 }

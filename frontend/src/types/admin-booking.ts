@@ -54,6 +54,32 @@ export interface BlockedDate {
   reason: string
 }
 
+/** Admin-managed consultation/service type */
+export interface AdminBookingServiceType {
+  id: string
+  title: string
+  description: string
+  duration_minutes: number
+  price: number
+  currency: string
+  is_active: boolean
+  display_order: number
+  created_at?: string
+}
+
+/** Booking analytics stats */
+export interface BookingStats {
+  total: number
+  pending: number
+  confirmed: number
+  completed: number
+  cancelled: number
+  totalRevenue: number
+  todayCount: number
+  thisWeekCount: number
+  byServiceType: { title: string; count: number; revenue: number }[]
+}
+
 /** Props for the Admin Bookings section */
 export interface AdminBookingsProps {
   bookings: BookingRow[]

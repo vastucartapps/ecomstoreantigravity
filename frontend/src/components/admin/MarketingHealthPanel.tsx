@@ -159,6 +159,8 @@ function GA4Card({
 }: {
   data: MarketingHealthData["ga4"]
 }) {
+  const snap = data.snapshot
+
   return (
     <div
       className="rounded-xl p-5 flex flex-col gap-4"
@@ -171,7 +173,7 @@ function GA4Card({
             className="text-sm font-semibold"
             style={{ color: earth700, fontFamily: fonts.heading }}
           >
-            Traffic
+            Traffic Overview
           </h3>
           <p className="text-xs mt-0.5" style={{ color: earth400, fontFamily: fonts.body }}>
             Last 7 days · Google Analytics
@@ -195,23 +197,21 @@ function GA4Card({
         >
           ⚠ {data.error}
         </div>
-      ) : data.snapshot ? (
-        <div className="flex flex-col gap-1">
-          {/* Key numbers */}
+      ) : snap ? (
+        <div className="flex flex-col gap-3">
+
+          {/* ── Key numbers ── */}
           <div
-            className="grid grid-cols-3 gap-2 p-3 rounded-lg mb-1"
+            className="grid grid-cols-3 gap-2 p-3 rounded-lg"
             style={{ backgroundColor: earth100 }}
           >
             {[
-              { label: "Sessions", value: formatNumber(data.snapshot.sessions) },
-              { label: "Users", value: formatNumber(data.snapshot.users) },
-              { label: "Pageviews", value: formatNumber(data.snapshot.pageviews) },
+              { label: "Sessions", value: formatNumber(snap.sessions) },
+              { label: "Users", value: formatNumber(snap.users) },
+              { label: "Pageviews", value: formatNumber(snap.pageviews) },
             ].map(({ label, value }) => (
               <div key={label} className="text-center">
-                <div
-                  className="text-base font-bold"
-                  style={{ color: primary500, fontFamily: fonts.body }}
-                >
+                <div className="text-base font-bold" style={{ color: primary500, fontFamily: fonts.body }}>
                   {value}
                 </div>
                 <div className="text-xs" style={{ color: earth400, fontFamily: fonts.body }}>
@@ -221,28 +221,87 @@ function GA4Card({
             ))}
           </div>
 
-          {/* Device split */}
-          <div className="flex flex-col gap-1.5 pt-1">
-            <p className="text-xs font-medium" style={{ color: earth400, fontFamily: fonts.body }}>
-              Device split
-            </p>
-            <MiniBar label="Mobile" percent={data.snapshot.mobilePercent} color={secondary500} />
-            <MiniBar label="Desktop" percent={data.snapshot.desktopPercent} color={primary500} />
+          {/* ── Engagement + New Users inline ── */}
+          <div className="flex items-center gap-3">
+            <div
+              className="flex-1 flex flex-col items-center py-2 rounded-lg"
+              style={{ backgroundColor: earth100 }}
+            >
+              <span className="text-sm font-bold" style={{ color: primary500, fontFamily: fonts.body }}>
+                {snap.engagementRate}%
+              </span>
+              <span className="text-xs" style={{ color: earth400, fontFamily: fonts.body }}>
+                Engaged
+              </span>
+            </div>
+            <div
+              className="flex-1 flex flex-col items-center py-2 rounded-lg"
+              style={{ backgroundColor: earth100 }}
+            >
+              <span className="text-sm font-bold" style={{ color: primary500, fontFamily: fonts.body }}>
+                {snap.newUserPercent}%
+              </span>
+              <span className="text-xs" style={{ color: earth400, fontFamily: fonts.body }}>
+                New Users
+              </span>
+            </div>
+            <div
+              className="flex-1 flex flex-col items-center py-2 rounded-lg"
+              style={{ backgroundColor: earth100 }}
+            >
+              <span className="text-sm font-bold" style={{ color: secondary500, fontFamily: fonts.body }}>
+                {snap.mobilePercent}%
+              </span>
+              <span className="text-xs" style={{ color: earth400, fontFamily: fonts.body }}>
+                Mobile
+              </span>
+            </div>
           </div>
 
-          {/* Top page */}
-          {data.snapshot.topPage && (
-            <div className="pt-1">
-              <MetricRow
-                label="Top page"
-                value={
-                  data.snapshot.topPage.length > 28
-                    ? data.snapshot.topPage.slice(0, 26) + "…"
-                    : data.snapshot.topPage
-                }
-              />
+          {/* ── Traffic sources ── */}
+          {snap.trafficSources.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold mb-2" style={{ color: earth400, fontFamily: fonts.body }}>
+                Traffic Sources
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {snap.trafficSources.map((src) => (
+                  <MiniBar
+                    key={src.channel}
+                    label={src.channel}
+                    percent={src.percent}
+                    color={primary500}
+                  />
+                ))}
+              </div>
             </div>
           )}
+
+          {/* ── Top pages ── */}
+          {snap.topPages.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold mb-1.5" style={{ color: earth400, fontFamily: fonts.body }}>
+                Top Pages
+              </p>
+              <div className="flex flex-col divide-y" style={{ borderColor: earth100 }}>
+                {snap.topPages.slice(0, 4).map((pg) => (
+                  <div key={pg.path} className="flex items-center justify-between py-1">
+                    <span
+                      className="text-xs truncate max-w-[70%]"
+                      style={{ color: earth700, fontFamily: fonts.body }}
+                      title={pg.path}
+                    >
+                      {pg.path}
+                    </span>
+                    <span className="text-xs font-medium" style={{ color: earth400, fontFamily: fonts.body }}>
+                      {formatNumber(pg.sessions)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
       ) : (
         <div

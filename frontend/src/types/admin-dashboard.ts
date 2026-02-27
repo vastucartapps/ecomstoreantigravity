@@ -102,6 +102,14 @@ export interface GA4Snapshot {
   /** 0-100 */
   desktopPercent: number
   topPage: string | null
+  /** Top pages by sessions (up to 5) */
+  topPages: { path: string; sessions: number }[]
+  /** 0-100 — what % of users are first-time visitors */
+  newUserPercent: number
+  /** 0-100 — GA4 engagement rate (sessions with 10s+ or 2+ pageviews) */
+  engagementRate: number
+  /** Traffic channel breakdown, sorted desc by sessions */
+  trafficSources: { channel: string; sessions: number; percent: number }[]
 }
 
 /** Sync health for a product channel (GMC or Meta) */

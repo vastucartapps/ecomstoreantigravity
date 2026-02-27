@@ -30,6 +30,11 @@ const DEFAULT_BRANDING: Branding = {
   address: "42 Temple Lane, Varanasi, Uttar Pradesh 221001, India",
   logoUrl: "/VastuCartLogo.png",
   faviconUrl: "/favicon.ico",
+  socialLinks: {
+    instagram: "https://instagram.com/vastucart",
+    facebook: "https://facebook.com/vastucart",
+    youtube: "https://youtube.com/vastucart",
+  },
 }
 
 const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [

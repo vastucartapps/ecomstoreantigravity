@@ -57,13 +57,16 @@ function formatValue(
   return value.toLocaleString("en-IN")
 }
 
-function calculateDelta(
-  current: number,
-  previous: number
-): { percent: number; isPositive: boolean } {
-  if (previous === 0) return { percent: 0, isPositive: current >= 0 }
+type DeltaResult =
+  | { kind: "none" }                                        // both 0 — no data
+  | { kind: "new"; value: number }                          // previous=0, current>0
+  | { kind: "percent"; percent: number; isPositive: boolean }
+
+function calculateDelta(current: number, previous: number): DeltaResult {
+  if (previous === 0 && current === 0) return { kind: "none" }
+  if (previous === 0) return { kind: "new", value: current }
   const percent = ((current - previous) / previous) * 100
-  return { percent: Math.abs(percent), isPositive: percent >= 0 }
+  return { kind: "percent", percent: Math.abs(percent), isPositive: percent >= 0 }
 }
 
 interface StatCardsProps {
@@ -143,16 +146,35 @@ export function StatCards({ stats, isLoading, onStatClick }: StatCardsProps) {
                 >
                   <IconComponent size={24} strokeWidth={1.8} />
                 </div>
-                <div
-                  className="rounded-full px-2 py-1 text-xs font-semibold"
-                  style={{
-                    fontFamily: fonts.mono,
-                    backgroundColor: delta.isPositive ? c.successLight : c.errorLight,
-                    color: delta.isPositive ? c.success : c.error,
-                  }}
-                >
-                  {delta.isPositive ? "↑" : "↓"} {delta.percent.toFixed(1)}%
-                </div>
+
+                {delta.kind === "none" && (
+                  <div
+                    className="rounded-full px-2 py-1 text-xs font-semibold"
+                    style={{ fontFamily: fonts.mono, backgroundColor: "#f5f0eb", color: "#a39585" }}
+                  >
+                    — no data
+                  </div>
+                )}
+                {delta.kind === "new" && (
+                  <div
+                    className="rounded-full px-2 py-1 text-xs font-semibold"
+                    style={{ fontFamily: fonts.mono, backgroundColor: c.successLight, color: c.success }}
+                  >
+                    ↑ New
+                  </div>
+                )}
+                {delta.kind === "percent" && (
+                  <div
+                    className="rounded-full px-2 py-1 text-xs font-semibold"
+                    style={{
+                      fontFamily: fonts.mono,
+                      backgroundColor: delta.isPositive ? c.successLight : c.errorLight,
+                      color: delta.isPositive ? c.success : c.error,
+                    }}
+                  >
+                    {delta.isPositive ? "↑" : "↓"} {delta.percent.toFixed(1)}%
+                  </div>
+                )}
               </div>
 
               {/* Label */}
