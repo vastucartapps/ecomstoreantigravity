@@ -1,15 +1,12 @@
 "use client"
 
 import { Suspense, useEffect, useRef } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { useAuth } from "@/providers/auth-provider"
+import { useSearchParams } from "next/navigation"
 import { medusa } from "@/lib/medusa"
 import { primary, fonts } from "@/lib/theme"
 
 function GoogleCallbackContent() {
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const { refreshUser } = useAuth()
   const ranRef = useRef(false)
 
   useEffect(() => {
@@ -18,42 +15,45 @@ function GoogleCallbackContent() {
 
     const token = searchParams.get("token")
     if (!token) {
-      router.replace("/login?error=oauth_failed")
+      window.location.href = "/login?error=oauth_failed"
       return
     }
 
-    // Store token where the Medusa JS SDK reads it (localStorage key: medusa_auth_token)
+    // Store token where the Medusa JS SDK reads it on every API call
     localStorage.setItem("medusa_auth_token", token)
 
     const finish = async () => {
-      // Try to retrieve the customer with the stored token.
-      // Returning Google OAuth users → succeeds immediately.
-      // First-time Google OAuth users → throws 401 because the customer record
-      // doesn't exist yet (Medusa issued a registration token, not an auth token).
+      // Returning Google OAuth users: token is a valid auth JWT → retrieve succeeds.
+      // First-time Google OAuth users: token is a registration JWT (actor not yet linked)
+      // → retrieve throws 401 → we create the customer record below.
       let customerExists = false
       try {
         const { customer } = await medusa.store.customer.retrieve()
         customerExists = !!customer
       } catch {
-        // 401 — new user; customer not yet created
+        // 401 — registration token; customer not yet linked to this Google identity
       }
 
       if (!customerExists) {
-        // Create the customer record linked to this Google auth identity.
-        // The registration token in localStorage authorises this creation.
-        // Email/profile are pulled from the Google identity by Medusa — body can be empty.
-        await (medusa.client.fetch as (path: string, opts: object) => Promise<unknown>)(
-          "/store/customers",
-          { method: "POST", body: {} }
-        )
+        // Create the customer record. The registration JWT in localStorage authorises
+        // this call. Medusa reads the email from the Google auth identity — no body needed.
+        await (medusa.client.fetch as any)("/store/customers", {
+          method: "POST",
+          body: {},
+        })
       }
 
-      // Update the React auth context with the now-authenticated customer
-      await refreshUser()
-      router.replace("/account")
+      // Full page reload rather than router.replace():
+      // router.replace() is a client-side nav that renders /account before React has
+      // flushed the setUser() call from refreshUser(), so the shell briefly sees
+      // user=null and redirects to /login. A full reload lets AuthProvider re-init
+      // from localStorage cleanly with no race condition.
+      window.location.href = "/account"
     }
 
-    finish().catch(() => router.replace("/login?error=oauth_failed"))
+    finish().catch(() => {
+      window.location.href = "/login?error=oauth_failed"
+    })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
