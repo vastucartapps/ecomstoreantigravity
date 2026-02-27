@@ -182,7 +182,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                   className="h-9 w-9 object-contain"
                 />
                 <span
-                  className="hidden sm:inline font-bold text-xl tracking-tight"
+                  className="inline font-bold text-xl tracking-tight"
                   style={{ fontFamily: fonts.heading, color: primary[500] }}
                 >
                   {branding.storeName}
@@ -233,10 +233,10 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                 <Search size={20} />
               </button>
 
-              {/* Wishlist */}
+              {/* Wishlist — hidden on mobile (accessible via hamburger menu Quick Links) */}
               <Link
                 href="/wishlist"
-                className="relative flex items-center justify-center w-9 h-9 rounded-lg transition-opacity hover:opacity-70"
+                className="relative hidden sm:flex items-center justify-center w-9 h-9 rounded-lg transition-opacity hover:opacity-70"
                 aria-label="Wishlist"
               >
                 <Heart size={20} style={{ color: primary[500] }} />
@@ -838,7 +838,6 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
               <ul className="space-y-1">
                 {[
                   { label: "My Orders", href: "/account/orders" },
-                  { label: "Wishlist", href: "/wishlist" },
                   { label: "Track Order", href: "/track-order" },
                 ].map((link) => (
                   <li key={link.href}>
@@ -852,6 +851,27 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                     </Link>
                   </li>
                 ))}
+                <li>
+                  <Link
+                    href="/wishlist"
+                    className="flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors hover:opacity-80"
+                    style={{ color: earth[600], fontFamily: fonts.body }}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <span className="flex items-center gap-2">
+                      <Heart size={15} style={{ color: primary[500] }} />
+                      Wishlist
+                    </span>
+                    {wishlistCount > 0 && (
+                      <span
+                        className="min-w-[20px] h-5 rounded-full flex items-center justify-center text-white text-xs font-bold px-1.5"
+                        style={{ background: gradients.secondaryButton, fontFamily: fonts.body }}
+                      >
+                        {wishlistCount > 99 ? "99+" : wishlistCount}
+                      </span>
+                    )}
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
