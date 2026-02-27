@@ -21,10 +21,11 @@ export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl
 
   // /store/*, /auth/*, /.well-known/*, /health — always proxy to backend
-  // (no Next.js pages exist at these paths)
+  // Exception: /auth/google/callback is a Next.js page (OAuth token landing),
+  // not a backend route — let it render as a page.
   if (
     pathname.startsWith("/store/") ||
-    pathname.startsWith("/auth/") ||
+    (pathname.startsWith("/auth/") && pathname !== "/auth/google/callback") ||
     pathname.startsWith("/.well-known/") ||
     pathname === "/health"
   ) {
