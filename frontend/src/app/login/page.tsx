@@ -95,6 +95,8 @@ function LoginContent() {
   }
 
   const handleGoogleLogin = async () => {
+    // Preserve returnTo so the callback page can redirect the user back after sign-in
+    localStorage.setItem("oauth_return_to", returnTo || "/account")
     const backendUrl =
       process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
     try {

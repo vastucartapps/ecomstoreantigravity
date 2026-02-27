@@ -94,6 +94,8 @@ export default function RegisterPage() {
   }
 
   const handleGoogleLogin = async () => {
+    // After Google OAuth from register page, land on the account dashboard
+    localStorage.setItem("oauth_return_to", "/account")
     const backendUrl =
       process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
     try {
