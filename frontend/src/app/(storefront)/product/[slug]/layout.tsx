@@ -23,7 +23,7 @@ export async function generateMetadata({
     const data = await res.json()
     const product = data.products?.[0]
 
-    if (!product) return { title: "Product Not Found" }
+    if (!product) return { title: "Product Not Found", openGraph: { images: [{ url: "/og-default.png" }] } }
 
     const title = product.title
     const description = product.description
@@ -61,13 +61,13 @@ export async function generateMetadata({
         type: "website",
         images: imageUrl
           ? [{ url: imageUrl, width: 800, height: 800, alt: title }]
-          : [],
+          : [{ url: "/og-default.png", width: 500, height: 500, alt: "VastuCart" }],
       },
       twitter: {
         card: "summary_large_image",
         title,
         description,
-        images: imageUrl ? [imageUrl] : [],
+        images: imageUrl ? [imageUrl] : ["/og-default.png"],
       },
       // Open Graph product tags — used by Meta (Facebook/Instagram) for
       // dynamic product ads, catalogue matching, and rich link previews.
@@ -80,7 +80,7 @@ export async function generateMetadata({
       },
     }
   } catch {
-    return { title: "Product | VastuCart" }
+    return { title: "Product | VastuCart", openGraph: { images: [{ url: "/og-default.png" }] } }
   }
 }
 

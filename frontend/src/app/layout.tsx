@@ -48,9 +48,9 @@ export const metadata: Metadata = {
     locale: "en_IN",
     images: [
       {
-        url: "/og-default.jpg",
-        width: 1200,
-        height: 630,
+        url: "/og-default.png",
+        width: 500,
+        height: 500,
         alt: "VastuCart — Authentic Spiritual Products",
       },
     ],
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     title: "VastuCart — Authentic Spiritual Products",
     description:
       "Your trusted destination for authentic spiritual products, crystals, yantras, and Vastu Shastra tools.",
-    images: ["/og-default.jpg"],
+    images: ["/og-default.png"],
   },
   robots: {
     index: true,

@@ -23,7 +23,7 @@ export async function generateMetadata({
     const data = await res.json()
     const category = data.product_categories?.[0]
 
-    if (!category) return { title: "Category | VastuCart" }
+    if (!category) return { title: "Category | VastuCart", openGraph: { images: [{ url: "/og-default.png" }] } }
 
     const name = category.name
     const title = `${name} — Authentic Spiritual Products`
@@ -45,17 +45,17 @@ export async function generateMetadata({
         type: "website",
         images: heroImage
           ? [{ url: heroImage, width: 1200, height: 630, alt: name }]
-          : [],
+          : [{ url: "/og-default.png", width: 500, height: 500, alt: name }],
       },
       twitter: {
         card: "summary_large_image",
         title,
         description: description.slice(0, 160),
-        images: heroImage ? [heroImage] : [],
+        images: heroImage ? [heroImage] : ["/og-default.png"],
       },
     }
   } catch {
-    return { title: "Category | VastuCart" }
+    return { title: "Category | VastuCart", openGraph: { images: [{ url: "/og-default.png" }] } }
   }
 }
 
