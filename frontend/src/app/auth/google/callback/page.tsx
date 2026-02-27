@@ -65,17 +65,25 @@ function GoogleCallbackContent() {
         })
       } catch (err: any) {
         if (err?.status === 422) {
-          // Email already registered via a different auth method (e.g. email+password).
-          // Can't link accounts automatically — ask the user to sign in with their password.
-          window.location.href = "/login?error=email_exists"
-          return
+          // Email already registered via email+password — merge accounts by linking
+          // this Google auth identity to the existing customer, then proceed normally.
+          const linkRes = await (medusa.client.fetch as any)("/store/customers/link", {
+            method: "POST",
+            body: { email },
+          })
+          if (!linkRes?.success) {
+            window.location.href = "/login?error=oauth_failed"
+            return
+          }
+          // Fall through to token refresh below — identity is now linked.
+        } else {
+          throw err
         }
-        throw err
       }
 
       // Exchange the registration JWT for a full auth JWT (now includes actor_id = customer_id).
       // POST /auth/token/refresh re-generates the token using the auth identity, which is now
-      // linked to the newly created customer.
+      // linked to the newly created customer (or the merged existing customer).
       const refreshRes = await (medusa.client.fetch as any)("/auth/token/refresh", {
         method: "POST",
       })

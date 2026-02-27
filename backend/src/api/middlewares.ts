@@ -94,6 +94,15 @@ export default defineMiddlewares({
       middlewares: [authenticate("user", ["bearer", "session", "api-key"])],
     },
 
+    // ─── Account linking: accept registration JWTs (actor_id can be empty) ───
+    // Called from Google OAuth callback when email already exists via email+password.
+    // allowUnregistered: true mirrors the pattern used by POST /store/customers.
+    {
+      matcher: "/store/customers/link",
+      method: ["POST"],
+      middlewares: [authenticate("customer", ["bearer"], { allowUnregistered: true })],
+    },
+
     // ─── Rate limiting on public write endpoints ──────────────────────────────
     {
       matcher: "/store/newsletter",
