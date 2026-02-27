@@ -12,6 +12,7 @@ import type {
   MarketingTag,
   GmcStatusResponse,
   MetaStatusResponse,
+  GA4ReportResponse,
 } from "@/types/admin-integrations"
 
 export default function IntegrationsSEOPage() {
@@ -26,6 +27,7 @@ export default function IntegrationsSEOPage() {
   const gmcPollRef = useRef<NodeJS.Timeout | null>(null)
   const [metaStatus, setMetaStatus] = useState<MetaStatusResponse | null>(null)
   const metaPollRef = useRef<NodeJS.Timeout | null>(null)
+  const [ga4Report, setGa4Report] = useState<GA4ReportResponse | null>(null)
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -62,6 +64,15 @@ export default function IntegrationsSEOPage() {
       return status
     } catch {
       return null
+    }
+  }, [])
+
+  const handleFetchGa4Report = useCallback(async (days = 30) => {
+    try {
+      const report = await hook.fetchGa4Report(days)
+      setGa4Report(report)
+    } catch {
+      // Silently fail — panel shows error state
     }
   }, [])
 
@@ -329,6 +340,7 @@ export default function IntegrationsSEOPage() {
         marketingTags={config.marketingTags}
         gmcStatus={gmcStatus}
         metaStatus={metaStatus}
+        ga4Report={ga4Report}
         onChangeTab={setActiveTab}
         onToggleConnection={handleToggleConnection}
         onTestConnection={handleTestConnection}
@@ -340,6 +352,7 @@ export default function IntegrationsSEOPage() {
         onRemoveTag={handleRemoveTag}
         onGmcSync={handleGmcSync}
         onMetaSync={handleMetaSync}
+        onFetchGa4Report={handleFetchGa4Report}
       />
 
       {/* Toast */}

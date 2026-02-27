@@ -38,6 +38,7 @@ import type {
   MarketingTag,
   GmcStatusResponse,
   MetaStatusResponse,
+  GA4ReportResponse,
 } from "@/types/admin-integrations"
 
 const c = {
@@ -1518,6 +1519,285 @@ function MetaStatusPanel({
   )
 }
 
+/* ─── GA4 Analytics Panel ─── */
+function Ga4AnalyticsPanel({
+  ga4Report,
+  onFetch,
+}: {
+  ga4Report: GA4ReportResponse | null | undefined
+  onFetch?: (days?: number) => Promise<void>
+}) {
+  const [loading, setLoading] = useState(false)
+  const [days, setDays] = useState(30)
+
+  const handleFetch = async (d = days) => {
+    setLoading(true)
+    try {
+      await onFetch?.(d)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const totalSessions = ga4Report?.report?.totals.sessions ?? 0
+  const deviceTotal = (ga4Report?.report?.deviceBreakdown || []).reduce(
+    (s, d) => s + d.sessions,
+    0
+  )
+
+  return (
+    <div
+      className="rounded-xl overflow-hidden mb-6"
+      style={{ backgroundColor: c.card, boxShadow: c.shadow }}
+    >
+      <div className="h-1" style={{ background: "linear-gradient(90deg, #E37400, #FBBC05, #34A853, #4285F4)" }} />
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h3
+            className="flex items-center gap-2 text-base font-semibold"
+            style={{ fontFamily: fonts.heading, color: c.earth700 }}
+          >
+            <BarChart2 size={18} style={{ color: "#4285F4" }} />
+            Google Analytics 4 — Last {days} Days
+          </h3>
+          <div className="flex items-center gap-2">
+            <select
+              value={days}
+              onChange={(e) => {
+                const d = parseInt(e.target.value, 10)
+                setDays(d)
+                handleFetch(d)
+              }}
+              className="px-2 py-1 rounded-md text-xs border outline-none"
+              style={{
+                borderColor: c.primary100,
+                color: c.earth700,
+                fontFamily: fonts.body,
+                backgroundColor: c.bg,
+              }}
+            >
+              {[7, 14, 30, 60, 90].map((d) => (
+                <option key={d} value={d}>
+                  {d} days
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={() => handleFetch()}
+              disabled={loading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-white"
+              style={{
+                backgroundColor: "#4285F4",
+                fontFamily: fonts.body,
+                opacity: loading ? 0.7 : 1,
+              }}
+            >
+              {loading ? (
+                <RefreshCw size={12} className="animate-spin" />
+              ) : (
+                <RefreshCw size={12} />
+              )}
+              {loading ? "Loading…" : "Refresh"}
+            </button>
+          </div>
+        </div>
+
+        {!ga4Report ? (
+          <div
+            className="flex items-center gap-3 p-3 rounded-lg"
+            style={{ backgroundColor: c.primary50 }}
+          >
+            <AlertCircle size={16} style={{ color: c.warning }} />
+            <p className="text-sm" style={{ color: c.earth600, fontFamily: fonts.body }}>
+              Click Refresh to load your GA4 analytics data.
+            </p>
+          </div>
+        ) : !ga4Report.isConfigured ? (
+          <div
+            className="flex items-center gap-3 p-3 rounded-lg"
+            style={{ backgroundColor: c.primary50 }}
+          >
+            <AlertCircle size={16} style={{ color: c.warning }} />
+            <div>
+              <p className="text-sm font-medium" style={{ color: c.earth700, fontFamily: fonts.body }}>
+                GA4 Data API not configured
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: c.earth500, fontFamily: fonts.body }}>
+                Enter your Measurement ID, Property ID (numeric), and Service Account Key in the GA4 integration card above, then save and toggle on.
+              </p>
+            </div>
+          </div>
+        ) : ga4Report.error ? (
+          <div
+            className="flex items-center gap-3 p-3 rounded-lg"
+            style={{ backgroundColor: c.errorLight }}
+          >
+            <AlertCircle size={16} style={{ color: c.error }} />
+            <div>
+              <p className="text-sm font-medium" style={{ color: c.error, fontFamily: fonts.body }}>
+                GA4 API Error
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: c.earth600, fontFamily: fonts.mono }}>
+                {ga4Report.error}
+              </p>
+            </div>
+          </div>
+        ) : ga4Report.report ? (
+          <div className="space-y-5">
+            {/* Date range */}
+            <p className="text-xs" style={{ color: c.earth400, fontFamily: fonts.body }}>
+              {new Date(ga4Report.report.dateRange.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+              {" – "}
+              {new Date(ga4Report.report.dateRange.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+              {" · "}
+              {ga4Report.report.propertyId}
+            </p>
+
+            {/* Totals grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: "Sessions", value: ga4Report.report.totals.sessions, color: "#4285F4" },
+                { label: "Users", value: ga4Report.report.totals.users, color: "#34A853" },
+                { label: "Page Views", value: ga4Report.report.totals.pageviews, color: "#FBBC05" },
+                { label: "Events", value: ga4Report.report.totals.eventCount, color: "#E37400" },
+              ].map(({ label, value, color }) => (
+                <div
+                  key={label}
+                  className="rounded-lg p-3 text-center"
+                  style={{ backgroundColor: c.primary50 }}
+                >
+                  <p
+                    className="text-xl font-semibold"
+                    style={{ color, fontFamily: fonts.heading }}
+                  >
+                    {value.toLocaleString("en-IN")}
+                  </p>
+                  <p
+                    className="text-xs mt-0.5"
+                    style={{ color: c.earth500, fontFamily: fonts.body }}
+                  >
+                    {label}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Top pages + device breakdown side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Top pages */}
+              <div>
+                <p
+                  className="text-xs font-medium mb-2"
+                  style={{ color: c.earth500, fontFamily: fonts.body }}
+                >
+                  Top Pages by Sessions
+                </p>
+                <div className="space-y-1.5">
+                  {(ga4Report.report.topPages || []).slice(0, 8).map((p, i) => {
+                    const pct = totalSessions > 0 ? (p.sessions / totalSessions) * 100 : 0
+                    return (
+                      <div key={i} className="space-y-0.5">
+                        <div className="flex items-center justify-between">
+                          <span
+                            className="text-xs truncate max-w-[160px]"
+                            style={{ color: c.earth700, fontFamily: fonts.mono }}
+                            title={p.page}
+                          >
+                            {p.page}
+                          </span>
+                          <span
+                            className="text-xs ml-2 shrink-0"
+                            style={{ color: c.earth500, fontFamily: fonts.body }}
+                          >
+                            {p.sessions.toLocaleString("en-IN")}
+                          </span>
+                        </div>
+                        <div
+                          className="h-1.5 rounded-full"
+                          style={{ backgroundColor: c.primary100 }}
+                        >
+                          <div
+                            className="h-1.5 rounded-full transition-all"
+                            style={{
+                              width: `${Math.min(100, pct)}%`,
+                              backgroundColor: "#4285F4",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {ga4Report.report.topPages.length === 0 && (
+                    <p className="text-xs" style={{ color: c.earth300, fontFamily: fonts.body }}>
+                      No page data available
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Device breakdown */}
+              <div>
+                <p
+                  className="text-xs font-medium mb-2"
+                  style={{ color: c.earth500, fontFamily: fonts.body }}
+                >
+                  Device Breakdown
+                </p>
+                <div className="space-y-1.5">
+                  {(ga4Report.report.deviceBreakdown || []).map((d, i) => {
+                    const pct = deviceTotal > 0 ? (d.sessions / deviceTotal) * 100 : 0
+                    const devColors: Record<string, string> = {
+                      mobile: "#34A853",
+                      desktop: "#4285F4",
+                      tablet: "#FBBC05",
+                    }
+                    const clr = devColors[d.device.toLowerCase()] || c.earth300
+                    return (
+                      <div key={i} className="space-y-0.5">
+                        <div className="flex items-center justify-between">
+                          <span
+                            className="text-xs capitalize"
+                            style={{ color: c.earth700, fontFamily: fonts.body }}
+                          >
+                            {d.device}
+                          </span>
+                          <span
+                            className="text-xs ml-2"
+                            style={{ color: c.earth500, fontFamily: fonts.body }}
+                          >
+                            {pct.toFixed(1)}% ({d.sessions.toLocaleString("en-IN")})
+                          </span>
+                        </div>
+                        <div
+                          className="h-1.5 rounded-full"
+                          style={{ backgroundColor: c.primary100 }}
+                        >
+                          <div
+                            className="h-1.5 rounded-full transition-all"
+                            style={{
+                              width: `${Math.min(100, pct)}%`,
+                              backgroundColor: clr,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {ga4Report.report.deviceBreakdown.length === 0 && (
+                    <p className="text-xs" style={{ color: c.earth300, fontFamily: fonts.body }}>
+                      No device data available
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 /* ─── Main Component ─── */
 export function AdminIntegrations({
   activeTab: initialTab,
@@ -1527,6 +1807,7 @@ export function AdminIntegrations({
   marketingTags,
   gmcStatus,
   metaStatus,
+  ga4Report,
   onChangeTab,
   onToggleConnection,
   onTestConnection,
@@ -1538,6 +1819,7 @@ export function AdminIntegrations({
   onRemoveTag,
   onGmcSync,
   onMetaSync,
+  onFetchGa4Report,
 }: AdminIntegrationsProps) {
   const [tab, setTab] = useState<IntegrationTab>(initialTab)
 
@@ -1621,6 +1903,11 @@ export function AdminIntegrations({
             {/* Meta Status Panel — shown when Meta card exists */}
             {integrations.some((i) => i.id === "meta") && (
               <MetaStatusPanel metaStatus={metaStatus} onSync={onMetaSync} />
+            )}
+
+            {/* GA4 Analytics Panel — shown when GA4 card exists */}
+            {integrations.some((i) => i.id === "ga4") && (
+              <Ga4AnalyticsPanel ga4Report={ga4Report} onFetch={onFetchGa4Report} />
             )}
 
           {/* Card grid */}

@@ -113,6 +113,26 @@ export interface MetaStatusResponse {
   errorReport: MetaErrorReport | null
 }
 
+/** GA4 analytics report from /admin/analytics/ga4 */
+export interface GA4Report {
+  totals: {
+    sessions: number
+    users: number
+    pageviews: number
+    eventCount: number
+  }
+  topPages: { page: string; sessions: number }[]
+  deviceBreakdown: { device: string; sessions: number }[]
+  dateRange: { startDate: string; endDate: string }
+  propertyId: string
+}
+
+export interface GA4ReportResponse {
+  isConfigured: boolean
+  report: GA4Report | null
+  error: string | null
+}
+
 /** Props for the AdminIntegrations component */
 export interface AdminIntegrationsProps {
   activeTab: IntegrationTab
@@ -122,6 +142,7 @@ export interface AdminIntegrationsProps {
   marketingTags: MarketingTag[]
   gmcStatus?: GmcStatusResponse | null
   metaStatus?: MetaStatusResponse | null
+  ga4Report?: GA4ReportResponse | null
   onChangeTab?: (tab: IntegrationTab) => void
   onToggleConnection?: (integrationId: string) => Promise<void>
   onTestConnection?: (integrationId: string) => Promise<void>
@@ -136,4 +157,5 @@ export interface AdminIntegrationsProps {
   onRemoveTag?: (tagId: string) => Promise<void>
   onGmcSync?: () => Promise<void>
   onMetaSync?: () => Promise<void>
+  onFetchGa4Report?: (days?: number) => Promise<void>
 }

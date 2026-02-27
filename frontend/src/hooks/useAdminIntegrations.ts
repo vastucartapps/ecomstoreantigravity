@@ -7,6 +7,7 @@ import type {
   MarketingTag,
   GmcStatusResponse,
   MetaStatusResponse,
+  GA4ReportResponse,
 } from "@/types/admin-integrations"
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
@@ -20,7 +21,7 @@ const DEFAULT_INTEGRATIONS: Integration[] = [
       "Track website traffic, user behaviour, and conversion events with GA4.",
     isConnected: false,
     status: "inactive",
-    configFields: { measurementId: "", streamId: "" },
+    configFields: { measurementId: "", propertyId: "", serviceAccountKey: "" },
     lastSynced: null,
   },
   {
@@ -128,7 +129,7 @@ function validateIntegration(
 ): boolean {
   switch (id) {
     case "ga4":
-      return /^G-[A-Z0-9]{4,}$/i.test(fields.measurementId || "")
+      return /^G-[A-Z0-9]{4,}$/i.test(fields.measurementId || "") && (fields.propertyId || "").trim().length > 0
     case "meta-pixel":
       return /^\d{13,16}$/.test(fields.pixelId || "")
     case "meta":
@@ -409,6 +410,14 @@ export function useAdminIntegrations() {
     await adminFetch("/admin/integrations/meta/sync", { method: "POST" })
   }
 
+  /**
+   * Fetch GA4 analytics report for the last N days (default 30).
+   * Backend reads propertyId + serviceAccountKey from store metadata.
+   */
+  async function fetchGa4Report(days = 30): Promise<GA4ReportResponse> {
+    return adminFetch<GA4ReportResponse>(`/admin/analytics/ga4?days=${days}`)
+  }
+
   return {
     fetchConfig,
     toggleConnection,
@@ -423,5 +432,6 @@ export function useAdminIntegrations() {
     triggerGmcSync,
     fetchMetaStatus,
     triggerMetaSync,
+    fetchGa4Report,
   }
 }
