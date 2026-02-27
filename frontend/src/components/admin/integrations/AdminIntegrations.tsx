@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import {
   BarChart2,
   Eye,
@@ -26,6 +26,7 @@ import {
   ExternalLink,
   Zap,
   XCircle,
+  Upload,
 } from "lucide-react"
 import { ThemeSelect } from "@/components/ui/ThemeSelect"
 import type {
@@ -158,7 +159,31 @@ function IntegrationCard({
   >(null)
   const [saving, setSaving] = useState(false)
   const [toggling, setToggling] = useState(false)
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const Icon = iconMap[integration.icon] || Plug
+
+  // Handle JSON key file upload — reads file, base64-encodes, sets serviceAccountKey field
+  const handleKeyFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const text = ev.target?.result as string
+        // Validate it's JSON before encoding
+        JSON.parse(text)
+        const encoded = btoa(unescape(encodeURIComponent(text)))
+        setFields((prev) => ({ ...prev, serviceAccountKey: encoded }))
+        setUploadedFileName(file.name)
+      } catch {
+        alert("Invalid JSON file. Please upload the service account key JSON downloaded from Google Cloud.")
+      }
+    }
+    reader.readAsText(file)
+    // Reset so same file can be re-selected if needed
+    e.target.value = ""
+  }
 
   // Sync local fields when integration prop changes (after parent re-renders)
   const handleTest = async () => {
@@ -302,6 +327,15 @@ function IntegrationCard({
 
         {expanded && (
           <div className="mt-3 space-y-2">
+            {/* Hidden file input for service account JSON upload */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              onChange={handleKeyFileUpload}
+            />
+
             {Object.entries(fields).map(([key, val]) => (
               <div key={key}>
                 <label
@@ -310,28 +344,55 @@ function IntegrationCard({
                 >
                   {key.replace(/([A-Z])/g, " $1").trim()}
                   {sensitiveKeys.has(key) && (
-                    <span
-                      className="ml-1 text-xs"
-                      style={{ color: c.earth300 }}
-                    >
+                    <span className="ml-1 text-xs" style={{ color: c.earth300 }}>
                       (secret)
                     </span>
                   )}
                 </label>
-                <input
-                  type={sensitiveKeys.has(key) ? "password" : "text"}
-                  value={val}
-                  onChange={(e) =>
-                    setFields((prev) => ({ ...prev, [key]: e.target.value }))
-                  }
-                  className="w-full px-3 py-1.5 rounded-md text-xs border outline-none"
-                  style={{
-                    fontFamily: fonts.mono,
-                    borderColor: c.primary100,
-                    color: c.earth700,
-                    backgroundColor: c.bg,
-                  }}
-                />
+
+                {/* Service Account Key — show upload button instead of raw text */}
+                {key === "serviceAccountKey" ? (
+                  <div className="flex flex-col gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium border-2 border-dashed transition-colors w-full"
+                      style={{
+                        borderColor: uploadedFileName || val ? c.success : c.primary200,
+                        color: uploadedFileName || val ? c.success : c.primary500,
+                        backgroundColor: uploadedFileName || val ? c.successLight : c.primary50,
+                        fontFamily: fonts.body,
+                      }}
+                    >
+                      <Upload size={13} />
+                      {uploadedFileName
+                        ? `✓ ${uploadedFileName}`
+                        : val
+                        ? "✓ Key loaded — click to replace"
+                        : "Upload service account JSON key file"}
+                    </button>
+                    {(uploadedFileName || val) && (
+                      <p className="text-xs" style={{ color: c.earth400, fontFamily: fonts.body }}>
+                        The JSON key is encoded and ready. Hit Save below.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <input
+                    type={sensitiveKeys.has(key) ? "password" : "text"}
+                    value={val}
+                    onChange={(e) =>
+                      setFields((prev) => ({ ...prev, [key]: e.target.value }))
+                    }
+                    className="w-full px-3 py-1.5 rounded-md text-xs border outline-none"
+                    style={{
+                      fontFamily: fonts.mono,
+                      borderColor: c.primary100,
+                      color: c.earth700,
+                      backgroundColor: c.bg,
+                    }}
+                  />
+                )}
               </div>
             ))}
 
