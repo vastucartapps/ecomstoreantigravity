@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { Suspense, useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/providers/auth-provider"
 import { medusa } from "@/lib/medusa"
 import type { MarketingSlide, PasswordRequirement } from "@/types/auth"
@@ -15,10 +15,17 @@ const PASSWORD_REQUIREMENTS: PasswordRequirement[] = [
   { label: "One special character (!@#$%)", key: "special" },
 ]
 
-export default function AdminLoginPage() {
+function AdminLoginContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { user, isAdmin, adminLogin } = useAuth()
   const [slides, setSlides] = useState<MarketingSlide[]>([])
+
+  const hint = searchParams.get("hint")
+  const serverError =
+    hint === "google"
+      ? "Your email is registered as an admin account. Please sign in with your admin email and password below."
+      : null
 
   // Redirect if already logged in as admin
   useEffect(() => {
@@ -64,6 +71,15 @@ export default function AdminLoginPage() {
         if (view === "register") router.push("/register")
         else if (view === "forgot-password") router.push("/forgot-password")
       }}
+      serverError={serverError}
     />
+  )
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense>
+      <AdminLoginContent />
+    </Suspense>
   )
 }

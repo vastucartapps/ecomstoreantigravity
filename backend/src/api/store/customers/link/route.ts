@@ -2,6 +2,32 @@ import type { AuthenticatedMedusaRequest, MedusaResponse } from "@medusajs/frame
 import { Modules } from "@medusajs/framework/utils"
 
 /**
+ * GET /store/customers/link?email=...
+ *
+ * Pre-flight check: called BEFORE POST /store/customers to detect whether the
+ * email belongs to a Medusa admin user.  If it does, the frontend redirects the
+ * user to /admin-login instead of creating a customer account.
+ *
+ * Requires a registration JWT so that only the authenticated Google user can
+ * query their own email.
+ *
+ * Response: { is_admin: boolean }
+ */
+export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
+  const email = (req.query as Record<string, string>)?.email
+  if (!email) return res.status(400).json({ message: "email is required" })
+
+  try {
+    const userService = req.scope.resolve(Modules.USER)
+    const users = await userService.listUsers({ email }, { take: 1 })
+    return res.json({ is_admin: users.length > 0 })
+  } catch {
+    // If the user module is unavailable, assume not admin to avoid blocking sign-in
+    return res.json({ is_admin: false })
+  }
+}
+
+/**
  * POST /store/customers/link
  *
  * Links a Google (or other OAuth) auth identity to an existing customer account
@@ -33,12 +59,12 @@ export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse)
 
   const customerModule = req.scope.resolve(Modules.CUSTOMER)
   const [customers] = await customerModule.listAndCountCustomers(
-    { email },
+    { email, has_account: true },
     { skip: 0, take: 1 }
   )
 
   if (!customers.length) {
-    return res.status(404).json({ message: "No customer found with this email." })
+    return res.status(404).json({ message: "No registered customer found with this email." })
   }
 
   const customer = customers[0]

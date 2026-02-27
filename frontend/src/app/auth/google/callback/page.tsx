@@ -56,6 +56,22 @@ function GoogleCallbackContent() {
       const firstName = payload.user_metadata?.given_name || ""
       const lastName = payload.user_metadata?.family_name || ""
 
+      // ── Admin pre-flight check ──────────────────────────────────────────────
+      // If this email belongs to a Medusa admin user, the customer OAuth flow is
+      // the wrong path.  Redirect to admin-login instead of creating a customer.
+      try {
+        const check = await (medusa.client.fetch as any)(
+          `/store/customers/link?email=${encodeURIComponent(email)}`,
+          { method: "GET" }
+        )
+        if (check?.is_admin) {
+          window.location.href = "/admin-login?hint=google"
+          return
+        }
+      } catch {
+        // Pre-flight failed — proceed anyway; do not block sign-in
+      }
+
       // Create customer record — Medusa links the Google auth identity to this customer.
       // Medusa requires email even with a registration JWT (it does not auto-extract it).
       try {

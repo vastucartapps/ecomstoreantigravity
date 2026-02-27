@@ -95,11 +95,12 @@ export default defineMiddlewares({
     },
 
     // ─── Account linking: accept registration JWTs (actor_id can be empty) ───
-    // Called from Google OAuth callback when email already exists via email+password.
+    // GET: preflight check — is this email a Medusa admin user?
+    // POST: merge — link Google auth identity to existing email+password customer.
     // allowUnregistered: true mirrors the pattern used by POST /store/customers.
     {
       matcher: "/store/customers/link",
-      method: ["POST"],
+      method: ["GET", "POST"],
       middlewares: [authenticate("customer", ["bearer"], { allowUnregistered: true })],
     },
 
