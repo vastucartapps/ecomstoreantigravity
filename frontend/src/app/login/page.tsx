@@ -94,10 +94,22 @@ function LoginContent() {
     }
   }
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     const backendUrl =
       process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
-    window.location.href = `${backendUrl}/auth/customer/google`
+    try {
+      const res = await fetch(`${backendUrl}/auth/customer/google`, {
+        method: "GET",
+        credentials: "include",
+      })
+      const data = await res.json()
+      if (data?.location) {
+        window.location.href = data.location
+      }
+    } catch {
+      // Fallback: navigate directly
+      window.location.href = `${backendUrl}/auth/customer/google`
+    }
   }
 
   return (
