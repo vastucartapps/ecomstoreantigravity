@@ -190,12 +190,22 @@ export function useAdminIntegrations() {
     if (!saved) return { ...DEFAULT_CONFIG }
 
     // Merge saved integrations with defaults so new integrations are always present
+    // Also merge configFields so new fields added to defaults appear in the UI
     const savedMap = new Map<string, Integration>(
       (saved.integrations || []).map((i: Integration) => [i.id, i])
     )
-    const mergedIntegrations = DEFAULT_INTEGRATIONS.map((def) =>
-      savedMap.has(def.id) ? (savedMap.get(def.id) as Integration) : def
-    )
+    const mergedIntegrations = DEFAULT_INTEGRATIONS.map((def) => {
+      if (!savedMap.has(def.id)) return def
+      const savedInteg = savedMap.get(def.id) as Integration
+      return {
+        ...savedInteg,
+        // Merge configFields: default keys define the schema, saved values fill them in
+        configFields: {
+          ...def.configFields,
+          ...savedInteg.configFields,
+        },
+      }
+    })
 
     return {
       integrations: mergedIntegrations,
