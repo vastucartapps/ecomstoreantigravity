@@ -7,6 +7,7 @@ import { RevenueChart } from "./RevenueChart"
 import { RecentOrdersTable } from "./RecentOrdersTable"
 import { QuickActions } from "./QuickActions"
 import { AlertsSidebar } from "./AlertsSidebar"
+import { MarketingHealthPanel } from "./MarketingHealthPanel"
 
 const c = {
   earth700: "#433b35",
@@ -29,6 +30,7 @@ export function AdminOverviewDashboard({
   alerts,
   timePeriod: initialTimePeriod = "today",
   isLoading = false,
+  marketingHealth,
   onTimePeriodChange,
   onStatClick,
   onViewOrder,
@@ -109,6 +111,13 @@ export function AdminOverviewDashboard({
           onDismissAlert={onDismissAlert}
         />
       </div>
+
+      {/* Marketing Channels */}
+      {marketingHealth && (
+        <div className="mt-6">
+          <MarketingHealthPanel data={marketingHealth} />
+        </div>
+      )}
     </div>
   )
 }

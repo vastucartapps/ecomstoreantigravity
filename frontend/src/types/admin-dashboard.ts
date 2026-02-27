@@ -88,6 +88,36 @@ export interface Alert {
   meta: Record<string, number>
 }
 
+// ---------------------------------------------------------------------------
+// Marketing Health (GA4 + GMC + Meta)
+// ---------------------------------------------------------------------------
+
+/** GA4 7-day traffic snapshot */
+export interface GA4Snapshot {
+  sessions: number
+  users: number
+  pageviews: number
+  /** 0-100 */
+  mobilePercent: number
+  /** 0-100 */
+  desktopPercent: number
+  topPage: string | null
+}
+
+/** Sync health for a product channel (GMC or Meta) */
+export interface MarketingChannelHealth {
+  syncStatus: 'success' | 'error' | 'syncing' | null
+  lastSync: string | null
+  productsCount: number
+  issueCount: number
+}
+
+export interface MarketingHealthData {
+  ga4: { configured: boolean; snapshot: GA4Snapshot | null; error: string | null }
+  gmc: { configured: boolean; health: MarketingChannelHealth | null }
+  meta: { configured: boolean; health: MarketingChannelHealth | null }
+}
+
 /** Props for the Admin Overview Dashboard */
 export interface AdminOverviewDashboardProps {
   stats: DashboardStat[]
@@ -97,6 +127,7 @@ export interface AdminOverviewDashboardProps {
   alerts: Alert[]
   timePeriod: TimePeriod
   isLoading?: boolean
+  marketingHealth?: MarketingHealthData | null
 
   onTimePeriodChange?: (period: TimePeriod) => void
   onStatClick?: (linkTo: string) => void

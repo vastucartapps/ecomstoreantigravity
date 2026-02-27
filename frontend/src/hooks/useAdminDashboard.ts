@@ -10,6 +10,9 @@ import type {
   QuickAction,
   Alert,
   OrderStatus,
+  MarketingHealthData,
+  GA4Snapshot,
+  MarketingChannelHealth,
 } from "@/types/admin-dashboard"
 import type {
   MedusaOrder,
@@ -384,6 +387,98 @@ function buildAlerts(
 }
 
 // ---------------------------------------------------------------------------
+// Marketing health fetchers (GA4 + GMC + Meta)
+// ---------------------------------------------------------------------------
+
+async function fetchGA4Health(): Promise<MarketingHealthData["ga4"]> {
+  try {
+    const res = await adminFetch<{
+      isConfigured: boolean
+      report: {
+        totals: { sessions: number; users: number; pageviews: number }
+        deviceBreakdown: { device: string; sessions: number }[]
+        topPages: { page: string; sessions: number }[]
+      } | null
+      error: string | null
+    }>("/admin/analytics/ga4?days=7")
+
+    if (!res.isConfigured) return { configured: false, snapshot: null, error: null }
+    if (res.error || !res.report) return { configured: true, snapshot: null, error: res.error }
+
+    const { totals, deviceBreakdown, topPages } = res.report
+    const totalSessions = deviceBreakdown.reduce((s, d) => s + d.sessions, 0) || 1
+    const mobileSessions = deviceBreakdown.find((d) => d.device === "mobile")?.sessions || 0
+    const desktopSessions = deviceBreakdown.find((d) => d.device === "desktop")?.sessions || 0
+
+    const snapshot: GA4Snapshot = {
+      sessions: totals.sessions,
+      users: totals.users,
+      pageviews: totals.pageviews,
+      mobilePercent: Math.round((mobileSessions / totalSessions) * 100),
+      desktopPercent: Math.round((desktopSessions / totalSessions) * 100),
+      topPage: topPages?.[0]?.page || null,
+    }
+    return { configured: true, snapshot, error: null }
+  } catch {
+    return { configured: false, snapshot: null, error: null }
+  }
+}
+
+async function fetchGMCHealth(): Promise<MarketingHealthData["gmc"]> {
+  try {
+    const res = await adminFetch<{
+      isConfigured: boolean
+      syncStatus: {
+        status: "success" | "error" | "syncing" | null
+        lastSync: string | null
+        lastSyncProducts: number
+        lastSyncErrors: number
+      } | null
+      errorReport: { disapprovedCount: number; totalProducts: number } | null
+    }>("/admin/integrations/gmc/status")
+
+    if (!res.isConfigured) return { configured: false, health: null }
+
+    const health: MarketingChannelHealth = {
+      syncStatus: res.syncStatus?.status ?? null,
+      lastSync: res.syncStatus?.lastSync ?? null,
+      productsCount: res.syncStatus?.lastSyncProducts ?? 0,
+      issueCount: res.errorReport?.disapprovedCount ?? res.syncStatus?.lastSyncErrors ?? 0,
+    }
+    return { configured: true, health }
+  } catch {
+    return { configured: false, health: null }
+  }
+}
+
+async function fetchMetaHealth(): Promise<MarketingHealthData["meta"]> {
+  try {
+    const res = await adminFetch<{
+      isConfigured: boolean
+      syncStatus: {
+        status: "success" | "error" | "syncing" | null
+        lastSync: string | null
+        lastSyncProducts: number
+        lastSyncErrors: number
+      } | null
+      errorReport: { errorCount: number } | null
+    }>("/admin/integrations/meta/status")
+
+    if (!res.isConfigured) return { configured: false, health: null }
+
+    const health: MarketingChannelHealth = {
+      syncStatus: res.syncStatus?.status ?? null,
+      lastSync: res.syncStatus?.lastSync ?? null,
+      productsCount: res.syncStatus?.lastSyncProducts ?? 0,
+      issueCount: res.errorReport?.errorCount ?? res.syncStatus?.lastSyncErrors ?? 0,
+    }
+    return { configured: true, health }
+  } catch {
+    return { configured: false, health: null }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Default quick actions (static)
 // ---------------------------------------------------------------------------
 
@@ -421,6 +516,7 @@ export interface AdminDashboardData {
   recentOrders: RecentOrder[]
   quickActions: QuickAction[]
   alerts: Alert[]
+  marketingHealth: MarketingHealthData | null
   isLoading: boolean
   error: string | null
   refetch: () => void
@@ -433,6 +529,7 @@ export function useAdminDashboard(timePeriod: TimePeriod): AdminDashboardData {
   const [revenueBars, setRevenueBars] = useState<RevenueBar[]>([])
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
+  const [marketingHealth, setMarketingHealth] = useState<MarketingHealthData | null>(null)
 
   const load = useCallback(async () => {
     setIsLoading(true)
@@ -448,6 +545,9 @@ export function useAdminDashboard(timePeriod: TimePeriod): AdminDashboardData {
         lowStockProducts,
         reviewCount,
         returnCount,
+        ga4,
+        gmc,
+        meta,
       ] = await Promise.all([
         fetchOrders(toISO(start), toISO(end)),
         fetchOrders(toISO(prevStart), toISO(prevEnd)),
@@ -456,6 +556,9 @@ export function useAdminDashboard(timePeriod: TimePeriod): AdminDashboardData {
         fetchLowStockProducts(),
         fetchPendingReviews(),
         fetchPendingReturns(),
+        fetchGA4Health(),
+        fetchGMCHealth(),
+        fetchMetaHealth(),
       ])
 
       // Sort current orders by date desc (most recent first)
@@ -476,6 +579,7 @@ export function useAdminDashboard(timePeriod: TimePeriod): AdminDashboardData {
       setRevenueBars(buildRevenueBars(sortedOrders, timePeriod, start, end))
       setRecentOrders(buildRecentOrders(sortedOrders))
       setAlerts(buildAlerts(lowStockProducts, reviewCount, returnCount))
+      setMarketingHealth({ ga4, gmc, meta })
     } catch (e: any) {
       setError(e?.message || "Failed to load dashboard data")
     } finally {
@@ -493,6 +597,7 @@ export function useAdminDashboard(timePeriod: TimePeriod): AdminDashboardData {
     recentOrders,
     quickActions: defaultQuickActions,
     alerts,
+    marketingHealth,
     isLoading,
     error,
     refetch: load,

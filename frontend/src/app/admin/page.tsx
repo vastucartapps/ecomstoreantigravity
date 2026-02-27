@@ -12,7 +12,7 @@ export default function AdminDashboardPage() {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("today")
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set())
 
-  const { stats, revenueBars, recentOrders, quickActions, alerts, isLoading, refetch } =
+  const { stats, revenueBars, recentOrders, quickActions, alerts, marketingHealth, isLoading, refetch } =
     useAdminDashboard(timePeriod)
 
   const handleTimePeriodChange = (period: TimePeriod) => {
@@ -63,6 +63,7 @@ export default function AdminDashboardPage() {
       alerts={visibleAlerts}
       timePeriod={timePeriod}
       isLoading={isLoading}
+      marketingHealth={marketingHealth}
       onTimePeriodChange={handleTimePeriodChange}
       onStatClick={handleStatClick}
       onViewOrder={handleViewOrder}
