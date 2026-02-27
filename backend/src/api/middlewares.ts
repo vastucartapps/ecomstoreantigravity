@@ -45,12 +45,45 @@ function setApiVersion(
   next()
 }
 
+// ─── Google OAuth callback → frontend redirect ────────────────────────────────
+// Medusa returns {"token":"..."} as JSON from /auth/customer/google/callback.
+// This middleware intercepts that response and redirects the browser to the
+// frontend callback page with the token as a query param, instead of showing
+// raw JSON in the browser.
+function googleOAuthRedirect(
+  _req: import("express").Request,
+  res: import("express").Response,
+  next: import("express").NextFunction
+) {
+  const originalJson = res.json.bind(res)
+  ;(res as any).json = function (data: any) {
+    if (data?.token && typeof data.token === "string" && !data.errors) {
+      const frontendUrl =
+        process.env.STORE_CORS?.split(",")[0]?.trim() ||
+        "https://store.vastucart.in"
+      res.json = originalJson // restore before redirect to avoid recursion
+      return res.redirect(
+        303,
+        `${frontendUrl}/auth/google/callback?token=${encodeURIComponent(data.token)}`
+      )
+    }
+    return originalJson(data)
+  }
+  next()
+}
+
 export default defineMiddlewares({
   routes: [
     // ─── API version header on all routes ────────────────────────────────────
     {
       matcher: "/**",
       middlewares: [setApiVersion],
+    },
+
+    // ─── Google OAuth: redirect browser to frontend instead of showing JSON ───
+    {
+      matcher: "/auth/customer/google/callback",
+      middlewares: [googleOAuthRedirect],
     },
 
     // ─── Admin authentication guard ──────────────────────────────────────────

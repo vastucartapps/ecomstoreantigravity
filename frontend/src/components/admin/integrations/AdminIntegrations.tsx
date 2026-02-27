@@ -1508,7 +1508,9 @@ function MetaStatusPanel({
               >
                 <CheckCircle2 size={14} style={{ color: c.success }} />
                 <p className="text-xs" style={{ color: c.success, fontFamily: fonts.body }}>
-                  All {errorReport.totalItems} catalogue items healthy in Meta &mdash; no issues detected.
+                  {syncStatus?.lastSyncProducts
+                    ? `All ${syncStatus.lastSyncProducts} catalogue variants healthy in Meta — no issues detected.`
+                    : "Catalogue healthy — no issues detected in Meta diagnostics."}
                 </p>
               </div>
             )}
