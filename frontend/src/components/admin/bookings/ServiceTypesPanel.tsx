@@ -36,8 +36,20 @@ const EMPTY_FORM: Omit<AdminBookingServiceType, "id" | "created_at"> = {
   outcomes: "",
   mode: "online",
   badge_text: "",
+  slug: "",
 }
 
+/** Auto-generate a URL slug from a title string */
+function autoSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+}
+
+const STOREFRONT_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
 const ECOSYSTEM_API_URL = `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://sapi.vastucart.in"}/store/bookings/service-types`
 const CONSULTATION_PAGE_URL = `${process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"}/consultations`
 
@@ -183,10 +195,12 @@ export function ServiceTypesPanel({ serviceTypes, onAdd, onUpdate, onDelete, onT
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [copiedApi, setCopiedApi] = useState(false)
   const [copiedPage, setCopiedPage] = useState(false)
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
 
   const openAdd = () => {
     setForm(EMPTY_FORM)
     setEditingId(null)
+    setSlugManuallyEdited(false)
     setShowForm(true)
   }
 
@@ -206,8 +220,10 @@ export function ServiceTypesPanel({ serviceTypes, onAdd, onUpdate, onDelete, onT
       outcomes: type.outcomes || "",
       mode: type.mode || "online",
       badge_text: type.badge_text || "",
+      slug: type.slug || "",
     })
     setEditingId(type.id)
+    setSlugManuallyEdited(!!type.slug)
     setShowForm(true)
   }
 
@@ -376,6 +392,9 @@ export function ServiceTypesPanel({ serviceTypes, onAdd, onUpdate, onDelete, onT
                         ₹{type.price.toLocaleString("en-IN")}
                       </span>
                     )}
+                    {type.slug && (
+                      <span className="text-xs truncate" style={{ color: c.earth300 }}>/consultations/{type.slug}</span>
+                    )}
                   </div>
                 </div>
 
@@ -474,7 +493,10 @@ export function ServiceTypesPanel({ serviceTypes, onAdd, onUpdate, onDelete, onT
                   <input
                     type="text"
                     value={form.title}
-                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    onChange={(e) => {
+                      const t = e.target.value
+                      setForm((f) => ({ ...f, title: t, slug: slugManuallyEdited ? f.slug : autoSlug(t) }))
+                    }}
                     placeholder="e.g. Home Vastu Consultation"
                     style={inputStyle}
                     onFocus={(e) => (e.currentTarget.style.borderColor = c.primary500)}
@@ -493,6 +515,35 @@ export function ServiceTypesPanel({ serviceTypes, onAdd, onUpdate, onDelete, onT
                     onBlur={(e) => (e.currentTarget.style.borderColor = c.border)}
                   />
                 </div>
+              </div>
+
+              {/* SEO Slug */}
+              <div>
+                <label className="block text-xs font-semibold mb-1" style={{ color: c.earth600 }}>
+                  URL Slug
+                  <span className="font-normal ml-1" style={{ color: c.earth400 }}>(auto-generated · editable)</span>
+                </label>
+                <input
+                  type="text"
+                  value={form.slug}
+                  onChange={(e) => {
+                    setSlugManuallyEdited(true)
+                    const s = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "")
+                    setForm((f) => ({ ...f, slug: s }))
+                  }}
+                  placeholder="home-vastu-consultation"
+                  style={inputStyle}
+                  onFocus={(e) => (e.currentTarget.style.borderColor = c.primary500)}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = c.border)}
+                />
+                {form.slug ? (
+                  <p className="text-xs mt-1 truncate">
+                    <span style={{ color: c.earth300 }}>store.vastucart.in/consultations/</span>
+                    <span style={{ color: c.primary500, fontWeight: 600 }}>{form.slug}</span>
+                  </p>
+                ) : (
+                  <p className="text-xs mt-1" style={{ color: c.earth400 }}>Slug auto-fills from the title above</p>
+                )}
               </div>
 
               {/* Description */}

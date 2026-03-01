@@ -28,6 +28,7 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse): Promise<voi
     outcomes?: string
     mode?: string
     badge_text?: string
+    slug?: string
   }
 
   if (!body.title?.trim()) {

@@ -4,6 +4,16 @@ import BlockedDate from "./models/blocked-date"
 import SlotConfig from "./models/slot-config"
 import BookingServiceType from "./models/booking-service-type"
 
+/** Generate a URL-safe slug from a title string */
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+}
+
 const DEFAULT_SLOT_CONFIG = {
   enabledDays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],
   startTime: "10:00",
@@ -116,6 +126,31 @@ class BookingsModuleService extends MedusaService({ Booking, BlockedDate, SlotCo
     return types
   }
 
+  /** Fetch a single active service type by its slug (for SEO detail pages) */
+  async getServiceTypeBySlug(slug: string): Promise<any | null> {
+    const [types] = await this.listAndCountBookingServiceTypes(
+      { slug, is_active: true },
+      { take: 1 }
+    )
+    return types[0] ?? null
+  }
+
+  /** Generate a unique slug — appends -2, -3 on collision */
+  private async generateUniqueSlug(base: string, excludeId?: string): Promise<string> {
+    let candidate = slugify(base)
+    let suffix = 1
+    while (true) {
+      const [existing] = await this.listAndCountBookingServiceTypes(
+        { slug: candidate },
+        { take: 1 }
+      )
+      const collision = existing.filter((r: any) => r.id !== excludeId)
+      if (collision.length === 0) return candidate
+      suffix++
+      candidate = `${slugify(base)}-${suffix}`
+    }
+  }
+
   async createServiceType(data: {
     title: string
     description?: string
@@ -131,7 +166,12 @@ class BookingsModuleService extends MedusaService({ Booking, BlockedDate, SlotCo
     outcomes?: string
     mode?: string
     badge_text?: string
+    slug?: string
   }): Promise<any> {
+    const slug = data.slug?.trim()
+      ? await this.generateUniqueSlug(data.slug.trim())
+      : await this.generateUniqueSlug(data.title)
+
     return this.createBookingServiceTypes({
       title: data.title,
       description: data.description || "",
@@ -147,6 +187,7 @@ class BookingsModuleService extends MedusaService({ Booking, BlockedDate, SlotCo
       outcomes: data.outcomes || "",
       mode: data.mode || "online",
       badge_text: data.badge_text || "",
+      slug,
     })
   }
 
@@ -165,7 +206,11 @@ class BookingsModuleService extends MedusaService({ Booking, BlockedDate, SlotCo
     outcomes: string
     mode: string
     badge_text: string
+    slug: string
   }>): Promise<any> {
+    if (data.slug !== undefined) {
+      data.slug = await this.generateUniqueSlug(data.slug, id)
+    }
     return this.updateBookingServiceTypes({ id, ...data } as any)
   }
 

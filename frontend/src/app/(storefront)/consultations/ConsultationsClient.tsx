@@ -199,13 +199,13 @@ function ServiceCard({ type }: { type: ServiceType }) {
         {/* Spacer pushes button to bottom */}
         <div className="flex-1" />
 
-        {/* CTA */}
+        {/* CTA — deep-link to detail page (SEO) or booking form fallback */}
         <Link
-          href={`/account/bookings?type=${type.id}`}
+          href={type.slug ? `/consultations/${type.slug}` : `/account/bookings?type=${type.id}`}
           className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl text-sm font-bold text-white transition-opacity hover:opacity-90 mt-2"
           style={{ background: "linear-gradient(135deg, #013f47 0%, #026b7a 100%)" }}
         >
-          Book Consultation
+          View &amp; Book
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
@@ -219,20 +219,20 @@ const HERO_STEPS = [
   {
     step: "01",
     Icon: FileText,
-    title: "Share Your Space",
-    desc: "Upload your floor plan or describe your home, office, or plot to get started",
+    title: "Share Your Floor Plan",
+    desc: "Upload your layout or describe your home, office, or plot — we handle the rest",
   },
   {
     step: "02",
     Icon: Search,
-    title: "Expert Analysis",
-    desc: "Your dedicated Vastu expert reviews energy zones, directions, and imbalances",
+    title: "Expert Vastu Diagnosis",
+    desc: "Your expert identifies energy blockages, wrong directions, and zone imbalances",
   },
   {
     step: "03",
     Icon: Zap,
-    title: "Transform Your Life",
-    desc: "Receive a personalised remedy plan with a 30-day follow-up for best results",
+    title: "Written Report + Follow-up",
+    desc: "Get a detailed remedy plan delivered in writing, plus a 30-day check-in call — guaranteed",
   },
 ] as const
 
@@ -305,23 +305,25 @@ export default function ConsultationsClient({ serviceTypes }: { serviceTypes: Se
                   letterSpacing: "-0.01em",
                 }}
               >
-                Unlock Harmony,{" "}
-                <span style={{ color: "#c85103" }}>Prosperity</span>
-                <br />& Peace in Your Space
+                Your Home Has Energy.
+                <br />Is It Working{" "}
+                <span style={{ color: "#c85103" }}>For You</span>
+                <br />— or Against You?
               </h1>
 
               {/* Sub-headline */}
-              <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 17, lineHeight: 1.75, maxWidth: 510, marginBottom: 28 }}>
-                Work one-on-one with India&apos;s certified Vastu Shastra experts. Receive a personalised
-                analysis of your home, office, or plot — with actionable remedies that deliver real results.
+              <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 17, lineHeight: 1.75, maxWidth: 520, marginBottom: 28 }}>
+                Most people live with invisible friction in their space — blocked finances, disrupted sleep,
+                strained relationships. Our certified Vastu experts diagnose your exact floor plan and
+                prescribe remedies that create measurable change.
               </p>
 
               {/* Feature checklist */}
               <ul className="space-y-3" style={{ marginBottom: 36 }}>
                 {[
-                  "Personalised remedies for your exact floor plan",
-                  "Certified experts with 15+ years of Vastu practice",
-                  "Online & in-person sessions, pan-India coverage",
+                  "Personalised to your exact floor plan — not generic advice",
+                  "Certified experts, 15+ years of practice, 500+ families served",
+                  "Online & in-person sessions, pan-India · 30-day follow-up included",
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
                     <span
@@ -347,7 +349,7 @@ export default function ConsultationsClient({ serviceTypes }: { serviceTypes: Se
                   className="inline-flex items-center justify-center gap-2 rounded-2xl font-bold text-white transition-opacity hover:opacity-90"
                   style={{ background: "#c85103", padding: "15px 30px", fontSize: 15 }}
                 >
-                  View Consultations
+                  See All Consultations
                   <ArrowRight className="w-4 h-4" />
                 </a>
                 <Link
@@ -362,7 +364,7 @@ export default function ConsultationsClient({ serviceTypes }: { serviceTypes: Se
                   }}
                 >
                   <Phone className="w-4 h-4" />
-                  Free Discovery Call
+                  Talk to an Expert First
                 </Link>
               </div>
 
@@ -374,8 +376,8 @@ export default function ConsultationsClient({ serviceTypes }: { serviceTypes: Se
                 {[
                   { num: "500+", label: "Families Helped" },
                   { num: "4.9★", label: "Avg Rating" },
-                  { num: "20+", label: "Cities Covered" },
-                  { num: "15 yrs", label: "Expert Avg" },
+                  { num: "20+", label: "Cities" },
+                  { num: "30-day", label: "Follow-up Included" },
                 ].map(({ num, label }) => (
                   <div key={label}>
                     <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1.1 }}>{num}</div>
@@ -405,7 +407,7 @@ export default function ConsultationsClient({ serviceTypes }: { serviceTypes: Se
                     marginBottom: 24,
                   }}
                 >
-                  Your Path to Harmony
+                  How We Help You
                 </p>
 
                 {HERO_STEPS.map(({ step, Icon, title, desc }, i) => (

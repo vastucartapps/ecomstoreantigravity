@@ -21,6 +21,7 @@ export interface ServiceType {
   outcomes: string
   mode: "online" | "offline" | "both"
   badge_text: string
+  slug?: string
 }
 
 async function fetchServiceTypes(): Promise<ServiceType[]> {
@@ -97,7 +98,7 @@ function buildJsonLd(types: ServiceType[]) {
           price: t.price,
           priceCurrency: t.currency || "INR",
           availability: "https://schema.org/InStock",
-          url: `${SITE_URL}/account/bookings?type=${t.id}`,
+          url: t.slug ? `${SITE_URL}/consultations/${t.slug}` : `${SITE_URL}/account/bookings?type=${t.id}`,
         }
       : {
           "@type": "Offer",
@@ -121,7 +122,7 @@ function buildJsonLd(types: ServiceType[]) {
         "@type": "Service",
         name: t.title,
         description: t.description || undefined,
-        url: `${SITE_URL}/account/bookings?type=${t.id}`,
+        url: t.slug ? `${SITE_URL}/consultations/${t.slug}` : `${SITE_URL}/account/bookings?type=${t.id}`,
         offers: t.price > 0
           ? { "@type": "Offer", price: t.price, priceCurrency: t.currency || "INR" }
           : undefined,

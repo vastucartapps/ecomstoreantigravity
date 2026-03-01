@@ -18,6 +18,7 @@ const BookingServiceType = model.define("booking_service_type", {
   outcomes: model.text().default(""),
   mode: model.text().default("online"),         // online | offline | both
   badge_text: model.text().default(""),         // e.g. "Most Popular"
+  slug: model.text().nullable(),               // URL-friendly identifier for SEO detail pages
 })
 
 export default BookingServiceType

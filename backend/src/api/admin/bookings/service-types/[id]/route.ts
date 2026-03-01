@@ -23,6 +23,7 @@ export const PATCH = async (req: MedusaRequest, res: MedusaResponse): Promise<vo
     outcomes: string
     mode: string
     badge_text: string
+    slug: string
   }>
 
   const bookingsService = req.scope.resolve(BOOKINGS_MODULE) as any

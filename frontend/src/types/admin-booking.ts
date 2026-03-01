@@ -73,6 +73,7 @@ export interface AdminBookingServiceType {
   outcomes: string
   mode: "online" | "offline" | "both"
   badge_text: string
+  slug?: string
   created_at?: string
 }
 

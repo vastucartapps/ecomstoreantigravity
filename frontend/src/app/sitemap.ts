@@ -55,6 +55,12 @@ const STATIC_PAGES: MetadataRoute.Sitemap = [
     changeFrequency: "monthly",
     priority: 0.7,
   },
+  {
+    url: `${SITE_URL}/consultations`,
+    lastModified: new Date(),
+    changeFrequency: "weekly",
+    priority: 0.9,
+  },
 ]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -76,14 +82,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const storeHeaders = { "x-publishable-api-key": PUB_KEY }
   const fetchOpts = { headers: storeHeaders, next: { revalidate: 3600 } }
 
-  // Fetch products and categories in parallel
-  const [productsRes, categoriesRes] = await Promise.allSettled([
+  // Fetch products, categories, and consultation service types in parallel
+  const [productsRes, categoriesRes, consultationsRes] = await Promise.allSettled([
     fetch(
       `${BACKEND_URL}/store/products?limit=500&fields=id,handle,updated_at`,
       fetchOpts
     ),
     fetch(
       `${BACKEND_URL}/store/product-categories?limit=200&fields=id,handle,updated_at`,
+      fetchOpts
+    ),
+    fetch(
+      `${BACKEND_URL}/store/bookings/service-types`,
       fetchOpts
     ),
   ])
@@ -122,5 +132,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           .catch(() => [])
       : []
 
-  return [...STATIC_PAGES, ...productPages, ...categoryPages]
+  const consultationPages: MetadataRoute.Sitemap =
+    consultationsRes.status === "fulfilled" && consultationsRes.value.ok
+      ? await consultationsRes.value
+          .json()
+          .then((d: any) =>
+            (d.service_types || [])
+              .filter((s: any) => s.slug)
+              .map((s: any) => ({
+                url: `${SITE_URL}/consultations/${s.slug}`,
+                lastModified: new Date(),
+                changeFrequency: "weekly" as const,
+                priority: 0.8,
+              }))
+          )
+          .catch(() => [])
+      : []
+
+  return [...STATIC_PAGES, ...productPages, ...categoryPages, ...consultationPages]
 }
