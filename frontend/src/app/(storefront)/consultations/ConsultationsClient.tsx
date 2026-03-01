@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Clock, Monitor, MapPin, Users, ChevronLeft, ChevronRight, Check, ArrowRight, Star, Phone } from "lucide-react"
+import { Clock, Monitor, MapPin, Users, ChevronLeft, ChevronRight, Check, ArrowRight, Star, Phone, FileText, Search, Zap, Award } from "lucide-react"
 import { normalizeImageUrl } from "@/lib/image-url"
 import type { ServiceType } from "./page"
 
@@ -215,71 +215,264 @@ function ServiceCard({ type }: { type: ServiceType }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
+const HERO_STEPS = [
+  {
+    step: "01",
+    Icon: FileText,
+    title: "Share Your Space",
+    desc: "Upload your floor plan or describe your home, office, or plot to get started",
+  },
+  {
+    step: "02",
+    Icon: Search,
+    title: "Expert Analysis",
+    desc: "Your dedicated Vastu expert reviews energy zones, directions, and imbalances",
+  },
+  {
+    step: "03",
+    Icon: Zap,
+    title: "Transform Your Life",
+    desc: "Receive a personalised remedy plan with a 30-day follow-up for best results",
+  },
+] as const
+
 export default function ConsultationsClient({ serviceTypes }: { serviceTypes: ServiceType[] }) {
   return (
     <div style={{ minHeight: "100vh", background: "#fffbf5" }}>
 
-      {/* Hero */}
-      <div
-        className="relative overflow-hidden"
-        style={{
-          background: "linear-gradient(135deg, #013f47 0%, #026b7a 50%, #013f47 100%)",
-          padding: "80px 16px 72px",
-        }}
-      >
-        {/* Decorative circles */}
-        <div
-          className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10"
-          style={{ background: "radial-gradient(circle, #c85103 0%, transparent 70%)", transform: "translate(30%, -30%)" }}
-        />
-        <div
-          className="absolute bottom-0 left-0 w-64 h-64 rounded-full opacity-10"
-          style={{ background: "radial-gradient(circle, #c5e8e2 0%, transparent 70%)", transform: "translate(-30%, 30%)" }}
-        />
+      {/* ─── Premium Hero ─────────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden" style={{ background: "#051c20" }}>
 
-        <div className="relative max-w-4xl mx-auto text-center">
-          {/* Eyebrow */}
-          <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-6"
-            style={{ background: "rgba(255,255,255,0.12)", color: "#c5e8e2", letterSpacing: "0.06em" }}
+        {/* Background: mandala SVG + radial glows */}
+        <div className="absolute inset-0 pointer-events-none select-none overflow-hidden" aria-hidden="true">
+          <svg
+            className="absolute opacity-[0.045]"
+            style={{ top: -80, right: -80, width: 600, height: 600 }}
+            viewBox="0 0 600 600"
+            fill="none"
           >
-            <Star className="w-3.5 h-3.5" style={{ fill: "#c85103", color: "#c85103" }} />
-            CERTIFIED VASTU EXPERTS
-          </div>
-
-          <h1
-            className="text-4xl md:text-5xl font-bold text-white mb-4"
-            style={{ fontFamily: "var(--font-heading, serif)", lineHeight: 1.15 }}
-          >
-            Transform Your Space with
-            <span style={{ color: "#c85103", display: "block" }}>Expert Vastu Guidance</span>
-          </h1>
-          <p className="text-lg text-white/75 max-w-2xl mx-auto mb-8">
-            Our certified Vastu consultants help you harmonise energy in your home, office, or plot —
-            bringing prosperity, health, and peace to your life.
-          </p>
-
-          {/* Trust signals */}
-          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-white/70">
-            {[
-              { icon: <Star className="w-4 h-4" style={{ fill: "#c85103", color: "#c85103" }} />, text: "4.9 / 5 rating" },
-              { icon: <Users className="w-4 h-4" />, text: "500+ consultations" },
-              { icon: <Monitor className="w-4 h-4" />, text: "Online & In-Person" },
-            ].map((t, i) => (
-              <div key={i} className="flex items-center gap-1.5">
-                {t.icon}
-                <span>{t.text}</span>
-              </div>
+            {[70, 120, 170, 225, 278].map((r) => (
+              <circle key={r} cx="300" cy="300" r={r} stroke="white" strokeWidth="1" />
             ))}
+            {Array.from({ length: 12 }).map((_, i) => {
+              const a = (i * 30 * Math.PI) / 180
+              return (
+                <line
+                  key={i}
+                  x1={300 + 70 * Math.cos(a)} y1={300 + 70 * Math.sin(a)}
+                  x2={300 + 278 * Math.cos(a)} y2={300 + 278 * Math.sin(a)}
+                  stroke="white" strokeWidth="0.6" opacity="0.7"
+                />
+              )
+            })}
+            {Array.from({ length: 8 }).map((_, i) => {
+              const a = (i * 45 * Math.PI) / 180
+              return (
+                <circle key={i} cx={300 + 190 * Math.cos(a)} cy={300 + 190 * Math.sin(a)} r={16} stroke="white" strokeWidth="0.6" />
+              )
+            })}
+          </svg>
+          <div style={{ position: "absolute", top: 0, right: 0, width: "60%", height: "100%", background: "radial-gradient(ellipse at 85% 35%, rgba(200,81,3,0.09) 0%, transparent 65%)" }} />
+          <div style={{ position: "absolute", bottom: 0, left: 0, width: "45%", height: "65%", background: "radial-gradient(ellipse at 15% 85%, rgba(1,63,71,0.45) 0%, transparent 60%)" }} />
+        </div>
+
+        {/* Main grid */}
+        <div
+          className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+          style={{ paddingTop: 88, paddingBottom: 80 }}
+        >
+          <div className="grid lg:grid-cols-[1fr_420px] gap-12 lg:gap-20 items-center">
+
+            {/* ── Left: Copy ── */}
+            <div>
+              {/* Eyebrow rule */}
+              <div className="flex items-center gap-3" style={{ marginBottom: 28 }}>
+                <div style={{ width: 32, height: 2, background: "#c85103", borderRadius: 1, flexShrink: 0 }} />
+                <span style={{ color: "#b89c7a", fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" }}>
+                  Vastu Shastra · Est. 2019
+                </span>
+              </div>
+
+              {/* Headline */}
+              <h1
+                style={{
+                  fontFamily: "var(--font-heading, serif)",
+                  fontSize: "clamp(2.25rem, 4.5vw, 3.5rem)",
+                  fontWeight: 800,
+                  color: "#ffffff",
+                  lineHeight: 1.1,
+                  marginBottom: 20,
+                  letterSpacing: "-0.01em",
+                }}
+              >
+                Unlock Harmony,{" "}
+                <span style={{ color: "#c85103" }}>Prosperity</span>
+                <br />& Peace in Your Space
+              </h1>
+
+              {/* Sub-headline */}
+              <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 17, lineHeight: 1.75, maxWidth: 510, marginBottom: 28 }}>
+                Work one-on-one with India&apos;s certified Vastu Shastra experts. Receive a personalised
+                analysis of your home, office, or plot — with actionable remedies that deliver real results.
+              </p>
+
+              {/* Feature checklist */}
+              <ul className="space-y-3" style={{ marginBottom: 36 }}>
+                {[
+                  "Personalised remedies for your exact floor plan",
+                  "Certified experts with 15+ years of Vastu practice",
+                  "Online & in-person sessions, pan-India coverage",
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3">
+                    <span
+                      className="flex-shrink-0 flex items-center justify-center"
+                      style={{
+                        width: 22, height: 22, borderRadius: "50%",
+                        background: "rgba(200,81,3,0.18)",
+                        border: "1px solid rgba(200,81,3,0.35)",
+                        marginTop: 2,
+                      }}
+                    >
+                      <Check className="w-3 h-3" style={{ color: "#c85103" }} />
+                    </span>
+                    <span style={{ color: "rgba(255,255,255,0.75)", fontSize: 15, lineHeight: 1.6 }}>{item}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {/* CTAs */}
+              <div className="flex flex-col sm:flex-row gap-4" style={{ marginBottom: 44 }}>
+                <a
+                  href="#services"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl font-bold text-white transition-opacity hover:opacity-90"
+                  style={{ background: "#c85103", padding: "15px 30px", fontSize: 15 }}
+                >
+                  View Consultations
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+                <Link
+                  href="/contact"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition-opacity hover:opacity-80"
+                  style={{
+                    background: "rgba(255,255,255,0.07)",
+                    color: "#fff",
+                    border: "1.5px solid rgba(255,255,255,0.18)",
+                    padding: "15px 30px",
+                    fontSize: 15,
+                  }}
+                >
+                  <Phone className="w-4 h-4" />
+                  Free Discovery Call
+                </Link>
+              </div>
+
+              {/* Stats row */}
+              <div
+                className="flex flex-wrap"
+                style={{ gap: "20px 40px", paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.1)" }}
+              >
+                {[
+                  { num: "500+", label: "Families Helped" },
+                  { num: "4.9★", label: "Avg Rating" },
+                  { num: "20+", label: "Cities Covered" },
+                  { num: "15 yrs", label: "Expert Avg" },
+                ].map(({ num, label }) => (
+                  <div key={label}>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1.1 }}>{num}</div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.38)", marginTop: 3 }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Right: Process Card (lg+ only) ── */}
+            <div className="hidden lg:block">
+              <div
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.09)",
+                  borderRadius: 24,
+                  padding: "32px 28px",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: "#c5e8e2",
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    marginBottom: 24,
+                  }}
+                >
+                  Your Path to Harmony
+                </p>
+
+                {HERO_STEPS.map(({ step, Icon, title, desc }, i) => (
+                  <div key={step} style={{ display: "flex", gap: 16 }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <div
+                        style={{
+                          width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
+                          background: i === 0 ? "#c85103" : "rgba(255,255,255,0.06)",
+                          border: i !== 0 ? "1px solid rgba(255,255,255,0.12)" : "none",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                        }}
+                      >
+                        <Icon className="w-5 h-5" style={{ color: i === 0 ? "#fff" : "rgba(255,255,255,0.45)" }} />
+                      </div>
+                      {i < 2 && (
+                        <div style={{ width: 1, flex: 1, minHeight: 32, background: "rgba(255,255,255,0.09)", margin: "8px 0" }} />
+                      )}
+                    </div>
+                    <div style={{ paddingBottom: i < 2 ? 24 : 0 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: "#c85103", letterSpacing: "0.1em", marginBottom: 3 }}>
+                        STEP {step}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "#fff", marginBottom: 4 }}>{title}</div>
+                      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", lineHeight: 1.55 }}>{desc}</div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Trust badge */}
+                <div
+                  style={{
+                    borderTop: "1px solid rgba(255,255,255,0.09)",
+                    marginTop: 20,
+                    paddingTop: 20,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
+                      background: "rgba(200,81,3,0.12)",
+                      border: "1px solid rgba(200,81,3,0.25)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <Award className="w-5 h-5" style={{ color: "#c85103" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>Certified & Trusted</div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.38)" }}>Vaastu International · Since 2019</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
+
+        {/* Bottom accent line */}
+        <div style={{ height: 3, background: "linear-gradient(90deg, transparent 0%, #c85103 25%, #013f47 50%, #c85103 75%, transparent 100%)" }} />
       </div>
 
-      {/* Accent border */}
-      <div style={{ height: 4, background: "linear-gradient(90deg, #013f47, #c85103, #013f47)" }} />
-
-      {/* Services Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      {/* ─── Services Grid ────────────────────────────────────────────────────── */}
+      <div id="services" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         {serviceTypes.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-lg font-semibold" style={{ color: "#5c4433" }}>
@@ -326,7 +519,7 @@ export default function ConsultationsClient({ serviceTypes }: { serviceTypes: Se
         )}
       </div>
 
-      {/* Bottom CTA strip */}
+      {/* ─── Bottom CTA Strip ─────────────────────────────────────────────────── */}
       <div
         className="py-14"
         style={{ background: "linear-gradient(135deg, #f0ebe4 0%, #e8f5f3 100%)" }}
