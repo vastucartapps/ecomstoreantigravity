@@ -5,7 +5,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://sapi.
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
-export const revalidate = 300 // 5-minute ISR
+export const dynamic = "force-dynamic" // Always fresh — admin-managed content
 
 export interface ServiceType {
   id: string
@@ -27,7 +27,7 @@ async function fetchServiceTypes(): Promise<ServiceType[]> {
   try {
     const res = await fetch(`${BACKEND_URL}/store/bookings/service-types`, {
       headers: { "x-publishable-api-key": PUB_KEY },
-      next: { revalidate: 300 },
+      cache: "no-store",
     })
     if (!res.ok) return []
     const data = await res.json()
