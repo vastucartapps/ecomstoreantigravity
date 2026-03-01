@@ -107,7 +107,7 @@ export interface LoyaltyBalance {
   transactions: LoyaltyTransaction[]
 }
 
-/** Service type from admin — used in booking form */
+/** Service type from admin — used in booking form + /consultations page */
 export interface BookingServiceType {
   id: string
   title: string
@@ -115,6 +115,13 @@ export interface BookingServiceType {
   duration_minutes: number
   price: number
   currency: string
+  image_1: string
+  image_2: string
+  image_3: string
+  what_is_included: string  // JSON: string[]
+  outcomes: string
+  mode: "online" | "offline" | "both"
+  badge_text: string
 }
 
 export interface Booking {

@@ -415,6 +415,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
               {[
                 { label: "Home", href: "/" },
                 { label: "Shop", href: "/search" },
+                { label: "Consultations", href: "/consultations" },
                 { label: "About", href: "/about" },
                 { label: "Contact", href: "/contact" },
               ].map((nav) => {
@@ -768,6 +769,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                 {[
                   { label: "Home", href: "/" },
                   { label: "Shop", href: "/search" },
+                  { label: "Consultations", href: "/consultations" },
                   { label: "About Us", href: "/about" },
                   { label: "Contact", href: "/contact" },
                 ].map((link) => (
@@ -1049,7 +1051,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
               </h3>
               <ul className="space-y-2.5">
                 {[
-                  { label: "Vastu Consultation", href: "/services/consultation" },
+                  { label: "Vastu Consultation", href: "/consultations" },
                   { label: "Blog & Articles", href: "/blog" },
                   { label: "Gift Cards", href: "/gift-cards" },
                   { label: "Loyalty Rewards", href: "/account/loyalty" },

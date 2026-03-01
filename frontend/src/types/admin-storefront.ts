@@ -30,6 +30,7 @@ export interface Branding {
   logoUrl: string
   faviconUrl: string
   socialLinks: SocialLinks
+  gift_card_image_url: string
 }
 
 export interface HomepageSection {

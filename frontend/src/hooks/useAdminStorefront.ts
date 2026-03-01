@@ -35,6 +35,7 @@ const DEFAULT_BRANDING: Branding = {
     facebook: "https://facebook.com/vastucart",
     youtube: "https://youtube.com/vastucart",
   },
+  gift_card_image_url: "",
 }
 
 const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [

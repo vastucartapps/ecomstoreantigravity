@@ -16,6 +16,13 @@ export const PATCH = async (req: MedusaRequest, res: MedusaResponse): Promise<vo
     currency: string
     is_active: boolean
     display_order: number
+    image_1: string
+    image_2: string
+    image_3: string
+    what_is_included: string
+    outcomes: string
+    mode: string
+    badge_text: string
   }>
 
   const bookingsService = req.scope.resolve(BOOKINGS_MODULE) as any

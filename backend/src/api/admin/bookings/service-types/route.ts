@@ -21,6 +21,13 @@ export const POST = async (req: MedusaRequest, res: MedusaResponse): Promise<voi
     currency?: string
     is_active?: boolean
     display_order?: number
+    image_1?: string
+    image_2?: string
+    image_3?: string
+    what_is_included?: string
+    outcomes?: string
+    mode?: string
+    badge_text?: string
   }
 
   if (!body.title?.trim()) {

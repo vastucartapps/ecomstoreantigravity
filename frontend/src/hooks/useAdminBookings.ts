@@ -2,6 +2,8 @@
 
 import { useCallback } from "react"
 import { adminFetch } from "@/lib/medusa"
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 import type {
   BookingRow,
   BookingStatus,
@@ -308,6 +310,27 @@ export function useAdminBookings() {
     }
   }, [])
 
+  // ---------------------------------------------------------------------------
+  // File upload (images to MinIO via Medusa admin uploads)
+  // ---------------------------------------------------------------------------
+
+  const uploadFile = useCallback(async (file: File): Promise<string> => {
+    const formData = new FormData()
+    formData.append("files", file)
+    const token = typeof window !== "undefined" ? localStorage.getItem("vastucart_admin_token") : null
+    const headers: HeadersInit = {}
+    if (token) headers["Authorization"] = `Bearer ${token}`
+    const res = await fetch(`${BACKEND_URL}/admin/uploads`, {
+      method: "POST",
+      headers,
+      credentials: "include",
+      body: formData,
+    })
+    if (!res.ok) throw new Error("Upload failed")
+    const data = await res.json()
+    return data.files?.[0]?.url || ""
+  }, [])
+
   return {
     fetchBookings,
     updateStatus,
@@ -324,5 +347,6 @@ export function useAdminBookings() {
     updateServiceType,
     deleteServiceType,
     fetchBookingStats,
+    uploadFile,
   }
 }

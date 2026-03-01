@@ -69,6 +69,7 @@ export default function AdminBookingsPage() {
     updateServiceType,
     deleteServiceType,
     fetchBookingStats,
+    uploadFile,
   } = useAdminBookings()
 
   const [activeTab, setActiveTab] = useState<Tab>("bookings")
@@ -340,6 +341,7 @@ export default function AdminBookingsPage() {
           onUpdate={handleUpdateServiceType}
           onDelete={handleDeleteServiceType}
           onToggleActive={(id, is_active) => handleUpdateServiceType(id, { is_active })}
+          onUploadFile={uploadFile}
         />
       )}
 

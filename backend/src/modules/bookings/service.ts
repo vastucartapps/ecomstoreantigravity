@@ -124,6 +124,13 @@ class BookingsModuleService extends MedusaService({ Booking, BlockedDate, SlotCo
     currency?: string
     is_active?: boolean
     display_order?: number
+    image_1?: string
+    image_2?: string
+    image_3?: string
+    what_is_included?: string
+    outcomes?: string
+    mode?: string
+    badge_text?: string
   }): Promise<any> {
     return this.createBookingServiceTypes({
       title: data.title,
@@ -133,6 +140,13 @@ class BookingsModuleService extends MedusaService({ Booking, BlockedDate, SlotCo
       currency: data.currency || "INR",
       is_active: data.is_active ?? true,
       display_order: data.display_order ?? 0,
+      image_1: data.image_1 || "",
+      image_2: data.image_2 || "",
+      image_3: data.image_3 || "",
+      what_is_included: data.what_is_included || "",
+      outcomes: data.outcomes || "",
+      mode: data.mode || "online",
+      badge_text: data.badge_text || "",
     })
   }
 
@@ -144,6 +158,13 @@ class BookingsModuleService extends MedusaService({ Booking, BlockedDate, SlotCo
     currency: string
     is_active: boolean
     display_order: number
+    image_1: string
+    image_2: string
+    image_3: string
+    what_is_included: string
+    outcomes: string
+    mode: string
+    badge_text: string
   }>): Promise<any> {
     return this.updateBookingServiceTypes({ id, ...data } as any)
   }

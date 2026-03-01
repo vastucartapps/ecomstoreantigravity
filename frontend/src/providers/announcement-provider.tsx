@@ -30,6 +30,7 @@ export interface BrandingValue {
   contactPhone: string
   address: string
   socialLinks: SocialLinks
+  gift_card_image_url: string
 }
 
 export interface FooterLink { label: string; url: string }
@@ -71,6 +72,7 @@ const DEFAULT_BRANDING: BrandingValue = {
     facebook: "https://facebook.com/vastucart",
     youtube: "https://youtube.com/vastucart",
   },
+  gift_card_image_url: "",
 }
 
 const DEFAULT_FOOTER: FooterValue = {

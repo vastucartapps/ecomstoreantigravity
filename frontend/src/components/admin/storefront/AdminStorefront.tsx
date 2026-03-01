@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import {
   Save,
   Upload,
@@ -442,6 +442,28 @@ export function AdminStorefront({
   // Content page editor
   const [editingPageId, setEditingPageId] = useState<string | null>(null)
   const [pageContent, setPageContent] = useState("")
+
+  const [uploadingGiftCard, setUploadingGiftCard] = useState(false)
+  const giftCardFileRef = useRef<HTMLInputElement>(null)
+
+  const handleGiftCardUpload = async (file: File) => {
+    setUploadingGiftCard(true)
+    try {
+      const formData = new FormData()
+      formData.append("files", file)
+      const token = typeof window !== "undefined" ? localStorage.getItem("vastucart_admin_token") : null
+      const headers: HeadersInit = {}
+      if (token) headers["Authorization"] = `Bearer ${token}`
+      const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
+      const res = await fetch(`${backendUrl}/admin/uploads`, { method: "POST", headers, credentials: "include", body: formData })
+      if (!res.ok) throw new Error("Upload failed")
+      const data = await res.json()
+      const url: string = data.files?.[0]?.url || ""
+      if (url) setBranding({ ...branding, gift_card_image_url: url })
+    } catch { /* silent */ } finally {
+      setUploadingGiftCard(false)
+    }
+  }
 
   // Loading states
   const [savingAnnouncement, setSavingAnnouncement] = useState(false)
@@ -1464,6 +1486,73 @@ export function AdminStorefront({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Gift Card Image */}
+          <div style={{ borderTop: `1px solid ${earth[200]}`, paddingTop: "20px", marginTop: "8px" }}>
+            <h3 style={{ fontFamily: fonts.heading, fontSize: "15px", fontWeight: 600, color: earth[700], margin: "0 0 4px 0" }}>
+              Gift Card Image
+            </h3>
+            <p style={{ fontSize: "12px", color: earth[400], margin: "0 0 12px 0" }}>
+              Displayed on customers&apos; gift card in their account dashboard. Recommended: 800×400px.
+            </p>
+            {branding.gift_card_image_url ? (
+              <div style={{ position: "relative", display: "inline-block" }}>
+                <img
+                  src={normalizeImageUrl(branding.gift_card_image_url)}
+                  alt="Gift card"
+                  style={{ height: 100, borderRadius: 12, objectFit: "cover", border: `1px solid ${earth[300]}` }}
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
+                />
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  <button
+                    onClick={() => giftCardFileRef.current?.click()}
+                    disabled={uploadingGiftCard}
+                    style={{
+                      padding: "6px 12px", background: earth[100], border: `1px solid ${earth[300]}`,
+                      borderRadius: 8, fontSize: 12, fontWeight: 600, color: earth[700], cursor: "pointer",
+                      display: "flex", alignItems: "center", gap: 4,
+                    }}
+                  >
+                    <Upload size={12} /> Replace
+                  </button>
+                  <button
+                    onClick={() => setBranding({ ...branding, gift_card_image_url: "" })}
+                    style={{
+                      padding: "6px 12px", background: "#FEF2F2", border: "1px solid #FECACA",
+                      borderRadius: 8, fontSize: 12, fontWeight: 600, color: "#DC2626", cursor: "pointer",
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => giftCardFileRef.current?.click()}
+                disabled={uploadingGiftCard}
+                style={{
+                  width: 200, height: 100, border: `2px dashed ${earth[300]}`, borderRadius: 12,
+                  background: earth[100], cursor: "pointer", display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center", gap: 6, color: earth[400],
+                  fontSize: 12, fontWeight: 600,
+                }}
+              >
+                <Upload size={18} />
+                {uploadingGiftCard ? "Uploading..." : "Upload Gift Card Image"}
+              </button>
+            )}
+            <input
+              ref={giftCardFileRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleGiftCardUpload(file)
+                e.target.value = ""
+              }}
+            />
           </div>
 
           <button

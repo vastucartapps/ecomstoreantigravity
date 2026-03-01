@@ -64,6 +64,15 @@ export interface AdminBookingServiceType {
   currency: string
   is_active: boolean
   display_order: number
+  // Images (uploaded to MinIO, carousel of up to 3)
+  image_1: string
+  image_2: string
+  image_3: string
+  // Rich content
+  what_is_included: string  // JSON: string[]
+  outcomes: string
+  mode: "online" | "offline" | "both"
+  badge_text: string
   created_at?: string
 }
 
