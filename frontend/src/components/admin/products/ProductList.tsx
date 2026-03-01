@@ -62,12 +62,12 @@ const fonts = {
 function SkeletonCard() {
   return (
     <div className="overflow-hidden rounded-lg animate-pulse" style={{ backgroundColor: c.card, boxShadow: c.shadow }}>
-      <div className="aspect-square bg-stone-200" />
-      <div className="p-4 space-y-2">
-        <div className="h-3 bg-stone-200 rounded w-1/2" />
-        <div className="h-4 bg-stone-200 rounded w-3/4" />
-        <div className="h-3 bg-stone-200 rounded w-1/3" />
-        <div className="h-5 bg-stone-200 rounded w-1/2 mt-3" />
+      <div className="h-28 bg-stone-200" />
+      <div className="p-2.5 space-y-1.5">
+        <div className="h-2.5 bg-stone-200 rounded w-1/2" />
+        <div className="h-3 bg-stone-200 rounded w-3/4" />
+        <div className="h-2.5 bg-stone-200 rounded w-1/3" />
+        <div className="h-4 bg-stone-200 rounded w-1/2 mt-2" />
       </div>
     </div>
   )
@@ -407,13 +407,13 @@ export function ProductList({
       {viewMode === "grid" && (
         <>
           {isLoading ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, i) => <SkeletonCard key={i} />)}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
           ) : products.length === 0 ? (
             emptyState
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {products.map((product) => {
                 const statusStyle = getStatusStyle(product.status)
                 const stockStyle = getStockStyle(product.stockLevel)
@@ -422,14 +422,14 @@ export function ProductList({
                 return (
                   <div
                     key={product.id}
-                    className="group relative overflow-hidden rounded-lg transition-all hover:shadow-lg"
+                    className="group relative overflow-hidden rounded-lg transition-all hover:shadow-md"
                     style={{ backgroundColor: c.card, boxShadow: c.shadow }}
                   >
                     {/* Gradient top border */}
                     <div className="h-0.5" style={{ background: c.gradient }} />
 
-                    {/* Image */}
-                    <div className="relative aspect-square overflow-hidden bg-stone-100">
+                    {/* Image — fixed compact height */}
+                    <div className="relative h-28 overflow-hidden bg-stone-100">
                       {product.imageUrl ? (
                         <img
                           src={product.imageUrl}
@@ -437,111 +437,95 @@ export function ProductList({
                           className="h-full w-full object-cover transition-transform group-hover:scale-105"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-4xl" style={{ color: c.earth300 }}>
+                        <div className="flex h-full w-full items-center justify-center text-3xl" style={{ color: c.earth300 }}>
                           📦
                         </div>
                       )}
 
                       {/* Checkbox */}
-                      <div className="absolute left-2 top-2">
+                      <div className="absolute left-1.5 top-1.5">
                         <input
                           type="checkbox"
                           checked={selectedIds.has(product.id)}
                           onChange={() => handleSelectProduct(product.id)}
-                          className="h-5 w-5 cursor-pointer rounded border-2 border-white bg-white/90 backdrop-blur-sm"
+                          className="h-4 w-4 cursor-pointer rounded border-2 border-white bg-white/90 backdrop-blur-sm"
                         />
                       </div>
 
                       {/* Status Badge */}
-                      <div className="absolute right-2 top-2">
+                      <div className="absolute right-1.5 top-1.5">
                         <span
-                          className="rounded-full px-2 py-1 text-xs font-medium"
+                          className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
                           style={{ backgroundColor: statusStyle.bg, color: statusStyle.text }}
                         >
                           {statusStyle.label}
                         </span>
                       </div>
 
-                      {/* Action Buttons — always visible on mobile, hover-only on desktop */}
-                      <div className="absolute inset-x-0 bottom-0 flex justify-center gap-2 bg-gradient-to-t from-black/60 to-transparent p-3 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+                      {/* Action Buttons */}
+                      <div className="absolute inset-x-0 bottom-0 flex justify-center gap-1.5 bg-gradient-to-t from-black/60 to-transparent p-2 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                         <button
                           onClick={() => onEditProduct?.(product.id)}
-                          className="rounded-lg bg-white/90 p-2 backdrop-blur-sm transition-all hover:bg-white"
+                          className="rounded bg-white/90 p-1.5 backdrop-blur-sm transition-all hover:bg-white"
                           style={{ color: c.primary500 }}
                           title="Edit"
                         >
-                          <Edit2 className="h-4 w-4" />
+                          <Edit2 className="h-3 w-3" />
                         </button>
                         <button
                           onClick={() => onDuplicateProduct?.(product.id)}
-                          className="rounded-lg bg-white/90 p-2 backdrop-blur-sm transition-all hover:bg-white"
+                          className="rounded bg-white/90 p-1.5 backdrop-blur-sm transition-all hover:bg-white"
                           style={{ color: c.earth600 }}
                           title="Duplicate"
                         >
-                          <Copy className="h-4 w-4" />
+                          <Copy className="h-3 w-3" />
                         </button>
                         <button
                           onClick={() => onDeleteProduct?.(product.id)}
-                          className="rounded-lg bg-white/90 p-2 backdrop-blur-sm transition-all hover:bg-white"
+                          className="rounded bg-white/90 p-1.5 backdrop-blur-sm transition-all hover:bg-white"
                           style={{ color: c.error }}
                           title="Delete"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3 w-3" />
                         </button>
                       </div>
                     </div>
 
                     {/* Content */}
-                    <div className="p-4">
-                      <div className="mb-2">
+                    <div className="p-2.5">
+                      {/* Stock pill */}
+                      <div className="mb-1.5">
                         <span
-                          className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium"
+                          className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
                           style={{ backgroundColor: stockStyle.bg, color: stockStyle.text }}
                         >
-                          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: stockStyle.text }} />
+                          <span className="h-1 w-1 rounded-full" style={{ backgroundColor: stockStyle.text }} />
                           {stockStyle.label}
                         </span>
                       </div>
 
-                      <h3 className="truncate text-base font-medium" style={{ fontFamily: fonts.heading, color: c.earth700 }}>
+                      <h3 className="truncate text-xs font-semibold leading-tight" style={{ fontFamily: fonts.heading, color: c.earth700 }}>
                         {product.name}
                       </h3>
-                      <p className="mt-0.5 truncate text-xs" style={{ color: c.earth400 }}>
+                      <p className="mt-0.5 truncate text-[10px]" style={{ color: c.earth400 }}>
                         {product.category}
                       </p>
 
-                      <div className="mt-3 flex items-baseline gap-2">
-                        <span className="text-lg font-semibold" style={{ color: c.primary500 }}>
+                      <div className="mt-2 flex items-baseline gap-1.5 flex-wrap">
+                        <span className="text-sm font-semibold" style={{ color: c.primary500 }}>
                           {formatPrice(product.price)}
                         </span>
                         {discount > 0 && (
-                          <>
-                            <span className="text-sm line-through" style={{ color: c.earth300 }}>
-                              {formatPrice(product.mrp)}
-                            </span>
-                            <span className="text-xs font-medium" style={{ color: c.secondary500 }}>
-                              {discount}% off
-                            </span>
-                          </>
+                          <span className="text-[10px] font-medium" style={{ color: c.secondary500 }}>
+                            {discount}% off
+                          </span>
                         )}
                       </div>
 
-                      <div className="mt-2 flex items-center gap-1">
-                        <Star className="h-3.5 w-3.5 fill-current" style={{ color: c.warning }} />
-                        <span className="text-sm font-medium" style={{ color: c.earth700 }}>
-                          {Number(product.rating || 0).toFixed(1)}
-                        </span>
-                        <span className="text-xs" style={{ color: c.earth400 }}>
-                          ({product.reviewCount || 0})
-                        </span>
-                      </div>
-
-                      {product.variantCount > 0 && (
-                        <div className="mt-2">
-                          <span className="text-xs" style={{ color: c.earth400 }}>
-                            {product.variantCount} variant{product.variantCount > 1 ? "s" : ""}
-                          </span>
-                        </div>
+                      {product.variantCount > 1 && (
+                        <p className="mt-1 text-[10px]" style={{ color: c.earth400 }}>
+                          {product.variantCount} variants
+                        </p>
                       )}
                     </div>
                   </div>

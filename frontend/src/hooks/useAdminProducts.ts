@@ -375,6 +375,7 @@ export function useAdminProducts() {
       const params = new URLSearchParams()
       params.set("limit", String(limit))
       params.set("offset", String(offset))
+      params.set("order", "-created_at")
       params.set("fields", "id,title,subtitle,handle,status,thumbnail,created_at,updated_at,metadata,*variants,*variants.prices,*images,*categories,*tags")
 
       if (filters.search) params.set("q", filters.search)
