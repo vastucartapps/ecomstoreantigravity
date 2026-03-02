@@ -10,6 +10,15 @@ function authHeaders() {
   return { "x-publishable-api-key": PUB_KEY }
 }
 
+function customerAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { "x-publishable-api-key": PUB_KEY }
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("medusa_auth_token")
+    if (token) headers["Authorization"] = `Bearer ${token}`
+  }
+  return headers
+}
+
 function mapMedusaOrder(o: any): Order {
   const year = new Date(o.created_at).getFullYear()
   const mmdd = new Date(o.created_at).toLocaleDateString("en-IN", { month: "2-digit", day: "2-digit" }).replace("/", "")
@@ -158,7 +167,7 @@ export function useDashboardData() {
 
   const fetchLoyalty = useCallback(async (): Promise<LoyaltyBalance> => {
     const res = await fetch(`${BACKEND_URL}/store/customers/me/loyalty`, {
-      headers: authHeaders(),
+      headers: customerAuthHeaders(),
       credentials: "include",
     })
     if (!res.ok) return { balance: 0, transactions: [] }
@@ -167,7 +176,7 @@ export function useDashboardData() {
 
   const fetchBookings = useCallback(async (): Promise<Booking[]> => {
     const res = await fetch(`${BACKEND_URL}/store/customers/me/bookings`, {
-      headers: authHeaders(),
+      headers: customerAuthHeaders(),
       credentials: "include",
     })
     if (!res.ok) return []
@@ -186,11 +195,14 @@ export function useDashboardData() {
   }): Promise<Booking> => {
     const res = await fetch(`${BACKEND_URL}/store/customers/me/bookings`, {
       method: "POST",
-      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      headers: { ...customerAuthHeaders(), "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify(data),
     })
     const result = await res.json()
+    if (!res.ok) {
+      throw new Error(result?.message || "Failed to create booking")
+    }
     return result.booking
   }, [])
 
@@ -217,7 +229,7 @@ export function useDashboardData() {
 
     const res = await fetch(
       `${BACKEND_URL}/store/customers/me/notifications?${params}`,
-      { headers: authHeaders(), credentials: "include" }
+      { headers: customerAuthHeaders(), credentials: "include" }
     )
     if (!res.ok) return { notifications: [], unread_count: 0 }
     return res.json()
@@ -226,7 +238,7 @@ export function useDashboardData() {
   const markNotificationRead = useCallback(async (id?: string) => {
     await fetch(`${BACKEND_URL}/store/customers/me/notifications/mark-read`, {
       method: "POST",
-      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      headers: { ...customerAuthHeaders(), "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify(id ? { notification_id: id } : {}),
     })
@@ -235,7 +247,7 @@ export function useDashboardData() {
   const fetchGiftCards = useCallback(async (): Promise<GiftCard[]> => {
     try {
       const res = await fetch(`${BACKEND_URL}/store/customers/me/gift-cards`, {
-        headers: authHeaders(),
+        headers: customerAuthHeaders(),
         credentials: "include",
       })
       if (!res.ok) return []
