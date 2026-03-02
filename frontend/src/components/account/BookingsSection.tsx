@@ -15,6 +15,32 @@ const STATUS_CONFIG = {
 
 const TIME_SLOTS = ["09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM"]
 
+function toLocalDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
+function parseSlotHour(slot: string): number {
+  const [time, period] = slot.split(" ")
+  let [hour] = time.split(":").map(Number)
+  if (period === "PM" && hour !== 12) hour += 12
+  if (period === "AM" && hour === 12) hour = 0
+  return hour
+}
+
+function getAvailableSlots(selectedDate: string): string[] {
+  if (!selectedDate) return TIME_SLOTS
+  const today = new Date()
+  const todayStr = toLocalDateStr(today)
+  if (selectedDate !== todayStr) return TIME_SLOTS
+  const currentHour = today.getHours()
+  const currentMinute = today.getMinutes()
+  // Require at least 1 hour ahead
+  return TIME_SLOTS.filter((slot) => {
+    const slotHour = parseSlotHour(slot)
+    return slotHour * 60 > currentHour * 60 + currentMinute + 60
+  })
+}
+
 interface BookingFormData {
   serviceTypeId: string
   date: string
@@ -33,15 +59,31 @@ export function BookingsSection() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    Promise.all([
-      fetchBookings(),
-      fetchBookingServiceTypes(),
-    ]).then(([b, types]) => {
+    // Read URL param client-side (safe — this is a "use client" component)
+    const urlParams = new URLSearchParams(window.location.search)
+    const typeFromUrl = urlParams.get("type")
+
+    Promise.all([fetchBookings(), fetchBookingServiceTypes()]).then(([b, types]) => {
       setBookings(b)
       setServiceTypes(types)
+
+      // Auto-select service type from URL param, or if only one exists
+      const autoId = typeFromUrl && types.find((t) => t.id === typeFromUrl)
+        ? typeFromUrl
+        : types.length === 1
+        ? types[0].id
+        : ""
+
+      if (autoId) {
+        setForm((prev) => ({ ...prev, serviceTypeId: autoId }))
+        setShowForm(true)
+      }
+
       setIsLoading(false)
     }).catch(() => setIsLoading(false))
   }, [])
+
+  const availableSlots = getAvailableSlots(form.date)
 
   const handleBook = async () => {
     if (!form.serviceTypeId || !form.date || !form.time) {
@@ -79,9 +121,7 @@ export function BookingsSection() {
     }
   }
 
-  const minDate = new Date()
-  minDate.setDate(minDate.getDate() + 1)
-  const minDateStr = minDate.toISOString().split("T")[0]
+  const minDateStr = toLocalDateStr(new Date())
 
   return (
     <div className="space-y-5">
@@ -128,7 +168,8 @@ export function BookingsSection() {
                   {serviceTypes.map((type) => (
                     <button
                       key={type.id}
-                      onClick={() => setForm({ ...form, serviceTypeId: type.id })}
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, serviceTypeId: type.id }))}
                       className="w-full flex items-center justify-between p-3 rounded-xl text-left transition-all"
                       style={{
                         border: `1.5px solid ${form.serviceTypeId === type.id ? primary[500] : "#e8e0d8"}`,
@@ -166,7 +207,16 @@ export function BookingsSection() {
                   type="date"
                   min={minDateStr}
                   value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                  onChange={(e) => {
+                    const newDate = e.target.value
+                    const available = getAvailableSlots(newDate)
+                    setForm((prev) => ({
+                      ...prev,
+                      date: newDate,
+                      // Clear time if the previously selected slot is no longer available
+                      time: available.includes(prev.time) ? prev.time : "",
+                    }))
+                  }}
                   className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
                   style={{ border: "1.5px solid #e8e0d8", color: earth[700], fontFamily: fonts.body, background: bg.card }}
                   onFocus={(e) => (e.currentTarget.style.borderColor = primary[500])}
@@ -179,21 +229,28 @@ export function BookingsSection() {
                 <label className="block text-xs font-semibold mb-2" style={{ color: earth[600] }}>
                   Preferred Time *
                 </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {TIME_SLOTS.map((slot) => (
-                    <button
-                      key={slot}
-                      onClick={() => setForm({ ...form, time: slot })}
-                      className="py-2 rounded-lg text-xs font-medium transition-all"
-                      style={{
-                        background: form.time === slot ? primary[500] : "#f0ebe4",
-                        color: form.time === slot ? "#fff" : earth[600],
-                      }}
-                    >
-                      {slot}
-                    </button>
-                  ))}
-                </div>
+                {availableSlots.length === 0 ? (
+                  <p className="text-xs px-3 py-2 rounded-lg" style={{ color: earth[400], background: "#f9f6f2" }}>
+                    No slots available for today — please select a future date.
+                  </p>
+                ) : (
+                  <div className="grid grid-cols-4 gap-2">
+                    {availableSlots.map((slot) => (
+                      <button
+                        key={slot}
+                        type="button"
+                        onClick={() => setForm((prev) => ({ ...prev, time: slot }))}
+                        className="py-2 rounded-lg text-xs font-medium transition-all"
+                        style={{
+                          background: form.time === slot ? primary[500] : "#f0ebe4",
+                          color: form.time === slot ? "#fff" : earth[600],
+                        }}
+                      >
+                        {slot}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Notes */}
@@ -203,7 +260,7 @@ export function BookingsSection() {
                 </label>
                 <textarea
                   value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
                   placeholder="Any specific concerns or questions..."
                   rows={3}
                   className="w-full px-4 py-2.5 rounded-xl text-sm outline-none resize-none"
@@ -216,10 +273,21 @@ export function BookingsSection() {
               {error && <p className="text-xs px-3 py-2 rounded-lg" style={{ color: "#EF4444", background: "#FEF2F2" }}>{error}</p>}
 
               <div className="flex gap-3 pt-1">
-                <button onClick={() => setShowForm(false)} className="flex-1 py-3 rounded-xl text-sm font-semibold" style={{ border: "1.5px solid #e8e0d8", color: earth[600] }}>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold"
+                  style={{ border: "1.5px solid #e8e0d8", color: earth[600] }}
+                >
                   Cancel
                 </button>
-                <button onClick={handleBook} disabled={saving} className="flex-1 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50" style={{ background: primary[500] }}>
+                <button
+                  type="button"
+                  onClick={handleBook}
+                  disabled={saving}
+                  className="flex-1 py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+                  style={{ background: primary[500] }}
+                >
                   {saving ? "Booking..." : "Confirm Booking"}
                 </button>
               </div>
@@ -244,6 +312,7 @@ export function BookingsSection() {
           </p>
           {serviceTypes.length > 0 && (
             <button
+              type="button"
               onClick={() => setShowForm(true)}
               className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
               style={{ background: primary[500] }}
