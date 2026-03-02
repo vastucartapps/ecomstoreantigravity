@@ -62,6 +62,15 @@ function isActiveItem(href: string, pathname: string): boolean {
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
+function customerHeaders(): Record<string, string> {
+  const h: Record<string, string> = { "x-publishable-api-key": PUB_KEY }
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("medusa_auth_token")
+    if (token) h["Authorization"] = `Bearer ${token}`
+  }
+  return h
+}
+
 interface SidebarContentProps {
   user: { name: string; email: string; avatarUrl?: string | null }
   pathname: string
@@ -302,7 +311,7 @@ export default function CustomerDashboardShell({ children }: CustomerDashboardSh
     const fetchCount = async () => {
       try {
         const res = await fetch(`${BACKEND_URL}/store/customers/me/notifications?limit=1`, {
-          headers: { "x-publishable-api-key": PUB_KEY },
+          headers: customerHeaders(),
           credentials: "include",
         })
         if (res.ok) {

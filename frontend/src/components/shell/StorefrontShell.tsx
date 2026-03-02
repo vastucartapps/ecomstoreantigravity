@@ -14,6 +14,15 @@ import { primary, secondary, earth, bg, gradients, fonts } from "./theme"
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
+function customerHeaders(): Record<string, string> {
+  const h: Record<string, string> = { "x-publishable-api-key": PUB_KEY }
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("medusa_auth_token")
+    if (token) h["Authorization"] = `Bearer ${token}`
+  }
+  return h
+}
+
 interface StorefrontShellProps {
   children: React.ReactNode
   categories?: { name: string; handle: string; image_url?: string }[]
@@ -57,7 +66,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
     const fetchCount = async () => {
       try {
         const res = await fetch(`${BACKEND_URL}/store/customers/me/notifications?limit=5`, {
-          headers: { "x-publishable-api-key": PUB_KEY },
+          headers: customerHeaders(),
           credentials: "include",
         })
         if (res.ok) {
@@ -87,7 +96,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
     try {
       await fetch(`${BACKEND_URL}/store/customers/me/notifications/mark-read`, {
         method: "POST",
-        headers: { "x-publishable-api-key": PUB_KEY, "Content-Type": "application/json" },
+        headers: { ...customerHeaders(), "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({}),
       })
