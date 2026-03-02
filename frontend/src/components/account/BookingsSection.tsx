@@ -15,8 +15,16 @@ const STATUS_CONFIG = {
 
 const TIME_SLOTS = ["09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "02:00 PM", "03:00 PM", "04:00 PM", "05:00 PM"]
 
-function toLocalDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+// All consultations are India-based — use IST (UTC+5:30) for all time comparisons
+const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000
+
+function getISTDate(): Date {
+  return new Date(Date.now() + IST_OFFSET_MS)
+}
+
+function toISTDateStr(): string {
+  const d = getISTDate()
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`
 }
 
 function parseSlotHour(slot: string): number {
@@ -29,12 +37,12 @@ function parseSlotHour(slot: string): number {
 
 function getAvailableSlots(selectedDate: string): string[] {
   if (!selectedDate) return TIME_SLOTS
-  const today = new Date()
-  const todayStr = toLocalDateStr(today)
-  if (selectedDate !== todayStr) return TIME_SLOTS
-  const currentHour = today.getHours()
-  const currentMinute = today.getMinutes()
-  // Require at least 1 hour ahead
+  const todayIST = toISTDateStr()
+  if (selectedDate !== todayIST) return TIME_SLOTS
+  const ist = getISTDate()
+  const currentHour = ist.getUTCHours()
+  const currentMinute = ist.getUTCMinutes()
+  // Require at least 1 hour ahead (in IST)
   return TIME_SLOTS.filter((slot) => {
     const slotHour = parseSlotHour(slot)
     return slotHour * 60 > currentHour * 60 + currentMinute + 60
@@ -121,7 +129,7 @@ export function BookingsSection() {
     }
   }
 
-  const minDateStr = toLocalDateStr(new Date())
+  const minDateStr = toISTDateStr()
 
   return (
     <div className="space-y-5">
