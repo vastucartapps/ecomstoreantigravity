@@ -10,6 +10,7 @@ import type {
   MarketingSlide,
   AboutConfig,
   ContactConfig,
+  ConsultationConfig,
 } from "@/types/admin-storefront"
 
 const DEFAULT_ANNOUNCEMENT: Announcement = {
@@ -47,6 +48,7 @@ const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
   { id: "hs-6", name: "Deals & Offers", type: "deals", enabled: false, order: 6 },
   { id: "hs-7", name: "Customer Testimonials", type: "testimonials", enabled: true, order: 7 },
   { id: "hs-8", name: "Newsletter Signup", type: "newsletter", enabled: true, order: 8 },
+  { id: "hs-9", name: "Consultation CTA", type: "consultations", enabled: true, order: 9 },
 ]
 
 const DEFAULT_CONTENT_PAGES: ContentPage[] = [
@@ -180,25 +182,85 @@ const DEFAULT_CONTACT_CONFIG: ContactConfig = {
 }
 
 
+const DEFAULT_CONSULTATION_CONFIG: ConsultationConfig = {
+  homepageSectionEnabled: true,
+  consultationsRouteEnabled: true,
+  // Homepage CTA copy
+  homepageEyebrow: "Certified Vastu Consultations",
+  homepageHeadline: "Your Space Has Energy.",
+  homepageHeadlineAccent: "Make It Work For You.",
+  homepageSubcopy: "Most homes quietly sabotage their owners \u2014 disrupting sleep, stalling finances, straining relationships. Our certified Vastu experts diagnose your exact floor plan and prescribe remedies that create real, measurable change.",
+  homepageBenefits: [
+    "Personalised to your exact floor plan \u2014 not generic advice",
+    "Online & in-person sessions, pan-India coverage",
+    "30-day follow-up support included with every booking",
+  ],
+  homepagePrimaryCta: "Explore All Consultations",
+  homepageSecondaryCta: "Free Discovery Call",
+  homepageStats: [
+    { value: "500+", label: "Families transformed across India" },
+    { value: "4.9", label: "avg rating" },
+    { value: "20+", label: "Cities covered pan India" },
+    { value: "15+", label: "Years of Vastu expertise" },
+  ],
+  homepageTestimonial: {
+    quote: "Three simple changes after our consultation. Within 60 days \u2014 a promotion, better sleep, and the constant stress at home just vanished.",
+    attribution: "Priya M., Pune",
+  },
+  // Dedicated page hero copy
+  pageEyebrow: "Vastu Shastra \u00B7 Est. 2019",
+  pageHeadline: "Your Home Has Energy.\nIs It Working For You\n\u2014 or Against You?",
+  pageSubheadline: "Most people live with invisible friction in their space \u2014 blocked finances, disrupted sleep, strained relationships. Our certified Vastu experts diagnose your exact floor plan and prescribe remedies that create measurable change.",
+  pageFeatureChecklist: [
+    "Personalised to your exact floor plan \u2014 not generic advice",
+    "Certified experts, 15+ years of practice, 500+ families served",
+    "Online & in-person sessions, pan-India \u00B7 30-day follow-up included",
+  ],
+  pageStats: [
+    { value: "500+", label: "Families Helped" },
+    { value: "4.9\u2605", label: "Avg Rating" },
+    { value: "20+", label: "Cities" },
+    { value: "30-day", label: "Follow-up Included" },
+  ],
+  pagePrimaryCta: "See All Consultations",
+  pageSecondaryCta: "Talk to an Expert First",
+  pageProcessSteps: [
+    { title: "Share Your Floor Plan", description: "Upload your layout or describe your home, office, or plot \u2014 we handle the rest" },
+    { title: "Expert Vastu Diagnosis", description: "Your expert identifies energy blockages, wrong directions, and zone imbalances" },
+    { title: "Written Report + Follow-up", description: "Get a detailed remedy plan delivered in writing, plus a 30-day check-in call \u2014 guaranteed" },
+  ],
+  pageTrustBadgeTitle: "Certified & Trusted",
+  pageTrustBadgeSubtitle: "Vaastu International \u00B7 Since 2019",
+}
+
 async function readStore(): Promise<{ id: string; config: StorefrontConfig; rawMetadata: Record<string, unknown> }> {
   const res = await adminFetch<{ stores: Array<{ id: string; metadata?: Record<string, unknown> }> }>("/admin/stores")
   const store = res.stores?.[0]
   const rawMetadata: Record<string, unknown> = store?.metadata ?? {}
   const saved = rawMetadata.storefront_config as StorefrontConfig | undefined
 
+  // Merge saved homepage sections with any new defaults that were added later
+  let mergedSections = DEFAULT_HOMEPAGE_SECTIONS
+  if (saved?.homepageSections?.length) {
+    const savedIds = new Set(saved.homepageSections.map((s: HomepageSection) => s.id))
+    const newDefaults = DEFAULT_HOMEPAGE_SECTIONS.filter((d) => !savedIds.has(d.id))
+    mergedSections = [...saved.homepageSections, ...newDefaults]
+  }
+
   const config: StorefrontConfig = saved
     ? {
         announcement: { ...DEFAULT_ANNOUNCEMENT, ...saved.announcement },
         branding: { ...DEFAULT_BRANDING, ...saved.branding },
-        homepageSections: saved.homepageSections?.length
-          ? saved.homepageSections
-          : DEFAULT_HOMEPAGE_SECTIONS,
+        homepageSections: mergedSections,
         contentPages: saved.contentPages?.length
           ? saved.contentPages
           : DEFAULT_CONTENT_PAGES,
         footerConfig: saved.footerConfig
           ? saved.footerConfig
           : DEFAULT_FOOTER,
+        consultationConfig: saved.consultationConfig
+          ? { ...DEFAULT_CONSULTATION_CONFIG, ...saved.consultationConfig }
+          : DEFAULT_CONSULTATION_CONFIG,
       }
     : {
         announcement: DEFAULT_ANNOUNCEMENT,
@@ -206,6 +268,7 @@ async function readStore(): Promise<{ id: string; config: StorefrontConfig; rawM
         homepageSections: DEFAULT_HOMEPAGE_SECTIONS,
         contentPages: DEFAULT_CONTENT_PAGES,
         footerConfig: DEFAULT_FOOTER,
+        consultationConfig: DEFAULT_CONSULTATION_CONFIG,
       }
 
   return { id: store?.id || "", config, rawMetadata }
@@ -367,6 +430,18 @@ export function useAdminStorefront() {
     })
   }
 
+  // ── Consultation Config ──────────────────────────────────────────────────────
+
+  async function fetchConsultationConfig(): Promise<ConsultationConfig> {
+    const { config } = await readStore()
+    return config.consultationConfig
+  }
+
+  async function saveConsultationConfig(consultationConfig: ConsultationConfig): Promise<void> {
+    const { id, config, rawMetadata } = await readStore()
+    await writeConfig(id, { ...config, consultationConfig }, rawMetadata)
+  }
+
   return {
     fetchConfig,
     updateAnnouncement,
@@ -388,5 +463,7 @@ export function useAdminStorefront() {
     saveAboutConfig,
     fetchContactConfig,
     saveContactConfig,
+    fetchConsultationConfig,
+    saveConsultationConfig,
   }
 }

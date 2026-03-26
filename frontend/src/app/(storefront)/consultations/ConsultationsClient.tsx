@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Clock, Monitor, MapPin, Users, ChevronLeft, ChevronRight, Check, ArrowRight, Star, Phone, FileText, Search, Zap, Award } from "lucide-react"
 import { normalizeImageUrl } from "@/lib/image-url"
 import type { ServiceType } from "./page"
+import type { ConsultationConfig } from "@/types/admin-storefront"
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -215,28 +216,21 @@ function ServiceCard({ type }: { type: ServiceType }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-const HERO_STEPS = [
-  {
-    step: "01",
-    Icon: FileText,
-    title: "Share Your Floor Plan",
-    desc: "Upload your layout or describe your home, office, or plot — we handle the rest",
-  },
-  {
-    step: "02",
-    Icon: Search,
-    title: "Expert Vastu Diagnosis",
-    desc: "Your expert identifies energy blockages, wrong directions, and zone imbalances",
-  },
-  {
-    step: "03",
-    Icon: Zap,
-    title: "Written Report + Follow-up",
-    desc: "Get a detailed remedy plan delivered in writing, plus a 30-day check-in call — guaranteed",
-  },
-] as const
+const STEP_ICONS = [FileText, Search, Zap]
 
-export default function ConsultationsClient({ serviceTypes }: { serviceTypes: ServiceType[] }) {
+const DEFAULT_STEPS = [
+  { title: "Share Your Floor Plan", description: "Upload your layout or describe your home, office, or plot \u2014 we handle the rest" },
+  { title: "Expert Vastu Diagnosis", description: "Your expert identifies energy blockages, wrong directions, and zone imbalances" },
+  { title: "Written Report + Follow-up", description: "Get a detailed remedy plan delivered in writing, plus a 30-day check-in call \u2014 guaranteed" },
+]
+
+export default function ConsultationsClient({ serviceTypes, heroConfig: hc }: { serviceTypes: ServiceType[]; heroConfig?: ConsultationConfig | null }) {
+  const steps = (hc?.pageProcessSteps?.length ? hc.pageProcessSteps : DEFAULT_STEPS).map((s, i) => ({
+    step: String(i + 1).padStart(2, "0"),
+    Icon: STEP_ICONS[i] || Zap,
+    title: s.title,
+    desc: s.description,
+  }))
   return (
     <div style={{ minHeight: "100vh", background: "#fffbf5" }}>
 
@@ -289,7 +283,7 @@ export default function ConsultationsClient({ serviceTypes }: { serviceTypes: Se
               <div className="flex items-center gap-3" style={{ marginBottom: 28 }}>
                 <div style={{ width: 32, height: 2, background: "#c85103", borderRadius: 1, flexShrink: 0 }} />
                 <span style={{ color: "#b89c7a", fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" }}>
-                  Vastu Shastra · Est. 2019
+                  {hc?.pageEyebrow || "Vastu Shastra \u00B7 Est. 2019"}
                 </span>
               </div>
 
@@ -305,26 +299,26 @@ export default function ConsultationsClient({ serviceTypes }: { serviceTypes: Se
                   letterSpacing: "-0.01em",
                 }}
               >
-                Your Home Has Energy.
-                <br />Is It Working{" "}
-                <span style={{ color: "#c85103" }}>For You</span>
-                <br />— or Against You?
+                {(hc?.pageHeadline || "Your Home Has Energy.\nIs It Working For You\n\u2014 or Against You?").split("\n").map((line, i, arr) => (
+                  <span key={i}>
+                    {line}
+                    {i < arr.length - 1 && <br />}
+                  </span>
+                ))}
               </h1>
 
               {/* Sub-headline */}
               <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 17, lineHeight: 1.75, maxWidth: 520, marginBottom: 28 }}>
-                Most people live with invisible friction in their space — blocked finances, disrupted sleep,
-                strained relationships. Our certified Vastu experts diagnose your exact floor plan and
-                prescribe remedies that create measurable change.
+                {hc?.pageSubheadline || "Most people live with invisible friction in their space \u2014 blocked finances, disrupted sleep, strained relationships. Our certified Vastu experts diagnose your exact floor plan and prescribe remedies that create measurable change."}
               </p>
 
               {/* Feature checklist */}
               <ul className="space-y-3" style={{ marginBottom: 36 }}>
-                {[
-                  "Personalised to your exact floor plan — not generic advice",
+                {(hc?.pageFeatureChecklist || [
+                  "Personalised to your exact floor plan \u2014 not generic advice",
                   "Certified experts, 15+ years of practice, 500+ families served",
-                  "Online & in-person sessions, pan-India · 30-day follow-up included",
-                ].map((item) => (
+                  "Online & in-person sessions, pan-India \u00B7 30-day follow-up included",
+                ]).map((item) => (
                   <li key={item} className="flex items-start gap-3">
                     <span
                       className="flex-shrink-0 flex items-center justify-center"
@@ -349,7 +343,7 @@ export default function ConsultationsClient({ serviceTypes }: { serviceTypes: Se
                   className="inline-flex items-center justify-center gap-2 rounded-2xl font-bold text-white transition-opacity hover:opacity-90"
                   style={{ background: "#c85103", padding: "15px 30px", fontSize: 15 }}
                 >
-                  See All Consultations
+                  {hc?.pagePrimaryCta || "See All Consultations"}
                   <ArrowRight className="w-4 h-4" />
                 </a>
                 <Link
@@ -364,7 +358,7 @@ export default function ConsultationsClient({ serviceTypes }: { serviceTypes: Se
                   }}
                 >
                   <Phone className="w-4 h-4" />
-                  Talk to an Expert First
+                  {hc?.pageSecondaryCta || "Talk to an Expert First"}
                 </Link>
               </div>
 
@@ -373,12 +367,12 @@ export default function ConsultationsClient({ serviceTypes }: { serviceTypes: Se
                 className="flex flex-wrap"
                 style={{ gap: "20px 40px", paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.1)" }}
               >
-                {[
-                  { num: "500+", label: "Families Helped" },
-                  { num: "4.9★", label: "Avg Rating" },
-                  { num: "20+", label: "Cities" },
-                  { num: "30-day", label: "Follow-up Included" },
-                ].map(({ num, label }) => (
+                {(hc?.pageStats || [
+                  { value: "500+", label: "Families Helped" },
+                  { value: "4.9\u2605", label: "Avg Rating" },
+                  { value: "20+", label: "Cities" },
+                  { value: "30-day", label: "Follow-up Included" },
+                ]).map(({ value: num, label }) => (
                   <div key={label}>
                     <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", lineHeight: 1.1 }}>{num}</div>
                     <div style={{ fontSize: 12, color: "rgba(255,255,255,0.38)", marginTop: 3 }}>{label}</div>
@@ -410,7 +404,7 @@ export default function ConsultationsClient({ serviceTypes }: { serviceTypes: Se
                   How We Help You
                 </p>
 
-                {HERO_STEPS.map(({ step, Icon, title, desc }, i) => (
+                {steps.map(({ step, Icon, title, desc }, i) => (
                   <div key={step} style={{ display: "flex", gap: 16 }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                       <div
@@ -423,7 +417,7 @@ export default function ConsultationsClient({ serviceTypes }: { serviceTypes: Se
                       >
                         <Icon className="w-5 h-5" style={{ color: i === 0 ? "#fff" : "rgba(255,255,255,0.45)" }} />
                       </div>
-                      {i < 2 && (
+                      {i < steps.length - 1 && (
                         <div style={{ width: 1, flex: 1, minHeight: 32, background: "rgba(255,255,255,0.09)", margin: "8px 0" }} />
                       )}
                     </div>
@@ -459,8 +453,8 @@ export default function ConsultationsClient({ serviceTypes }: { serviceTypes: Se
                     <Award className="w-5 h-5" style={{ color: "#c85103" }} />
                   </div>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>Certified & Trusted</div>
-                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.38)" }}>Vaastu International · Since 2019</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{hc?.pageTrustBadgeTitle || "Certified & Trusted"}</div>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.38)" }}>{hc?.pageTrustBadgeSubtitle || "Vaastu International \u00B7 Since 2019"}</div>
                   </div>
                 </div>
               </div>

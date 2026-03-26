@@ -13,6 +13,7 @@ import type {
   MarketingSlide,
   AboutConfig,
   ContactConfig,
+  ConsultationConfig,
 } from "@/types/admin-storefront"
 
 export default function StorefrontPage() {
@@ -22,6 +23,7 @@ export default function StorefrontPage() {
   const [marketingSlides, setMarketingSlides] = useState<MarketingSlide[]>([])
   const [aboutConfig, setAboutConfig] = useState<AboutConfig | null>(null)
   const [contactConfig, setContactConfig] = useState<ContactConfig | null>(null)
+  const [consultationConfig, setConsultationConfig] = useState<ConsultationConfig | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
@@ -35,18 +37,20 @@ export default function StorefrontPage() {
     setIsLoading(true)
     setError(null)
     try {
-      const [c, hs, ms, ac, cc] = await Promise.all([
+      const [c, hs, ms, ac, cc, conc] = await Promise.all([
         hook.fetchConfig(),
         hook.fetchHeroSlides(),
         hook.fetchMarketingSlides(),
         hook.fetchAboutConfig(),
         hook.fetchContactConfig(),
+        hook.fetchConsultationConfig(),
       ])
       setConfig(c)
       setHeroSlides(hs)
       setMarketingSlides(ms)
       setAboutConfig(ac)
       setContactConfig(cc)
+      setConsultationConfig(conc)
     } catch (e: any) {
       setError(e.message || "Failed to load storefront settings")
     } finally {
@@ -76,7 +80,7 @@ export default function StorefrontPage() {
     )
   }
 
-  if (error || !config || !aboutConfig || !contactConfig) {
+  if (error || !config || !aboutConfig || !contactConfig || !consultationConfig) {
     return (
       <div style={{ textAlign: "center", padding: "80px 0" }}>
         <p style={{ color: "#EF4444", marginBottom: "16px", fontSize: "14px" }}>
@@ -130,6 +134,7 @@ export default function StorefrontPage() {
         marketingSlides={marketingSlides}
         aboutConfig={aboutConfig}
         contactConfig={contactConfig}
+        consultationConfig={consultationConfig}
         onUpdateAnnouncement={async (a: Announcement) => {
           try {
             await hook.updateAnnouncement(a)
@@ -290,6 +295,15 @@ export default function StorefrontPage() {
             showToast("Contact page saved")
           } catch {
             showToast("Failed to save contact page", "error")
+          }
+        }}
+        onSaveConsultationConfig={async (c: ConsultationConfig) => {
+          try {
+            await hook.saveConsultationConfig(c)
+            setConsultationConfig(c)
+            showToast("Consultation settings saved")
+          } catch {
+            showToast("Failed to save consultation settings", "error")
           }
         }}
       />

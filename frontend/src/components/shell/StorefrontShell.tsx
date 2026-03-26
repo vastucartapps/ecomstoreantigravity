@@ -7,7 +7,7 @@ import { Search, Heart, ShoppingBag, User, Menu, X, Bell, ExternalLink } from "l
 import { useAuth } from "@/providers/auth-provider"
 import { useCart } from "@/providers/cart-provider"
 import { useWishlist } from "@/providers/wishlist-provider"
-import { useAnnouncement, useBranding, useStorefrontFooter } from "@/providers/announcement-provider"
+import { useAnnouncement, useBranding, useStorefrontFooter, useConsultationsEnabled } from "@/providers/announcement-provider"
 import { CartDrawer } from "@/components/storefront/cart/CartDrawer"
 import { primary, secondary, earth, bg, gradients, fonts } from "./theme"
 
@@ -45,6 +45,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
   } = useAnnouncement()
   const branding = useBranding()
   const footerConfig = useStorefrontFooter()
+  const consultationsEnabled = useConsultationsEnabled()
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
@@ -424,7 +425,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
               {[
                 { label: "Home", href: "/" },
                 { label: "Shop", href: "/search" },
-                { label: "Consultations", href: "/consultations" },
+                ...(consultationsEnabled ? [{ label: "Consultations", href: "/consultations" }] : []),
                 { label: "About", href: "/about" },
                 { label: "Contact", href: "/contact" },
               ].map((nav) => {
@@ -778,7 +779,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                 {[
                   { label: "Home", href: "/" },
                   { label: "Shop", href: "/search" },
-                  { label: "Consultations", href: "/consultations" },
+                  ...(consultationsEnabled ? [{ label: "Consultations", href: "/consultations" }] : []),
                   { label: "About Us", href: "/about" },
                   { label: "Contact", href: "/contact" },
                 ].map((link) => (
@@ -1060,7 +1061,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
               </h3>
               <ul className="space-y-2.5">
                 {[
-                  { label: "Vastu Consultation", href: "/consultations" },
+                  ...(consultationsEnabled ? [{ label: "Vastu Consultation", href: "/consultations" }] : []),
                   { label: "Blog & Articles", href: "/blog" },
                   { label: "Gift Cards", href: "/gift-cards" },
                   { label: "Loyalty Rewards", href: "/account/loyalty" },

@@ -43,11 +43,12 @@ import type {
   MarketingSlide,
   AboutConfig,
   ContactConfig,
+  ConsultationConfig,
   FaqItem,
 } from "@/types/admin-storefront"
 import { normalizeImageUrl } from "@/lib/image-url"
 
-type ActiveTab = "announcement" | "branding" | "homepage" | "content" | "footer" | "hero" | "login-slides" | "about-contact"
+type ActiveTab = "announcement" | "branding" | "homepage" | "content" | "footer" | "hero" | "login-slides" | "about-contact" | "consultations"
 
 const cardStyle: React.CSSProperties = {
   background: `linear-gradient(#ffffff, #ffffff) padding-box, linear-gradient(90deg, ${primary[500]}, #2a7a72, ${secondary[500]}) border-box`,
@@ -396,6 +397,8 @@ export function AdminStorefront({
   onDeleteMarketingSlide,
   onSaveAboutConfig,
   onSaveContactConfig,
+  consultationConfig: initialConsultationConfig,
+  onSaveConsultationConfig,
 }: AdminStorefrontProps) {
   const [activeTab, setActiveTab] = useState<ActiveTab>("announcement")
 
@@ -436,8 +439,13 @@ export function AdminStorefront({
   const [savingAbout, setSavingAbout] = useState(false)
   const [savingContact, setSavingContact] = useState(false)
 
+  // Consultation state
+  const [consultationConfig, setConsultationConfig] = useState<ConsultationConfig>(initialConsultationConfig)
+  const [savingConsultation, setSavingConsultation] = useState(false)
+
   useEffect(() => { setAboutConfig(initialAboutConfig) }, [initialAboutConfig])
   useEffect(() => { setContactConfig(initialContactConfig) }, [initialContactConfig])
+  useEffect(() => { setConsultationConfig(initialConsultationConfig) }, [initialConsultationConfig])
 
   // Content page editor
   const [editingPageId, setEditingPageId] = useState<string | null>(null)
@@ -483,6 +491,7 @@ export function AdminStorefront({
     { key: "content", label: "Content Pages", Icon: FileText },
     { key: "footer", label: "Footer", Icon: Info },
     { key: "about-contact", label: "About & Contact", Icon: Info },
+    { key: "consultations", label: "Consultations", Icon: Calendar },
   ]
 
   const sortedSections = [...sections].sort((a, b) => a.order - b.order)
@@ -2610,6 +2619,242 @@ export function AdminStorefront({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ═══════════════════════════ CONSULTATIONS TAB ══════════════════════════ */}
+      {activeTab === "consultations" && (
+        <div style={cardStyle}>
+          <h2 style={{ fontFamily: fonts.heading, color: primary[900], fontSize: "1.1rem", fontWeight: 600, marginBottom: "24px" }}>
+            Consultation Settings
+          </h2>
+
+          {/* ── Master Toggles ── */}
+          <div style={{ marginBottom: "32px", padding: "20px", background: primary[50], borderRadius: "12px", border: `1px solid ${primary[100]}` }}>
+            <p style={{ fontSize: "13px", fontWeight: 700, color: primary[700], textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "16px" }}>
+              Visibility Controls
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* Homepage toggle */}
+              <label style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }}>
+                <div
+                  onClick={() => setConsultationConfig({ ...consultationConfig, homepageSectionEnabled: !consultationConfig.homepageSectionEnabled })}
+                  style={{
+                    width: 44, height: 24, borderRadius: 12, position: "relative", cursor: "pointer",
+                    background: consultationConfig.homepageSectionEnabled ? primary[500] : earth[300],
+                    transition: "background 200ms",
+                  }}
+                >
+                  <div style={{
+                    position: "absolute", top: 2, left: consultationConfig.homepageSectionEnabled ? 22 : 2,
+                    width: 20, height: 20, borderRadius: 10, background: "#fff",
+                    transition: "left 200ms", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                  }} />
+                </div>
+                <div>
+                  <span style={{ fontSize: "14px", fontWeight: 600, color: earth[700] }}>Show consultation CTA on homepage</span>
+                  <p style={{ fontSize: "12px", color: earth[400], marginTop: "2px" }}>
+                    The promotional block with stats, testimonial, and CTAs
+                  </p>
+                </div>
+              </label>
+              {/* Route toggle */}
+              <label style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }}>
+                <div
+                  onClick={() => setConsultationConfig({ ...consultationConfig, consultationsRouteEnabled: !consultationConfig.consultationsRouteEnabled })}
+                  style={{
+                    width: 44, height: 24, borderRadius: 12, position: "relative", cursor: "pointer",
+                    background: consultationConfig.consultationsRouteEnabled ? primary[500] : earth[300],
+                    transition: "background 200ms",
+                  }}
+                >
+                  <div style={{
+                    position: "absolute", top: 2, left: consultationConfig.consultationsRouteEnabled ? 22 : 2,
+                    width: 20, height: 20, borderRadius: 10, background: "#fff",
+                    transition: "left 200ms", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                  }} />
+                </div>
+                <div>
+                  <span style={{ fontSize: "14px", fontWeight: 600, color: earth[700] }}>Enable /consultations route</span>
+                  <p style={{ fontSize: "12px", color: earth[400], marginTop: "2px" }}>
+                    Hides the page and removes &ldquo;Consultations&rdquo; from all navigation when off
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* ── Homepage CTA Copy ── */}
+          <div style={{ marginBottom: "32px" }}>
+            <p style={{ fontSize: "13px", fontWeight: 700, color: primary[700], textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "16px" }}>
+              Homepage CTA Section
+            </p>
+            <div style={{ display: "grid", gap: "16px" }}>
+              <div>
+                <label style={labelStyle}>Eyebrow Text</label>
+                <input type="text" value={consultationConfig.homepageEyebrow} onChange={(e) => setConsultationConfig({ ...consultationConfig, homepageEyebrow: e.target.value })} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <label style={labelStyle}>Headline</label>
+                  <input type="text" value={consultationConfig.homepageHeadline} onChange={(e) => setConsultationConfig({ ...consultationConfig, homepageHeadline: e.target.value })} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Headline Accent</label>
+                  <input type="text" value={consultationConfig.homepageHeadlineAccent} onChange={(e) => setConsultationConfig({ ...consultationConfig, homepageHeadlineAccent: e.target.value })} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>Sub-copy</label>
+                <textarea value={consultationConfig.homepageSubcopy} onChange={(e) => setConsultationConfig({ ...consultationConfig, homepageSubcopy: e.target.value })} rows={3} style={{ ...inputStyle, resize: "vertical" }} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <label style={labelStyle}>Primary CTA Label</label>
+                  <input type="text" value={consultationConfig.homepagePrimaryCta} onChange={(e) => setConsultationConfig({ ...consultationConfig, homepagePrimaryCta: e.target.value })} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Secondary CTA Label</label>
+                  <input type="text" value={consultationConfig.homepageSecondaryCta} onChange={(e) => setConsultationConfig({ ...consultationConfig, homepageSecondaryCta: e.target.value })} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                </div>
+              </div>
+
+              {/* Benefits list */}
+              <div>
+                <label style={labelStyle}>Benefits</label>
+                {consultationConfig.homepageBenefits.map((b, i) => (
+                  <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "8px", alignItems: "center" }}>
+                    <input type="text" value={b} onChange={(e) => { const arr = [...consultationConfig.homepageBenefits]; arr[i] = e.target.value; setConsultationConfig({ ...consultationConfig, homepageBenefits: arr }) }} style={{ ...inputStyle, flex: 1 }} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                    <button onClick={() => { const arr = consultationConfig.homepageBenefits.filter((_, j) => j !== i); setConsultationConfig({ ...consultationConfig, homepageBenefits: arr }) }} style={{ background: "none", border: "none", cursor: "pointer", color: earth[300], padding: "4px" }}><Trash2 size={14} /></button>
+                  </div>
+                ))}
+                <button onClick={() => setConsultationConfig({ ...consultationConfig, homepageBenefits: [...consultationConfig.homepageBenefits, ""] })} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: `1px dashed ${primary[200]}`, borderRadius: "6px", padding: "6px 12px", fontSize: "13px", fontWeight: 600, color: primary[500], cursor: "pointer" }}><Plus size={13} /> Add Benefit</button>
+              </div>
+
+              {/* Stats */}
+              <div>
+                <label style={labelStyle}>Stats</label>
+                {consultationConfig.homepageStats.map((s, i) => (
+                  <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "8px", alignItems: "center" }}>
+                    <input type="text" value={s.value} placeholder="Value" onChange={(e) => { const arr = [...consultationConfig.homepageStats]; arr[i] = { ...arr[i], value: e.target.value }; setConsultationConfig({ ...consultationConfig, homepageStats: arr }) }} style={{ ...inputStyle, width: "100px" }} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                    <input type="text" value={s.label} placeholder="Label" onChange={(e) => { const arr = [...consultationConfig.homepageStats]; arr[i] = { ...arr[i], label: e.target.value }; setConsultationConfig({ ...consultationConfig, homepageStats: arr }) }} style={{ ...inputStyle, flex: 1 }} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                    <button onClick={() => { const arr = consultationConfig.homepageStats.filter((_, j) => j !== i); setConsultationConfig({ ...consultationConfig, homepageStats: arr }) }} style={{ background: "none", border: "none", cursor: "pointer", color: earth[300], padding: "4px" }}><Trash2 size={14} /></button>
+                  </div>
+                ))}
+                <button onClick={() => setConsultationConfig({ ...consultationConfig, homepageStats: [...consultationConfig.homepageStats, { value: "", label: "" }] })} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: `1px dashed ${primary[200]}`, borderRadius: "6px", padding: "6px 12px", fontSize: "13px", fontWeight: 600, color: primary[500], cursor: "pointer" }}><Plus size={13} /> Add Stat</button>
+              </div>
+
+              {/* Testimonial */}
+              <div>
+                <label style={labelStyle}>Testimonial Quote</label>
+                <textarea value={consultationConfig.homepageTestimonial.quote} onChange={(e) => setConsultationConfig({ ...consultationConfig, homepageTestimonial: { ...consultationConfig.homepageTestimonial, quote: e.target.value } })} rows={2} style={{ ...inputStyle, resize: "vertical" }} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+              </div>
+              <div>
+                <label style={labelStyle}>Testimonial Attribution</label>
+                <input type="text" value={consultationConfig.homepageTestimonial.attribution} onChange={(e) => setConsultationConfig({ ...consultationConfig, homepageTestimonial: { ...consultationConfig.homepageTestimonial, attribution: e.target.value } })} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+              </div>
+            </div>
+          </div>
+
+          {/* ── Dedicated Page Hero Copy ── */}
+          <div style={{ marginBottom: "32px" }}>
+            <p style={{ fontSize: "13px", fontWeight: 700, color: primary[700], textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "16px" }}>
+              Consultations Page Hero
+            </p>
+            <div style={{ display: "grid", gap: "16px" }}>
+              <div>
+                <label style={labelStyle}>Eyebrow</label>
+                <input type="text" value={consultationConfig.pageEyebrow} onChange={(e) => setConsultationConfig({ ...consultationConfig, pageEyebrow: e.target.value })} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+              </div>
+              <div>
+                <label style={labelStyle}>Headline (use \n for line breaks)</label>
+                <textarea value={consultationConfig.pageHeadline} onChange={(e) => setConsultationConfig({ ...consultationConfig, pageHeadline: e.target.value })} rows={3} style={{ ...inputStyle, resize: "vertical" }} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+              </div>
+              <div>
+                <label style={labelStyle}>Sub-headline</label>
+                <textarea value={consultationConfig.pageSubheadline} onChange={(e) => setConsultationConfig({ ...consultationConfig, pageSubheadline: e.target.value })} rows={3} style={{ ...inputStyle, resize: "vertical" }} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <label style={labelStyle}>Primary CTA Label</label>
+                  <input type="text" value={consultationConfig.pagePrimaryCta} onChange={(e) => setConsultationConfig({ ...consultationConfig, pagePrimaryCta: e.target.value })} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Secondary CTA Label</label>
+                  <input type="text" value={consultationConfig.pageSecondaryCta} onChange={(e) => setConsultationConfig({ ...consultationConfig, pageSecondaryCta: e.target.value })} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                </div>
+              </div>
+
+              {/* Feature checklist */}
+              <div>
+                <label style={labelStyle}>Feature Checklist</label>
+                {consultationConfig.pageFeatureChecklist.map((item, i) => (
+                  <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "8px", alignItems: "center" }}>
+                    <input type="text" value={item} onChange={(e) => { const arr = [...consultationConfig.pageFeatureChecklist]; arr[i] = e.target.value; setConsultationConfig({ ...consultationConfig, pageFeatureChecklist: arr }) }} style={{ ...inputStyle, flex: 1 }} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                    <button onClick={() => { const arr = consultationConfig.pageFeatureChecklist.filter((_, j) => j !== i); setConsultationConfig({ ...consultationConfig, pageFeatureChecklist: arr }) }} style={{ background: "none", border: "none", cursor: "pointer", color: earth[300], padding: "4px" }}><Trash2 size={14} /></button>
+                  </div>
+                ))}
+                <button onClick={() => setConsultationConfig({ ...consultationConfig, pageFeatureChecklist: [...consultationConfig.pageFeatureChecklist, ""] })} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: `1px dashed ${primary[200]}`, borderRadius: "6px", padding: "6px 12px", fontSize: "13px", fontWeight: 600, color: primary[500], cursor: "pointer" }}><Plus size={13} /> Add Item</button>
+              </div>
+
+              {/* Page stats */}
+              <div>
+                <label style={labelStyle}>Stats Row</label>
+                {consultationConfig.pageStats.map((s, i) => (
+                  <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "8px", alignItems: "center" }}>
+                    <input type="text" value={s.value} placeholder="Value" onChange={(e) => { const arr = [...consultationConfig.pageStats]; arr[i] = { ...arr[i], value: e.target.value }; setConsultationConfig({ ...consultationConfig, pageStats: arr }) }} style={{ ...inputStyle, width: "100px" }} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                    <input type="text" value={s.label} placeholder="Label" onChange={(e) => { const arr = [...consultationConfig.pageStats]; arr[i] = { ...arr[i], label: e.target.value }; setConsultationConfig({ ...consultationConfig, pageStats: arr }) }} style={{ ...inputStyle, flex: 1 }} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                    <button onClick={() => { const arr = consultationConfig.pageStats.filter((_, j) => j !== i); setConsultationConfig({ ...consultationConfig, pageStats: arr }) }} style={{ background: "none", border: "none", cursor: "pointer", color: earth[300], padding: "4px" }}><Trash2 size={14} /></button>
+                  </div>
+                ))}
+                <button onClick={() => setConsultationConfig({ ...consultationConfig, pageStats: [...consultationConfig.pageStats, { value: "", label: "" }] })} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: `1px dashed ${primary[200]}`, borderRadius: "6px", padding: "6px 12px", fontSize: "13px", fontWeight: 600, color: primary[500], cursor: "pointer" }}><Plus size={13} /> Add Stat</button>
+              </div>
+
+              {/* Process Steps */}
+              <div>
+                <label style={labelStyle}>Process Steps</label>
+                {consultationConfig.pageProcessSteps.map((step, i) => (
+                  <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "8px", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1, display: "grid", gap: "6px" }}>
+                      <input type="text" value={step.title} placeholder="Step title" onChange={(e) => { const arr = [...consultationConfig.pageProcessSteps]; arr[i] = { ...arr[i], title: e.target.value }; setConsultationConfig({ ...consultationConfig, pageProcessSteps: arr }) }} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                      <input type="text" value={step.description} placeholder="Step description" onChange={(e) => { const arr = [...consultationConfig.pageProcessSteps]; arr[i] = { ...arr[i], description: e.target.value }; setConsultationConfig({ ...consultationConfig, pageProcessSteps: arr }) }} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                    </div>
+                    <button onClick={() => { const arr = consultationConfig.pageProcessSteps.filter((_, j) => j !== i); setConsultationConfig({ ...consultationConfig, pageProcessSteps: arr }) }} style={{ background: "none", border: "none", cursor: "pointer", color: earth[300], padding: "4px", marginTop: "8px" }}><Trash2 size={14} /></button>
+                  </div>
+                ))}
+                <button onClick={() => setConsultationConfig({ ...consultationConfig, pageProcessSteps: [...consultationConfig.pageProcessSteps, { title: "", description: "" }] })} style={{ display: "flex", alignItems: "center", gap: "6px", background: "none", border: `1px dashed ${primary[200]}`, borderRadius: "6px", padding: "6px 12px", fontSize: "13px", fontWeight: 600, color: primary[500], cursor: "pointer" }}><Plus size={13} /> Add Step</button>
+              </div>
+
+              {/* Trust badge */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                <div>
+                  <label style={labelStyle}>Trust Badge Title</label>
+                  <input type="text" value={consultationConfig.pageTrustBadgeTitle} onChange={(e) => setConsultationConfig({ ...consultationConfig, pageTrustBadgeTitle: e.target.value })} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Trust Badge Subtitle</label>
+                  <input type="text" value={consultationConfig.pageTrustBadgeSubtitle} onChange={(e) => setConsultationConfig({ ...consultationConfig, pageTrustBadgeSubtitle: e.target.value })} style={inputStyle} onFocus={(e) => (e.target.style.borderColor = primary[400])} onBlur={(e) => (e.target.style.borderColor = earth[300])} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Save button */}
+          <div>
+            <button
+              onClick={async () => {
+                setSavingConsultation(true)
+                try { await onSaveConsultationConfig(consultationConfig) } finally { setSavingConsultation(false) }
+              }}
+              disabled={savingConsultation}
+              style={{ ...saveBtnStyle, opacity: savingConsultation ? 0.7 : 1, cursor: savingConsultation ? "not-allowed" : "pointer" }}
+              onMouseEnter={(e) => { if (!savingConsultation) e.currentTarget.style.background = primary[400] }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = primary[500] }}
+            >
+              {savingConsultation ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              Save Consultation Settings
+            </button>
+          </div>
         </div>
       )}
     </div>

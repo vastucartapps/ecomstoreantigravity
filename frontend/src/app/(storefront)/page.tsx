@@ -26,7 +26,7 @@ import { bg, primary, earth, fonts } from "@/lib/theme"
 import { getRegionId } from "@/lib/region"
 import { normalizeImageUrl } from "@/lib/image-url"
 import { FALLBACK_CATEGORY_TILE } from "@/lib/image-constants"
-import type { HomepageSection } from "@/types/admin-storefront"
+import type { HomepageSection, ConsultationConfig } from "@/types/admin-storefront"
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -264,6 +264,7 @@ export default function HomePage() {
   const [deals, setDeals] = useState<DealProduct[]>([])
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
   const [sectionConfig, setSectionConfig] = useState<HomepageSection[] | undefined>(undefined)
+  const [consultationConfig, setConsultationConfig] = useState<ConsultationConfig | undefined>(undefined)
 
   // QuickView state
   const [qvOpen, setQvOpen] = useState(false)
@@ -384,6 +385,8 @@ export default function HomePage() {
       if (storefrontRes.status === "fulfilled") {
         const sections = storefrontRes.value.config?.homepageSections
         if (sections?.length) setSectionConfig(sections)
+        const conConfig = storefrontRes.value.config?.consultationConfig
+        if (conConfig) setConsultationConfig(conConfig)
       }
 
       // Deals: products with metadata.deal_expires_at in the future
@@ -528,6 +531,7 @@ export default function HomePage() {
         onToggleWishlist={handleToggleWishlist}
         onNewsletterSubscribe={handleNewsletterSubscribe}
         isWishlisted={isInWishlist}
+        consultationConfig={consultationConfig}
       />
       {qvProduct && (
         <QuickViewModal

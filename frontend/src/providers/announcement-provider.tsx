@@ -55,6 +55,8 @@ interface StorefrontContextValue {
   branding: BrandingValue
   // Footer
   footer: FooterValue
+  // Feature flags
+  consultationsRouteEnabled: boolean
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
@@ -123,9 +125,10 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
   const [serverActive, setServerActive] = useState(false)
   const [isDismissed, setIsDismissed] = useState(false)
 
-  // Branding + footer
+  // Branding + footer + feature flags
   const [branding, setBranding] = useState<BrandingValue>(DEFAULT_BRANDING)
   const [footer, setFooter] = useState<FooterValue>(DEFAULT_FOOTER)
+  const [consultationsRouteEnabled, setConsultationsRouteEnabled] = useState(true)
 
   useEffect(() => {
     if (typeof window !== "undefined" && sessionStorage.getItem(DISMISSED_KEY)) {
@@ -178,6 +181,11 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
             showSocialLinks: config.footerConfig.showSocialLinks ?? true,
           })
         }
+
+        // Consultation feature flag
+        if (config.consultationConfig) {
+          setConsultationsRouteEnabled(config.consultationConfig.consultationsRouteEnabled ?? true)
+        }
       } catch {
         // Config unavailable — use defaults silently
       }
@@ -206,6 +214,7 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
         dismiss,
         branding,
         footer,
+        consultationsRouteEnabled,
       }}
     >
       {children}
@@ -231,4 +240,10 @@ export function useStorefrontFooter(): FooterValue {
   const ctx = useContext(StorefrontContext)
   if (!ctx) throw new Error("useStorefrontFooter must be used within AnnouncementProvider")
   return ctx.footer
+}
+
+export function useConsultationsEnabled(): boolean {
+  const ctx = useContext(StorefrontContext)
+  if (!ctx) throw new Error("useConsultationsEnabled must be used within AnnouncementProvider")
+  return ctx.consultationsRouteEnabled
 }

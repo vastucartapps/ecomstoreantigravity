@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import ConsultationsClient from "./ConsultationsClient"
+import type { ConsultationConfig } from "@/types/admin-storefront"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://sapi.vastucart.in"
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
@@ -140,8 +142,48 @@ function buildJsonLd(types: ServiceType[]) {
   }
 }
 
+async function fetchConsultationConfig(): Promise<ConsultationConfig | null> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/store/storefront-config`, {
+      headers: { "x-publishable-api-key": PUB_KEY },
+      cache: "no-store",
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.config?.consultationConfig || null
+  } catch {
+    return null
+  }
+}
+
 export default async function ConsultationsPage() {
-  const serviceTypes = await fetchServiceTypes()
+  const [serviceTypes, consultationConfig] = await Promise.all([
+    fetchServiceTypes(),
+    fetchConsultationConfig(),
+  ])
+
+  // Gate: if route is disabled, show a minimal fallback
+  if (consultationConfig?.consultationsRouteEnabled === false) {
+    return (
+      <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#fffbf5" }}>
+        <div style={{ textAlign: "center", padding: "40px 20px" }}>
+          <h1 style={{ fontFamily: "var(--font-heading, serif)", fontSize: "1.5rem", fontWeight: 700, color: "#3d2c1e", marginBottom: "12px" }}>
+            This service is currently unavailable
+          </h1>
+          <p style={{ fontSize: "14px", color: "#9a7c68", marginBottom: "24px" }}>
+            Please check back soon or explore our other offerings.
+          </p>
+          <Link
+            href="/"
+            style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "12px 24px", borderRadius: "12px", background: "#013f47", color: "#fff", fontSize: "14px", fontWeight: 600, textDecoration: "none" }}
+          >
+            Back to Home
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   const jsonLd = buildJsonLd(serviceTypes)
 
   return (
@@ -150,7 +192,7 @@ export default async function ConsultationsPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <ConsultationsClient serviceTypes={serviceTypes} />
+      <ConsultationsClient serviceTypes={serviceTypes} heroConfig={consultationConfig} />
     </>
   )
 }

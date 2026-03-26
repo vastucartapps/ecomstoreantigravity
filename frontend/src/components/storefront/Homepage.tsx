@@ -20,6 +20,7 @@ import type {
   Testimonial,
   TrustBadge,
 } from "@/types/storefront"
+import type { ConsultationConfig } from "@/types/admin-storefront"
 import { ProductCard } from "./ProductCard"
 import {
   primary,
@@ -289,6 +290,7 @@ interface HomepageProps {
   onToggleWishlist?: (productId: string) => void
   onNewsletterSubscribe?: (email: string) => void
   isWishlisted?: (productId: string) => boolean
+  consultationConfig?: ConsultationConfig
 }
 
 export function Homepage({
@@ -309,6 +311,7 @@ export function Homepage({
   onToggleWishlist,
   onNewsletterSubscribe,
   isWishlisted,
+  consultationConfig: cc,
 }: HomepageProps) {
   const [heroIndex, setHeroIndex] = useState(0)
   const [heroFade, setHeroFade] = useState(true)
@@ -362,6 +365,7 @@ export function Homepage({
       new_arrivals: 50,
       bestsellers: 60,
       testimonials: 70,
+      consultations: 75,
       newsletter: 80,
     }
     if (!sectionConfig) return defaults[type] ?? 100
@@ -782,210 +786,209 @@ export function Homepage({
         </section>
       )}
 
-      {/* CONSULTATION CTA — Premium conversion block */}
-      <section
-        className="relative overflow-hidden py-16 sm:py-24"
-        style={{ background: "#011f23", order: 75 }}
-      >
-        {/* Orange radial glow — top right */}
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            top: -140, right: -100,
-            width: 520, height: 520,
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(200,81,3,0.2) 0%, transparent 68%)",
-          }}
-        />
-        {/* Teal glow — bottom left */}
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            bottom: -80, left: -60,
-            width: 400, height: 400,
-            borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(1,63,71,0.55) 0%, transparent 70%)",
-          }}
-        />
-        {/* Diamond grid overlay */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0L40 20L20 40L0 20z' fill='%23ffffff' fill-opacity='0.025'/%3E%3C/svg%3E")`,
-            backgroundSize: "40px 40px",
-          }}
-        />
+      {/* CONSULTATION CTA — Premium conversion block (admin-toggleable & editable) */}
+      {isSectionEnabled("consultations") && (cc?.homepageSectionEnabled !== false) && (
+        <section
+          className="relative overflow-hidden py-16 sm:py-24"
+          style={{ background: "#011f23", order: getSectionCssOrder("consultations") }}
+        >
+          {/* Orange radial glow — top right */}
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              top: -140, right: -100,
+              width: 520, height: 520,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(200,81,3,0.2) 0%, transparent 68%)",
+            }}
+          />
+          {/* Teal glow — bottom left */}
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              bottom: -80, left: -60,
+              width: 400, height: 400,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(1,63,71,0.55) 0%, transparent 70%)",
+            }}
+          />
+          {/* Diamond grid overlay */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 0L40 20L20 40L0 20z' fill='%23ffffff' fill-opacity='0.025'/%3E%3C/svg%3E")`,
+              backgroundSize: "40px 40px",
+            }}
+          />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="grid lg:grid-cols-[1fr_400px] gap-12 lg:gap-20 items-center">
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="grid lg:grid-cols-[1fr_400px] gap-12 lg:gap-20 items-center">
 
-            {/* ── Left: Copy + CTAs ── */}
-            <div>
-              {/* Eyebrow */}
-              <div className="flex items-center gap-2.5 mb-5">
-                <div style={{ width: 28, height: 2, background: "#c85103", borderRadius: 2, flexShrink: 0 }} />
-                <span
-                  className="text-xs font-bold tracking-widest uppercase"
-                  style={{ color: "#fd8630", fontFamily: fonts.body }}
-                >
-                  Certified Vastu Consultations
-                </span>
-              </div>
+              {/* ── Left: Copy + CTAs ── */}
+              <div>
+                {/* Eyebrow */}
+                <div className="flex items-center gap-2.5 mb-5">
+                  <div style={{ width: 28, height: 2, background: "#c85103", borderRadius: 2, flexShrink: 0 }} />
+                  <span
+                    className="text-xs font-bold tracking-widest uppercase"
+                    style={{ color: "#fd8630", fontFamily: fonts.body }}
+                  >
+                    {cc?.homepageEyebrow || "Certified Vastu Consultations"}
+                  </span>
+                </div>
 
-              {/* Headline */}
-              <h2
-                className="text-3xl sm:text-4xl lg:text-[2.85rem] font-bold leading-[1.15] text-white"
-                style={{ fontFamily: fonts.heading }}
-              >
-                Your Space Has Energy.
-                <br />
-                <span style={{ color: "#fd8630" }}>Make It Work For You.</span>
-              </h2>
-
-              {/* Sub-copy */}
-              <p
-                className="mt-5 text-base sm:text-lg leading-relaxed"
-                style={{ color: "rgba(255,255,255,0.62)", fontFamily: fonts.body, maxWidth: 480 }}
-              >
-                Most homes quietly sabotage their owners — disrupting sleep, stalling finances,
-                straining relationships. Our certified Vastu experts diagnose your exact floor plan
-                and prescribe remedies that create real, measurable change.
-              </p>
-
-              {/* Benefits list */}
-              <ul className="mt-7 space-y-3.5">
-                {[
-                  "Personalised to your exact floor plan — not generic advice",
-                  "Online & in-person sessions, pan-India coverage",
-                  "30-day follow-up support included with every booking",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <div
-                      className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
-                      style={{ background: "rgba(200,81,3,0.2)", border: "1px solid rgba(200,81,3,0.4)" }}
-                    >
-                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#fd8630" }} />
-                    </div>
-                    <span
-                      className="text-sm leading-relaxed"
-                      style={{ color: "rgba(255,255,255,0.73)", fontFamily: fonts.body }}
-                    >
-                      {item}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* CTA buttons */}
-              <div className="mt-9 flex flex-col sm:flex-row gap-3">
-                <a
-                  href="/consultations"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-sm font-bold transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
-                  style={{
-                    background: "linear-gradient(135deg, #c85103, #fd8630)",
-                    color: "#fff",
-                    boxShadow: "0 8px 28px rgba(200,81,3,0.4)",
-                    fontFamily: fonts.body,
-                  }}
-                >
-                  Explore All Consultations <ArrowRight className="w-4 h-4" />
-                </a>
-                <a
-                  href="/contact"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
-                  style={{
-                    background: "rgba(255,255,255,0.06)",
-                    color: "rgba(255,255,255,0.87)",
-                    border: "1.5px solid rgba(255,255,255,0.14)",
-                    fontFamily: fonts.body,
-                  }}
-                >
-                  Free Discovery Call
-                </a>
-              </div>
-            </div>
-
-            {/* ── Right: Stat cards (desktop only) ── */}
-            <div className="hidden lg:flex flex-col gap-4">
-              {/* Primary stat card */}
-              <div
-                className="rounded-2xl p-6"
-                style={{
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  backdropFilter: "blur(10px)",
-                }}
-              >
-                <p
-                  className="text-5xl font-bold text-white"
+                {/* Headline */}
+                <h2
+                  className="text-3xl sm:text-4xl lg:text-[2.85rem] font-bold leading-[1.15] text-white"
                   style={{ fontFamily: fonts.heading }}
                 >
-                  500+
-                </p>
-                <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.55)", fontFamily: fonts.body }}>
-                  Families transformed across India
-                </p>
-                <div className="mt-3 flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} className="w-4 h-4 fill-current" style={{ color: "#fd8630" }} />
-                  ))}
-                  <span className="text-sm font-bold text-white ml-2">4.9</span>
-                  <span className="text-xs ml-1" style={{ color: "rgba(255,255,255,0.45)", fontFamily: fonts.body }}>avg rating</span>
-                </div>
-              </div>
+                  {cc?.homepageHeadline || "Your Space Has Energy."}
+                  <br />
+                  <span style={{ color: "#fd8630" }}>{cc?.homepageHeadlineAccent || "Make It Work For You."}</span>
+                </h2>
 
-              {/* Two smaller metric cards */}
-              <div className="grid grid-cols-2 gap-4">
-                <div
-                  className="rounded-2xl p-5"
-                  style={{
-                    background: "linear-gradient(135deg, rgba(200,81,3,0.14), rgba(253,134,48,0.07))",
-                    border: "1px solid rgba(200,81,3,0.28)",
-                  }}
-                >
-                  <p className="text-3xl font-bold" style={{ color: "#fd8630", fontFamily: fonts.heading }}>20+</p>
-                  <p className="text-xs mt-1 leading-snug" style={{ color: "rgba(255,255,255,0.55)", fontFamily: fonts.body }}>
-                    Cities covered<br />pan India
-                  </p>
-                </div>
-                <div
-                  className="rounded-2xl p-5"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.09)",
-                  }}
-                >
-                  <p className="text-3xl font-bold text-white" style={{ fontFamily: fonts.heading }}>15+</p>
-                  <p className="text-xs mt-1 leading-snug" style={{ color: "rgba(255,255,255,0.55)", fontFamily: fonts.body }}>
-                    Years of Vastu<br />expertise
-                  </p>
-                </div>
-              </div>
-
-              {/* Testimonial quote card */}
-              <div
-                className="rounded-2xl p-5"
-                style={{
-                  background: "rgba(255,255,255,0.035)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                }}
-              >
+                {/* Sub-copy */}
                 <p
-                  className="text-sm leading-relaxed italic"
-                  style={{ color: "rgba(255,255,255,0.62)", fontFamily: fonts.body }}
+                  className="mt-5 text-base sm:text-lg leading-relaxed"
+                  style={{ color: "rgba(255,255,255,0.62)", fontFamily: fonts.body, maxWidth: 480 }}
                 >
-                  &ldquo;Three simple changes after our consultation. Within 60 days — a promotion,
-                  better sleep, and the constant stress at home just vanished.&rdquo;
+                  {cc?.homepageSubcopy || "Most homes quietly sabotage their owners \u2014 disrupting sleep, stalling finances, straining relationships. Our certified Vastu experts diagnose your exact floor plan and prescribe remedies that create real, measurable change."}
                 </p>
-                <p className="text-xs mt-3 font-semibold" style={{ color: "#fd8630", fontFamily: fonts.body }}>
-                  — Priya M., Pune
-                </p>
-              </div>
-            </div>
 
+                {/* Benefits list */}
+                <ul className="mt-7 space-y-3.5">
+                  {(cc?.homepageBenefits || [
+                    "Personalised to your exact floor plan \u2014 not generic advice",
+                    "Online & in-person sessions, pan-India coverage",
+                    "30-day follow-up support included with every booking",
+                  ]).map((item) => (
+                    <li key={item} className="flex items-start gap-3">
+                      <div
+                        className="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ background: "rgba(200,81,3,0.2)", border: "1px solid rgba(200,81,3,0.4)" }}
+                      >
+                        <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#fd8630" }} />
+                      </div>
+                      <span
+                        className="text-sm leading-relaxed"
+                        style={{ color: "rgba(255,255,255,0.73)", fontFamily: fonts.body }}
+                      >
+                        {item}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* CTA buttons */}
+                <div className="mt-9 flex flex-col sm:flex-row gap-3">
+                  <a
+                    href="/consultations"
+                    className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-sm font-bold transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+                    style={{
+                      background: "linear-gradient(135deg, #c85103, #fd8630)",
+                      color: "#fff",
+                      boxShadow: "0 8px 28px rgba(200,81,3,0.4)",
+                      fontFamily: fonts.body,
+                    }}
+                  >
+                    {cc?.homepagePrimaryCta || "Explore All Consultations"} <ArrowRight className="w-4 h-4" />
+                  </a>
+                  <a
+                    href="/contact"
+                    className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      color: "rgba(255,255,255,0.87)",
+                      border: "1.5px solid rgba(255,255,255,0.14)",
+                      fontFamily: fonts.body,
+                    }}
+                  >
+                    {cc?.homepageSecondaryCta || "Free Discovery Call"}
+                  </a>
+                </div>
+              </div>
+
+              {/* ── Right: Stat cards (desktop only) ── */}
+              <div className="hidden lg:flex flex-col gap-4">
+                {/* Primary stat card */}
+                <div
+                  className="rounded-2xl p-6"
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    backdropFilter: "blur(10px)",
+                  }}
+                >
+                  <p
+                    className="text-5xl font-bold text-white"
+                    style={{ fontFamily: fonts.heading }}
+                  >
+                    {cc?.homepageStats?.[0]?.value || "500+"}
+                  </p>
+                  <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.55)", fontFamily: fonts.body }}>
+                    {cc?.homepageStats?.[0]?.label || "Families transformed across India"}
+                  </p>
+                  <div className="mt-3 flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Star key={i} className="w-4 h-4 fill-current" style={{ color: "#fd8630" }} />
+                    ))}
+                    <span className="text-sm font-bold text-white ml-2">{cc?.homepageStats?.[1]?.value || "4.9"}</span>
+                    <span className="text-xs ml-1" style={{ color: "rgba(255,255,255,0.45)", fontFamily: fonts.body }}>{cc?.homepageStats?.[1]?.label || "avg rating"}</span>
+                  </div>
+                </div>
+
+                {/* Two smaller metric cards */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div
+                    className="rounded-2xl p-5"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(200,81,3,0.14), rgba(253,134,48,0.07))",
+                      border: "1px solid rgba(200,81,3,0.28)",
+                    }}
+                  >
+                    <p className="text-3xl font-bold" style={{ color: "#fd8630", fontFamily: fonts.heading }}>{cc?.homepageStats?.[2]?.value || "20+"}</p>
+                    <p className="text-xs mt-1 leading-snug" style={{ color: "rgba(255,255,255,0.55)", fontFamily: fonts.body }}>
+                      {cc?.homepageStats?.[2]?.label || "Cities covered pan India"}
+                    </p>
+                  </div>
+                  <div
+                    className="rounded-2xl p-5"
+                    style={{
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.09)",
+                    }}
+                  >
+                    <p className="text-3xl font-bold text-white" style={{ fontFamily: fonts.heading }}>{cc?.homepageStats?.[3]?.value || "15+"}</p>
+                    <p className="text-xs mt-1 leading-snug" style={{ color: "rgba(255,255,255,0.55)", fontFamily: fonts.body }}>
+                      {cc?.homepageStats?.[3]?.label || "Years of Vastu expertise"}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Testimonial quote card */}
+                <div
+                  className="rounded-2xl p-5"
+                  style={{
+                    background: "rgba(255,255,255,0.035)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                  }}
+                >
+                  <p
+                    className="text-sm leading-relaxed italic"
+                    style={{ color: "rgba(255,255,255,0.62)", fontFamily: fonts.body }}
+                  >
+                    &ldquo;{cc?.homepageTestimonial?.quote || "Three simple changes after our consultation. Within 60 days \u2014 a promotion, better sleep, and the constant stress at home just vanished."}&rdquo;
+                  </p>
+                  <p className="text-xs mt-3 font-semibold" style={{ color: "#fd8630", fontFamily: fonts.body }}>
+                    — {cc?.homepageTestimonial?.attribution || "Priya M., Pune"}
+                  </p>
+                </div>
+              </div>
+
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* NEWSLETTER */}
       {isSectionEnabled("newsletter") && (

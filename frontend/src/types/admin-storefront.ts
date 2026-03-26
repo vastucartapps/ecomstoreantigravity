@@ -93,6 +93,7 @@ export interface StorefrontConfig {
   homepageSections: HomepageSection[]
   contentPages: ContentPage[]
   footerConfig: FooterConfig
+  consultationConfig: ConsultationConfig
 }
 
 export interface AdminStorefrontProps {
@@ -118,8 +119,41 @@ export interface AdminStorefrontProps {
   onDeleteMarketingSlide: (id: string) => Promise<void>
   aboutConfig: AboutConfig
   contactConfig: ContactConfig
+  consultationConfig: ConsultationConfig
   onSaveAboutConfig: (c: AboutConfig) => Promise<void>
   onSaveContactConfig: (c: ContactConfig) => Promise<void>
+  onSaveConsultationConfig: (c: ConsultationConfig) => Promise<void>
+}
+
+// ── Consultation Config ──────────────────────────────────────────────────────
+
+export interface ConsultationConfig {
+  // Master toggles
+  homepageSectionEnabled: boolean
+  consultationsRouteEnabled: boolean
+
+  // Homepage CTA copy
+  homepageEyebrow: string
+  homepageHeadline: string
+  homepageHeadlineAccent: string
+  homepageSubcopy: string
+  homepageBenefits: string[]
+  homepagePrimaryCta: string
+  homepageSecondaryCta: string
+  homepageStats: Array<{ value: string; label: string }>
+  homepageTestimonial: { quote: string; attribution: string }
+
+  // Dedicated page hero copy
+  pageEyebrow: string
+  pageHeadline: string
+  pageSubheadline: string
+  pageFeatureChecklist: string[]
+  pageStats: Array<{ value: string; label: string }>
+  pagePrimaryCta: string
+  pageSecondaryCta: string
+  pageProcessSteps: Array<{ title: string; description: string }>
+  pageTrustBadgeTitle: string
+  pageTrustBadgeSubtitle: string
 }
 
 // ── About Page Config ────────────────────────────────────────────────────────
