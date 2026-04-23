@@ -10,6 +10,13 @@ import {
 } from "react"
 import { medusa } from "@/lib/medusa"
 import { getRegionId } from "@/lib/region"
+import {
+  trackAddToCart,
+  trackRemoveFromCart,
+  mapLineItems,
+  cartTotalMajor,
+  type MedusaLineItem,
+} from "@/lib/analytics/events"
 
 const CART_ID_KEY = "vastucart_cart_id"
 const GC_APPLIED_KEY = "vastucart_gc_applied"
@@ -111,20 +118,47 @@ export function CartProvider({ children }: { children: ReactNode }) {
       quantity,
     })
     setCart(updated)
+    // GA4 add_to_cart — fire with the just-added variant so GA sees the
+    // single unit value, not the whole cart total
+    const added = updated.items?.find((li: { variant_id?: string }) => li.variant_id === variantId)
+    if (added) {
+      const { currency } = cartTotalMajor(updated)
+      const items = mapLineItems(
+        [{ ...added, quantity } as MedusaLineItem],
+        currency
+      )
+      const value = items[0] ? items[0].price * (items[0].quantity || 1) : 0
+      trackAddToCart({ items, currency, value })
+    }
   }
 
   const updateItem = async (lineItemId: string, quantity: number) => {
     if (!cart) return
+    const before = cart.items?.find((li: { id: string }) => li.id === lineItemId)
+    const prevQty = before?.quantity || 0
     const { cart: updated } = await medusa.store.cart.updateLineItem(
       cart.id,
       lineItemId,
       { quantity }
     )
     setCart(updated)
+    // Treat a quantity delta as add_to_cart (positive) or remove_from_cart (negative)
+    const delta = quantity - prevQty
+    if (delta !== 0 && before) {
+      const { currency } = cartTotalMajor(updated)
+      const items = mapLineItems(
+        [{ ...before, quantity: Math.abs(delta) } as MedusaLineItem],
+        currency
+      )
+      const value = items[0] ? items[0].price * (items[0].quantity || 1) : 0
+      if (delta > 0) trackAddToCart({ items, currency, value })
+      else trackRemoveFromCart({ items, currency, value })
+    }
   }
 
   const removeItem = async (lineItemId: string) => {
     if (!cart) return
+    const removed = cart.items?.find((li: { id: string }) => li.id === lineItemId)
     // Medusa v2 deleteLineItem returns { parent: Cart } (not { cart: Cart })
     const result = await medusa.store.cart.deleteLineItem(
       cart.id,
@@ -132,6 +166,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     )
     const updated = (result as any).parent ?? (result as any).cart ?? result
     setCart(updated)
+    if (removed) {
+      const { currency } = cartTotalMajor(updated || cart)
+      const items = mapLineItems([removed as MedusaLineItem], currency)
+      const value = items[0] ? items[0].price * (items[0].quantity || 1) : 0
+      trackRemoveFromCart({ items, currency, value })
+    }
   }
 
   const clearCart = () => {

@@ -5,6 +5,14 @@ import { medusa } from "@/lib/medusa"
 import { useCart } from "./cart-provider"
 import type { CheckoutStepId, AddressPayload, SavedAddress, ShippingOption } from "@/types/checkout"
 import type { AppliedGiftCard } from "./cart-provider"
+import {
+  trackBeginCheckout,
+  trackAddShippingInfo,
+  trackAddPaymentInfo,
+  mapLineItems,
+  cartTotalMajor,
+  type MedusaLineItem,
+} from "@/lib/analytics/events"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
@@ -99,6 +107,23 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
       await medusa.store.cart.update(id, { email })
       setContactEmail(email)
       setContactPhone(phone)
+      // GA4 begin_checkout — fires at first commitment point (email captured)
+      if (cart) {
+        const { value, currency } = cartTotalMajor(cart)
+        trackBeginCheckout({
+          items: mapLineItems(
+            (cart as { items?: MedusaLineItem[] }).items,
+            currency
+          ),
+          currency,
+          value,
+          coupon: (cart as { promo_codes?: Array<{ code?: string } | string> }).promo_codes?.[0]
+            ? typeof (cart as { promo_codes: Array<{ code?: string } | string> }).promo_codes[0] === "string"
+              ? ((cart as { promo_codes: string[] }).promo_codes[0] as string)
+              : ((cart as { promo_codes: Array<{ code?: string }> }).promo_codes[0]?.code)
+            : undefined,
+        })
+      }
       setStepState("address")
     } catch (err: any) {
       setError(err?.message || "Failed to save contact info")
@@ -186,12 +211,25 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
       await medusa.store.cart.addShippingMethod(id, { option_id: optionId })
       await refreshCart()
       setSelectedShippingId(optionId)
+      if (cart) {
+        const { value, currency } = cartTotalMajor(cart)
+        const tier = shippingOptions.find((o) => o.id === optionId)?.name
+        trackAddShippingInfo({
+          items: mapLineItems(
+            (cart as { items?: MedusaLineItem[] }).items,
+            currency
+          ),
+          currency,
+          value,
+          shippingTier: tier,
+        })
+      }
     } catch (err: any) {
       setError(err?.message || "Failed to apply shipping method. Please try again.")
     } finally {
       setIsProcessing(false)
     }
-  }, [cart, cartId, refreshCart])
+  }, [cart, cartId, refreshCart, shippingOptions])
 
   // Fix #2: Surface shipping method errors instead of silently advancing
   const selectShippingMethod = useCallback(async (optionId: string) => {
@@ -203,13 +241,26 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
       await medusa.store.cart.addShippingMethod(id, { option_id: optionId })
       await refreshCart()
       setSelectedShippingId(optionId)
+      if (cart) {
+        const { value, currency } = cartTotalMajor(cart)
+        const tier = shippingOptions.find((o) => o.id === optionId)?.name
+        trackAddShippingInfo({
+          items: mapLineItems(
+            (cart as { items?: MedusaLineItem[] }).items,
+            currency
+          ),
+          currency,
+          value,
+          shippingTier: tier,
+        })
+      }
       setStepState("payment")
     } catch (err: any) {
       setError(err?.message || "Failed to select shipping method. Please try again.")
     } finally {
       setIsProcessing(false)
     }
-  }, [cart, cartId, refreshCart])
+  }, [cart, cartId, refreshCart, shippingOptions])
 
   const toggleCod = (enabled: boolean) => {
     setCodEnabled(enabled)
@@ -373,6 +424,22 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
       const id = cart?.id || cartId
       if (!id) throw new Error("No cart found")
 
+      // GA4 add_payment_info — user has submitted payment (or COD confirmation).
+      // Fires here since this is the reliable point for all payment providers
+      // (Razorpay returns to here after modal, COD calls this directly).
+      if (cart) {
+        const { value, currency } = cartTotalMajor(cart)
+        trackAddPaymentInfo({
+          items: mapLineItems(
+            (cart as { items?: MedusaLineItem[] }).items,
+            currency
+          ),
+          currency,
+          value,
+          paymentType: paymentMethod,
+        })
+      }
+
       // Store gift card info in cart metadata so the order-gift-card subscriber
       // can deduct the balance after order.placed fires.
       if (appliedGiftCard && giftCardDiscount > 0) {
@@ -405,7 +472,7 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsProcessing(false)
     }
-  }, [cart, cartId])
+  }, [cart, cartId, paymentMethod, appliedGiftCard, giftCardDiscount])
 
   return (
     <CheckoutContext.Provider

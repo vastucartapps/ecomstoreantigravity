@@ -24,6 +24,7 @@ import { bg, primary, earth, fonts } from "@/lib/theme"
 import { getRegionId } from "@/lib/region"
 import { FALLBACK_HERO } from "@/lib/image-constants"
 import { normalizeImageUrl } from "@/lib/image-url"
+import { trackViewItemList, onceInSession } from "@/lib/analytics/events"
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -274,6 +275,21 @@ function CategoryContent() {
           ...prev,
           productCount: prodData.count || mappedProducts.length,
         }))
+        // GA4 view_item_list — one fire per category+page+sort combination
+        const listKey = `list:category:${slug}:p${currentPage}:${currentSort}`
+        onceInSession(listKey, () => {
+          trackViewItemList({
+            listId: `category:${slug}`,
+            listName: `Category — ${decodeURIComponent(slug)}`,
+            items: mappedProducts.slice(0, 20).map((p: StorefrontProduct) => ({
+              item_id: p.id,
+              item_name: p.name,
+              price: p.price,
+              quantity: 1,
+              item_brand: "VastuCart",
+            })),
+          })
+        })
       } else {
         setProducts([])
         setTotalCount(0)

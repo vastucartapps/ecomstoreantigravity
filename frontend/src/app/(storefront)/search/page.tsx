@@ -28,6 +28,8 @@ const SORT_OPTIONS: SortOption[] = [
   { label: "Newest First", value: "newest" },
 ]
 
+import { trackViewItemList, trackSearch, onceInSession } from "@/lib/analytics/events"
+
 const DEFAULT_FILTERS: FilterGroup[] = [
   {
     id: "filter-price",
@@ -122,6 +124,26 @@ function SearchContent() {
       const mapped = (data.products || []).map(mapProduct)
       setProducts(mapped)
       setTotalCount(data.count || mapped.length)
+
+      // GA4 search + view_item_list
+      if (query) {
+        onceInSession(`search:${query}:p${currentPage}:${currentSort}`, () => {
+          trackSearch({ term: query, resultCount: data.count || mapped.length })
+        })
+      }
+      onceInSession(`list:search:${query || "all"}:p${currentPage}:${currentSort}`, () => {
+        trackViewItemList({
+          listId: query ? `search:${query}` : "search:all",
+          listName: query ? `Search — "${query}"` : "Search — All Products",
+          items: mapped.slice(0, 20).map((p: StorefrontProduct) => ({
+            item_id: p.id,
+            item_name: p.name,
+            price: p.price,
+            quantity: 1,
+            item_brand: "VastuCart",
+          })),
+        })
+      })
     } catch (err) {
       console.error("Search failed:", err)
     } finally {

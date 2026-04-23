@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ShoppingBag } from "lucide-react"
 import { useCart } from "@/providers/cart-provider"
+import { trackViewCart, mapLineItems, cartTotalMajor, onceInSession } from "@/lib/analytics/events"
 import { CartLineItem } from "@/components/storefront/cart/CartLineItem"
 import { OrderSummary } from "@/components/storefront/cart/OrderSummary"
 import { CouponInput } from "@/components/storefront/cart/CouponInput"
@@ -19,6 +20,16 @@ export default function CartPage() {
 
   const items = cart?.items || []
   const currency = cart?.currency_code?.toUpperCase() === "USD" ? "USD" : "INR"
+
+  // GA4 view_cart — fires once per cart state when items are present.
+  // Session-scoped dedupe keys include the cart id so a changed cart re-fires.
+  useEffect(() => {
+    if (!cart?.id || !items.length) return
+    onceInSession(`view_cart:${cart.id}:${items.length}`, () => {
+      const { value, currency: cur } = cartTotalMajor(cart)
+      trackViewCart({ items: mapLineItems(items, cur), currency: cur, value })
+    })
+  }, [cart, items.length])
 
   // Map Medusa cart to display
   const subtotal = (cart?.subtotal || 0) / 100

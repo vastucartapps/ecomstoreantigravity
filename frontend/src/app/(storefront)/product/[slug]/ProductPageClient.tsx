@@ -23,6 +23,7 @@ import type {
 import { bg, primary, earth, fonts } from "@/lib/theme"
 import { normalizeImageUrl } from "@/lib/image-url"
 import { getRegionId } from "@/lib/region"
+import { trackViewItem, onceInSession } from "@/lib/analytics/events"
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -404,6 +405,29 @@ export default function ProductPage() {
       setRatingBreakdown(ratingData)
       setRelatedProducts(relatedData)
       setProductTags((rawProduct.tags || []).map((t: any) => t.value || "").filter(Boolean))
+
+      // GA4 view_item — fires once per product per session (SKU-scoped key
+      // handles URL param changes + Strict Mode double-mount without dup events)
+      onceInSession(`view_item:${rawProduct.id}`, () => {
+        const variant = rawProduct.variants?.[0]
+        const cp = variant?.calculated_price
+        const price = (cp?.calculated_amount ?? 0) / 100
+        const currency = (cp?.currency_code || "inr").toUpperCase()
+        const brand = (rawProduct.metadata?.merchant_centre as { brand?: string } | undefined)?.brand || "VastuCart"
+        const category = rawProduct.categories?.[0]?.name
+        trackViewItem({
+          item: {
+            item_id: variant?.sku || rawProduct.id,
+            item_name: rawProduct.title,
+            price,
+            quantity: 1,
+            item_brand: brand,
+            ...(category ? { item_category: category } : {}),
+          },
+          currency,
+          value: price,
+        })
+      })
     } catch (err) {
       console.error("Failed to fetch product:", err)
     } finally {

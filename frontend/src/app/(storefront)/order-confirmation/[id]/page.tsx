@@ -11,6 +11,7 @@ import { normalizeImageUrl } from "@/lib/image-url"
 import { getRegionId } from "@/lib/region"
 import type { InvoiceData, InvoiceItem } from "@/lib/invoice-generator"
 import { DEFAULT_HSN } from "@/lib/gst-utils"
+import { trackPurchase, mapLineItems, onceInSession } from "@/lib/analytics/events"
 
 export default function OrderConfirmationPage() {
   const params = useParams()
@@ -47,9 +48,11 @@ export default function OrderConfirmationPage() {
   const fetchOrder = async () => {
     try {
       const result = await medusa.store.order.retrieve(orderId)
-      setOrder((result as any).order || result)
+      const ord = (result as any).order || result
+      setOrder(ord)
+      firePurchaseEvent(ord)
       // Fetch related products from same category as first item
-      fetchRelated((result as any).order || result)
+      fetchRelated(ord)
     } catch {
       // Order fetch failed (token may not be set for guest). Try without auth.
       try {
@@ -62,14 +65,38 @@ export default function OrderConfirmationPage() {
           }
         )
         const data = await res.json()
-        setOrder(data.order || data)
-        fetchRelated(data.order || data)
+        const ord = data.order || data
+        setOrder(ord)
+        firePurchaseEvent(ord)
+        fetchRelated(ord)
       } catch {
         // Can't fetch order
       }
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // GA4 purchase — the conversion event. Fires once per order (dedupe keyed
+  // by order ID so refreshes/back-navigation don't double-count revenue).
+  const firePurchaseEvent = (ord: any) => {
+    if (!ord?.id) return
+    onceInSession(`purchase:${ord.id}`, () => {
+      const currency = (ord.currency_code || "inr").toUpperCase()
+      const value = (ord.total || 0) / 100
+      const tax = (ord.tax_total || 0) / 100
+      const shipping = (ord.shipping_total || 0) / 100
+      const coupon = ord.promotions?.[0]?.code || undefined
+      trackPurchase({
+        transactionId: ord.id,
+        items: mapLineItems(ord.items, currency),
+        currency,
+        value,
+        tax,
+        shipping,
+        coupon,
+      })
+    })
   }
 
   const fetchRelated = async (orderData: any) => {
