@@ -8,7 +8,14 @@
  */
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
-const ORG_ID = `${SITE_URL}/#organization`
+/**
+ * Canonical brand URL. The Organization entity represents the brand itself
+ * (VastuCart), which lives at vastucart.in. This store (store.vastucart.in)
+ * is one of several properties of that brand — emitted as a `sameAs` so
+ * Google links both URLs to a single knowledge-graph entity.
+ */
+const BRAND_URL = process.env.NEXT_PUBLIC_BRAND_URL || "https://vastucart.in"
+const ORG_ID = `${BRAND_URL}/#organization`
 const WEBSITE_ID = `${SITE_URL}/#website`
 
 /** Ensure a URL is absolute — schema.org parsers reject relative paths for logos. */
@@ -65,7 +72,10 @@ export function buildSiteGraph(input: SiteSchemaInput = {}) {
   const socials = input.socials || {}
   const contact = input.contact || {}
 
+  // Build sameAs list: parent brand URL (if distinct from store) + all socials.
+  // This tells Google both domains represent the same Organization entity.
   const sameAs = [
+    BRAND_URL !== SITE_URL ? SITE_URL : null,
     socials.facebook,
     socials.instagram,
     socials.twitter,
@@ -80,17 +90,17 @@ export function buildSiteGraph(input: SiteSchemaInput = {}) {
     name,
     legalName,
     description,
-    url: SITE_URL,
+    url: BRAND_URL,
     foundingDate,
     logo: {
       "@type": "ImageObject",
-      "@id": `${SITE_URL}/#logo`,
+      "@id": `${BRAND_URL}/#logo`,
       url: logoUrl,
       contentUrl: logoUrl,
       caption: name,
       inLanguage: "en-IN",
     },
-    image: { "@id": `${SITE_URL}/#logo` },
+    image: { "@id": `${BRAND_URL}/#logo` },
   }
 
   if (sameAs.length) organization.sameAs = sameAs

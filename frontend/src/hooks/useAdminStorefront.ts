@@ -28,7 +28,11 @@ const DEFAULT_BRANDING: Branding = {
   tagline: "Sacred Essentials for Your Spiritual Journey",
   contactEmail: "support@vastucart.com",
   contactPhone: "+91 98765 43210",
-  address: "42 Temple Lane, Varanasi, Uttar Pradesh 221001, India",
+  streetAddress: "42 Temple Lane",
+  addressLocality: "Varanasi",
+  addressRegion: "Uttar Pradesh",
+  postalCode: "221001",
+  addressCountry: "IN",
   logoUrl: "/VastuCartLogo.png",
   faviconUrl: "/favicon.ico",
   socialLinks: {
@@ -37,6 +41,22 @@ const DEFAULT_BRANDING: Branding = {
     youtube: "https://youtube.com/vastucart",
   },
   gift_card_image_url: "",
+}
+
+/**
+ * Migrate legacy single-string `address` field into the new structured
+ * schema.org-aligned fields. Preserves the admin's typed text by dumping
+ * the whole string into `streetAddress` so no data is lost — admin can then
+ * split it across the proper fields at their leisure.
+ */
+function migrateLegacyBranding(
+  saved: Partial<Branding> & { address?: string }
+): Partial<Branding> {
+  if (!saved.address || saved.streetAddress) return saved
+  // Legacy single-string address exists but new structured fields don't yet.
+  // Dump the whole legacy string into streetAddress as a best-effort preserve.
+  const { address: legacy, ...rest } = saved
+  return { ...rest, streetAddress: legacy }
 }
 
 const DEFAULT_HOMEPAGE_SECTIONS: HomepageSection[] = [
@@ -250,7 +270,7 @@ async function readStore(): Promise<{ id: string; config: StorefrontConfig; rawM
   const config: StorefrontConfig = saved
     ? {
         announcement: { ...DEFAULT_ANNOUNCEMENT, ...saved.announcement },
-        branding: { ...DEFAULT_BRANDING, ...saved.branding },
+        branding: { ...DEFAULT_BRANDING, ...migrateLegacyBranding(saved.branding || {}) },
         homepageSections: mergedSections,
         contentPages: saved.contentPages?.length
           ? saved.contentPages

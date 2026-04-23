@@ -26,7 +26,16 @@ export interface Branding {
   tagline: string
   contactEmail: string
   contactPhone: string
-  address: string
+  /** Street address / line 1+2 (e.g. "42 Temple Lane"). Schema.org: streetAddress */
+  streetAddress: string
+  /** City (e.g. "Varanasi"). Schema.org: addressLocality */
+  addressLocality: string
+  /** State or region (e.g. "Uttar Pradesh"). Schema.org: addressRegion */
+  addressRegion: string
+  /** Postal / ZIP code (e.g. "221001"). Schema.org: postalCode */
+  postalCode: string
+  /** ISO 3166-1 alpha-2 country code (e.g. "IN"). Schema.org: addressCountry */
+  addressCountry: string
   logoUrl: string
   faviconUrl: string
   socialLinks: SocialLinks

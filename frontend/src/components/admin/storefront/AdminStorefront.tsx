@@ -1372,10 +1372,11 @@ export function AdminStorefront({
             </div>
 
             <div>
-              <label style={labelStyle}>Address</label>
+              <label style={labelStyle}>Street Address</label>
               <textarea
-                value={branding.address}
-                onChange={(e) => setBranding({ ...branding, address: e.target.value })}
+                value={branding.streetAddress}
+                onChange={(e) => setBranding({ ...branding, streetAddress: e.target.value })}
+                placeholder="42 Temple Lane, Near Old Market"
                 style={{
                   ...inputStyle,
                   minHeight: "60px",
@@ -1384,6 +1385,61 @@ export function AdminStorefront({
                 onFocus={(e) => (e.target.style.borderColor = primary[400])}
                 onBlur={(e) => (e.target.style.borderColor = earth[300])}
               />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+              <div>
+                <label style={labelStyle}>City</label>
+                <input
+                  type="text"
+                  value={branding.addressLocality}
+                  onChange={(e) => setBranding({ ...branding, addressLocality: e.target.value })}
+                  placeholder="Varanasi"
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                  onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>State / Region</label>
+                <input
+                  type="text"
+                  value={branding.addressRegion}
+                  onChange={(e) => setBranding({ ...branding, addressRegion: e.target.value })}
+                  placeholder="Uttar Pradesh"
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                  onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+              <div>
+                <label style={labelStyle}>Postal Code</label>
+                <input
+                  type="text"
+                  value={branding.postalCode}
+                  onChange={(e) => setBranding({ ...branding, postalCode: e.target.value })}
+                  placeholder="221001"
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                  onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Country (ISO code)</label>
+                <input
+                  type="text"
+                  value={branding.addressCountry}
+                  onChange={(e) => setBranding({ ...branding, addressCountry: e.target.value.toUpperCase().slice(0, 2) })}
+                  placeholder="IN"
+                  maxLength={2}
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                  onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                />
+              </div>
             </div>
 
             {/* Social Links */}

@@ -71,7 +71,11 @@ export default async function StorefrontLayout({
       contact: {
         email: branding?.contactEmail,
         phone: branding?.contactPhone,
-        streetAddress: branding?.address,
+        streetAddress: branding?.streetAddress || branding?.address,
+        addressLocality: branding?.addressLocality,
+        addressRegion: branding?.addressRegion,
+        postalCode: branding?.postalCode,
+        addressCountry: branding?.addressCountry,
       },
     })
   } else {
