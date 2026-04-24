@@ -12,6 +12,7 @@ import { useCheckout } from "@/providers/checkout-provider"
 import { Gift, X, CheckCircle2 } from "lucide-react"
 import { primary, earth, bg, fonts, secondary } from "@/lib/theme"
 import { normalizeImageUrl } from "@/lib/image-url"
+import { logPaymentLifecycle, trackPaymentFailed } from "@/lib/analytics/events"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
@@ -525,6 +526,8 @@ export function PaymentStep() {
     if (!nameOk) { setLocalErr("Please enter the cardholder name."); return }
 
     setLocalErr(null); setError(null); setRzpLoading(true)
+    const cartId = (cart as { id?: string } | null)?.id || ""
+    const amtMinor = Math.round(paymentAmount * 100)
     try {
       const ok = await loadRazorpayScript()
       if (!ok) throw new Error("Failed to load payment module. Check your internet connection.")
@@ -538,6 +541,8 @@ export function PaymentStep() {
       if (!res.ok || !data.order_id) throw new Error(data.error || "Payment init failed. Please try again.")
       const { order_id, key_id } = data
 
+      logPaymentLifecycle({ cartId, stage: "initiated", provider: "razorpay", currency: "INR", amount: amtMinor, email: contactEmail })
+
       return new Promise<void>((resolve, reject) => {
         const rzp = new (window as any).Razorpay({ key: key_id || RZP_KEY })
         rzp.on("payment.success", async () => {
@@ -547,7 +552,13 @@ export function PaymentStep() {
             resolve()
           } catch (e: any) { reject(e) }
         })
-        rzp.on("payment.error", (r: any) => reject(new Error(r?.error?.description || "Payment failed. Please try again.")))
+        rzp.on("payment.error", (r: any) => {
+          const code = r?.error?.code
+          const msg = r?.error?.description || "Payment failed. Please try again."
+          logPaymentLifecycle({ cartId, stage: "failed", provider: "razorpay", currency: "INR", amount: amtMinor, errorCode: code, errorMessage: msg, email: contactEmail })
+          trackPaymentFailed({ paymentType: "razorpay", value: paymentAmount, currency: "INR", errorCode: code, errorMessage: msg })
+          reject(new Error(msg))
+        })
 
         const [expM, expY] = cardExp.split("/").map((s) => s.trim())
         if (typeof rzp.createPayment === "function") {
@@ -567,9 +578,18 @@ export function PaymentStep() {
             config: { display: { blocks: { c: { name: "Card", instruments: [{ method: "card" }] } }, sequence: ["block.c"], preferences: { show_default_blocks: false } } },
             theme: { color: primary[500] },
             handler: async () => { try { const { orderId } = await completeCheckout(); router.push(`/order-confirmation/${orderId}?clear=1`); resolve() } catch (e: any) { reject(e) } },
-            modal: { ondismiss: () => reject(new Error("Payment cancelled.")) },
+            modal: { ondismiss: () => {
+              logPaymentLifecycle({ cartId, stage: "dismissed", provider: "razorpay", currency: "INR", amount: amtMinor, email: contactEmail })
+              reject(new Error("Payment cancelled."))
+            } },
           })
-          rzpStd.on("payment.failed", (r: any) => reject(new Error(r?.error?.description || "Payment failed.")))
+          rzpStd.on("payment.failed", (r: any) => {
+            const code = r?.error?.code
+            const msg = r?.error?.description || "Payment failed."
+            logPaymentLifecycle({ cartId, stage: "failed", provider: "razorpay", currency: "INR", amount: amtMinor, errorCode: code, errorMessage: msg, email: contactEmail })
+            trackPaymentFailed({ paymentType: "razorpay", value: paymentAmount, currency: "INR", errorCode: code, errorMessage: msg })
+            reject(new Error(msg))
+          })
           rzpStd.open()
         }
       })
@@ -585,6 +605,8 @@ export function PaymentStep() {
     if (method === "wallet" && !selWallet) { setLocalErr("Please select a wallet."); return }
 
     setLocalErr(null); setError(null); setRzpLoading(true)
+    const cartId = (cart as { id?: string } | null)?.id || ""
+    const amtMinor = Math.round(paymentAmount * 100)
     try {
       const ok = await loadRazorpayScript()
       if (!ok) throw new Error("Failed to load payment module.")
@@ -597,6 +619,8 @@ export function PaymentStep() {
       const data = await res.json()
       if (!res.ok || !data.order_id) throw new Error(data.error || "Payment init failed.")
       const { order_id, key_id } = data
+
+      logPaymentLifecycle({ cartId, stage: "initiated", provider: "razorpay", currency: "INR", amount: amtMinor, email: contactEmail })
 
       return new Promise<void>((resolve, reject) => {
         const instrument: Record<string, any> = { method }
@@ -620,9 +644,18 @@ export function PaymentStep() {
             try { const { orderId } = await completeCheckout(); router.push(`/order-confirmation/${orderId}?clear=1`); resolve() }
             catch (e: any) { reject(e) }
           },
-          modal: { ondismiss: () => reject(new Error("Payment cancelled. Your cart is safe — try again when ready.")) },
+          modal: { ondismiss: () => {
+            logPaymentLifecycle({ cartId, stage: "dismissed", provider: "razorpay", currency: "INR", amount: amtMinor, email: contactEmail })
+            reject(new Error("Payment cancelled. Your cart is safe — try again when ready."))
+          } },
         })
-        rzp.on("payment.failed", (r: any) => reject(new Error(r?.error?.description || "Payment failed.")))
+        rzp.on("payment.failed", (r: any) => {
+          const code = r?.error?.code
+          const msg = r?.error?.description || "Payment failed."
+          logPaymentLifecycle({ cartId, stage: "failed", provider: "razorpay", currency: "INR", amount: amtMinor, errorCode: code, errorMessage: msg, email: contactEmail })
+          trackPaymentFailed({ paymentType: "razorpay", value: paymentAmount, currency: "INR", errorCode: code, errorMessage: msg })
+          reject(new Error(msg))
+        })
         rzp.open()
       })
     } catch (e: any) {
@@ -634,6 +667,8 @@ export function PaymentStep() {
 
   const handleStripe = async () => {
     setLocalErr(null); setError(null); setStripeLoading(true)
+    const cartId = (cart as { id?: string } | null)?.id || ""
+    const amtMinor = Math.round(paymentAmount * 100)
     try {
       if (!stripeRef.current || !cardElRef.current) throw new Error("Payment form not ready. Please wait.")
       const res = await fetch(`${BACKEND_URL}/store/stripe/create-payment-intent`, {
@@ -643,6 +678,7 @@ export function PaymentStep() {
       })
       const d = await res.json()
       if (!res.ok || !d.client_secret) throw new Error(d.error || "Failed to initialize payment.")
+      logPaymentLifecycle({ cartId, stage: "initiated", provider: "stripe", currency: "USD", amount: amtMinor, email: contactEmail })
       const { error: sErr } = await stripeRef.current.confirmCardPayment(d.client_secret, {
         payment_method: {
           card: cardElRef.current,
@@ -652,7 +688,11 @@ export function PaymentStep() {
           },
         },
       })
-      if (sErr) throw new Error(sErr.message || "Payment failed.")
+      if (sErr) {
+        logPaymentLifecycle({ cartId, stage: "failed", provider: "stripe", currency: "USD", amount: amtMinor, errorCode: sErr.code, errorMessage: sErr.message, email: contactEmail })
+        trackPaymentFailed({ paymentType: "stripe", value: paymentAmount, currency: "USD", errorCode: sErr.code, errorMessage: sErr.message })
+        throw new Error(sErr.message || "Payment failed.")
+      }
       const { orderId } = await completeCheckout()
       router.push(`/order-confirmation/${orderId}?clear=1`)
     } catch (e: any) {

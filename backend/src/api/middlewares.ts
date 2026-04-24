@@ -130,6 +130,11 @@ export default defineMiddlewares({
       method: ["POST"],
       middlewares: [trackingLimit as any],
     },
+    {
+      matcher: "/store/payment-events",
+      method: ["POST"],
+      middlewares: [trackingLimit as any],
+    },
 
     // ─── Store search body validation ─────────────────────────────────────────
     {

@@ -9,6 +9,7 @@ import {
   trackBeginCheckout,
   trackAddShippingInfo,
   trackAddPaymentInfo,
+  logPaymentLifecycle,
   mapLineItems,
   cartTotalMajor,
   type MedusaLineItem,
@@ -461,18 +462,45 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         throw new Error("Order was created but no order ID was returned. Please check your order history.")
       }
 
+      // Phase 4 — log successful payment to backend funnel.
+      if (cart) {
+        logPaymentLifecycle({
+          cartId: id,
+          stage: "succeeded",
+          provider: paymentMethod || "system",
+          currency: (cart as { currency_code?: string }).currency_code || "inr",
+          amount: (cart as { total?: number }).total || 0,
+          orderId,
+          email: (cart as { email?: string }).email || contactEmail || undefined,
+        })
+      }
+
       // Mark the order as completed BEFORE returning so the checkout guard
       // is already suppressed when clearCart() fires on the next page.
       setCompletedOrderId(orderId)
       return { orderId }
     } catch (err: any) {
       const msg = err?.message || "Failed to complete order. Please try again."
+      // Phase 4 — log cart.complete failure as a payment failure with provider context.
+      const id = cart?.id || cartId
+      if (id && cart) {
+        logPaymentLifecycle({
+          cartId: id,
+          stage: "failed",
+          provider: paymentMethod || "system",
+          currency: (cart as { currency_code?: string }).currency_code || "inr",
+          amount: (cart as { total?: number }).total || 0,
+          errorCode: "cart_complete_failed",
+          errorMessage: msg,
+          email: (cart as { email?: string }).email || contactEmail || undefined,
+        })
+      }
       setError(msg)
       throw new Error(msg)
     } finally {
       setIsProcessing(false)
     }
-  }, [cart, cartId, paymentMethod, appliedGiftCard, giftCardDiscount])
+  }, [cart, cartId, paymentMethod, appliedGiftCard, giftCardDiscount, contactEmail])
 
   return (
     <CheckoutContext.Provider

@@ -288,7 +288,7 @@ export function trackSearch({ term, resultCount }: { term: string; resultCount?:
 
 /**
  * Custom event — distinguishes a real gateway failure from an abandonment
- * in GA4 Funnel Exploration. Pairs with Phase 4 (backend logging).
+ * in GA4 Funnel Exploration. Pairs with backend logging via logPaymentLifecycle.
  */
 export function trackPaymentFailed(args: PaymentFailedArgs): void {
   gtag("event", "payment_failed", {
@@ -299,6 +299,68 @@ export function trackPaymentFailed(args: PaymentFailedArgs): void {
     ...(args.errorMessage ? { error_message: args.errorMessage } : {}),
     ...(args.transactionAttemptId ? { transaction_attempt_id: args.transactionAttemptId } : {}),
   })
+}
+
+// ─── Backend lifecycle logging (Phase 4) ─────────────────────────
+
+export type PaymentLifecycleStage = "initiated" | "succeeded" | "failed" | "dismissed"
+
+export interface LogPaymentLifecycleArgs {
+  cartId: string
+  stage: PaymentLifecycleStage
+  provider: string // razorpay | stripe | paypal | cod | system | giftcard
+  currency: string
+  /** Minor units — paise or cents. Pass 0 if unknown. */
+  amount: number
+  orderId?: string
+  errorCode?: string
+  errorMessage?: string
+  email?: string
+}
+
+/**
+ * Log a payment lifecycle event to the backend so it appears in the admin
+ * payment-events dashboard (funnel stats + failure breakdown).
+ *
+ * Fire-and-forget: never awaited, never throws. Paired with the GA4
+ * trackPayment* helpers — GA4 gives realtime external visibility, this
+ * gives first-party auditable history with error codes & IPs.
+ */
+export function logPaymentLifecycle(args: LogPaymentLifecycleArgs): void {
+  if (!hasWindow()) return
+  if (!args.cartId || !args.stage) return
+
+  const backend = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
+  const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+  if (!backend || !pubKey) return
+
+  const body = {
+    cart_id: args.cartId,
+    stage: args.stage,
+    provider: args.provider,
+    currency: args.currency.toLowerCase(),
+    amount: Math.max(0, Math.floor(args.amount || 0)),
+    ...(args.orderId ? { order_id: args.orderId } : {}),
+    ...(args.errorCode ? { error_code: args.errorCode } : {}),
+    ...(args.errorMessage ? { error_message: args.errorMessage } : {}),
+    ...(args.email ? { email: args.email } : {}),
+  }
+
+  // keepalive: survives page navigation (crucial for 'succeeded' which fires
+  // right before router.push to order-confirmation).
+  try {
+    fetch(`${backend}/store/payment-events`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-publishable-api-key": pubKey,
+      },
+      body: JSON.stringify(body),
+      keepalive: true,
+    }).catch(() => {})
+  } catch {
+    // never throw from analytics
+  }
 }
 
 // ─── Deduplication guard ─────────────────────────────────────────

@@ -273,6 +273,11 @@ const modules: any[] = [
   {
     resolve: "./src/modules/support-tickets",
   },
+
+  // Payment Events (payment lifecycle logging for funnel analytics)
+  {
+    resolve: "./src/modules/payment-events",
+  },
 ]
 
 // Analytics (only if PostHog key is set)
