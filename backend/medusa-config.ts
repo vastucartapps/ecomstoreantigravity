@@ -278,6 +278,11 @@ const modules: any[] = [
   {
     resolve: "./src/modules/payment-events",
   },
+
+  // Abandoned Cart Recovery (scheduled recovery emails + conversion tracking)
+  {
+    resolve: "./src/modules/abandoned-cart-recovery",
+  },
 ]
 
 // Analytics (only if PostHog key is set)
