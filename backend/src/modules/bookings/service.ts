@@ -69,7 +69,14 @@ class BookingsModuleService extends MedusaService({ Booking, BlockedDate, SlotCo
   }
 
   async updateBookingFields(id: string, fields: { notes?: string; meeting_link?: string; status?: string }): Promise<any> {
-    return this.updateBookings({ id, ...fields } as any)
+    // Strip undefined values — Medusa's generated updateBookings rejects
+    // payloads where partial fields are explicitly undefined. Only carry
+    // through the keys the caller actually set.
+    const updateData: Record<string, unknown> = { id }
+    if (fields.status !== undefined) updateData.status = fields.status
+    if (fields.meeting_link !== undefined) updateData.meeting_link = fields.meeting_link
+    if (fields.notes !== undefined) updateData.notes = fields.notes
+    return this.updateBookings(updateData as any)
   }
 
   // ---------------------------------------------------------------------------
