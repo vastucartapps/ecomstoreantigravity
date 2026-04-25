@@ -126,6 +126,11 @@ export function useAdminBookings() {
     }
   }, [])
 
+  // All three booking-edit hooks now log the underlying error so admin
+  // can see it in DevTools console and report meaningful detail when the
+  // toast surfaces a generic failure. Returning boolean keeps existing
+  // page-level handlers (showToast on false) working unchanged.
+
   const updateStatus = useCallback(
     async (id: string, status: BookingStatus): Promise<boolean> => {
       try {
@@ -134,7 +139,8 @@ export function useAdminBookings() {
           body: { status },
         })
         return true
-      } catch {
+      } catch (err) {
+        console.error(`[bookings] updateStatus(${id}) failed:`, err)
         return false
       }
     },
@@ -149,7 +155,8 @@ export function useAdminBookings() {
           body: { meeting_link: link },
         })
         return true
-      } catch {
+      } catch (err) {
+        console.error(`[bookings] setMeetingLink(${id}) failed:`, err)
         return false
       }
     },
@@ -164,7 +171,8 @@ export function useAdminBookings() {
           body: { notes },
         })
         return true
-      } catch {
+      } catch (err) {
+        console.error(`[bookings] addNotes(${id}) failed:`, err)
         return false
       }
     },

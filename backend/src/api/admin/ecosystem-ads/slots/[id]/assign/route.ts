@@ -17,7 +17,10 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       return
     }
 
-    res.json({ success: true })
+    // Return updated slot so admin UI can refresh local state inline
+    // without a separate refetch round-trip.
+    const slot = await adsService.retrieveEcosystemSlot(req.params.id)
+    res.json({ success: true, slot })
   } catch (err: any) {
     res.status(500).json({ message: err.message || "Failed to assign slot" })
   }
@@ -27,7 +30,8 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse) {
   try {
     const adsService = req.scope.resolve(ECOSYSTEM_ADS_MODULE) as any
     await adsService.removeSlotAssignment(req.params.id)
-    res.json({ success: true })
+    const slot = await adsService.retrieveEcosystemSlot(req.params.id)
+    res.json({ success: true, slot })
   } catch (err: any) {
     res.status(500).json({ message: err.message || "Failed to remove assignment" })
   }

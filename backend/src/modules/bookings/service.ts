@@ -218,7 +218,15 @@ class BookingsModuleService extends MedusaService({ Booking, BlockedDate, SlotCo
     if (data.slug !== undefined) {
       data.slug = await this.generateUniqueSlug(data.slug, id)
     }
-    return this.updateBookingServiceTypes({ id, ...data } as any)
+    // Strip undefined keys — Medusa's generated update method rejects
+    // partial payloads where some fields are explicitly undefined.
+    const updateData: Record<string, unknown> = { id }
+    for (const key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key) && (data as any)[key] !== undefined) {
+        updateData[key] = (data as any)[key]
+      }
+    }
+    return this.updateBookingServiceTypes(updateData as any)
   }
 
   async deleteServiceType(id: string): Promise<void> {

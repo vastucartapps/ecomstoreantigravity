@@ -27,13 +27,21 @@ export const PATCH = async (req: MedusaRequest, res: MedusaResponse): Promise<vo
   }>
 
   const bookingsService = req.scope.resolve(BOOKINGS_MODULE) as any
-  const updated = await bookingsService.updateServiceType(id, body)
-  res.json({ service_type: updated })
+  try {
+    const updated = await bookingsService.updateServiceType(id, body)
+    res.json({ service_type: updated })
+  } catch (err: any) {
+    res.status(500).json({ message: err?.message || "Failed to update service type" })
+  }
 }
 
 export const DELETE = async (req: MedusaRequest, res: MedusaResponse): Promise<void> => {
   const { id } = req.params
   const bookingsService = req.scope.resolve(BOOKINGS_MODULE) as any
-  await bookingsService.deleteServiceType(id)
-  res.json({ id, deleted: true })
+  try {
+    await bookingsService.deleteServiceType(id)
+    res.json({ id, deleted: true })
+  } catch (err: any) {
+    res.status(500).json({ message: err?.message || "Failed to delete service type" })
+  }
 }
