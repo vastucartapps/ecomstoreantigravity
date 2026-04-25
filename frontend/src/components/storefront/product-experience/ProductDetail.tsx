@@ -13,6 +13,7 @@ import { RichContent } from "./RichContent"
 import { ReviewsSection } from "./ReviewsSection"
 import { QASection } from "./QASection"
 import { primary, secondary, earth, bg, fonts, gradients } from "@/lib/theme"
+import { useOperationalPolicies } from "@/providers/announcement-provider"
 
 export function ProductDetail({
   product,
@@ -39,6 +40,15 @@ export function ProductDetail({
   onBreadcrumbClick,
   onScrollToReviews,
 }: ProductDetailProps) {
+  // Per-product overrides (set in product metadata) win; otherwise fall
+  // through to admin-canonical operational policies. Single source of
+  // truth — admin edits the return window in Shipping → Return Policy
+  // and every PDP without a per-product override updates.
+  const ops = useOperationalPolicies()
+  const deliveryDisplay =
+    product.deliveryEstimate || ops.defaultDeliveryDisplay
+  const returnDisplay =
+    product.returnPolicy || `${ops.returnWindowDays}-day easy returns`
   const [quantity, setQuantity] = useState(1)
   const [wishlisted, setWishlisted] = useState(isWishlisted)
   const [activeTab, setActiveTab] = useState<"description" | "specs">("description")
@@ -244,7 +254,7 @@ export function ProductDetail({
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: earth[300], fontFamily: fonts.body }}>Delivery</p>
-                    <p className="text-sm font-medium mt-0.5" style={{ color: earth[700], fontFamily: fonts.body }}>{product.deliveryEstimate}</p>
+                    <p className="text-sm font-medium mt-0.5" style={{ color: earth[700], fontFamily: fonts.body }}>{deliveryDisplay}</p>
                   </div>
                 </div>
 
@@ -266,7 +276,7 @@ export function ProductDetail({
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: earth[300], fontFamily: fonts.body }}>Returns</p>
-                    <p className="text-sm font-medium mt-0.5" style={{ color: earth[700], fontFamily: fonts.body }}>{product.returnPolicy}</p>
+                    <p className="text-sm font-medium mt-0.5" style={{ color: earth[700], fontFamily: fonts.body }}>{returnDisplay}</p>
                   </div>
                 </div>
               </div>

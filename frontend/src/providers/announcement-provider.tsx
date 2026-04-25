@@ -70,6 +70,9 @@ export interface OperationalPolicies {
   inspectionDays: string
   refundDays: string
   unboxingVideoRequired: boolean
+  /** Display string for default delivery time (e.g. "7-10 business days").
+   *  Derived from the standard delivery estimate in shipping config. */
+  defaultDeliveryDisplay: string
 }
 
 /** Geo-detected region — set by middleware via Cloudflare CF-IPCountry
@@ -133,6 +136,7 @@ const DEFAULT_OPERATIONAL_POLICIES: OperationalPolicies = {
   inspectionDays: "3-5",
   refundDays: "7-10",
   unboxingVideoRequired: true,
+  defaultDeliveryDisplay: "7-10 business days",
 }
 
 const DEFAULT_FOOTER: FooterValue = {
@@ -308,6 +312,20 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
             next.codFee = config.cod.fee ?? next.codFee
             next.codMinOrderInr = config.cod.minOrder ?? next.codMinOrderInr
             next.codMaxOrderInr = config.cod.maxOrder ?? next.codMaxOrderInr
+          }
+          // Derive default delivery display from the standard delivery
+          // estimate (the "Rest of India" / "Standard" row admin saved).
+          // Falls back to whatever's present if no row matches "standard".
+          const ests = config?.deliveryEstimates as
+            | Array<{ region?: string; minDays?: number; maxDays?: number }>
+            | undefined
+          if (Array.isArray(ests) && ests.length) {
+            const standard =
+              ests.find((e) => /standard|rest of india/i.test(e.region || "")) ||
+              ests[0]
+            if (standard && typeof standard.minDays === "number" && typeof standard.maxDays === "number") {
+              next.defaultDeliveryDisplay = `${standard.minDays}-${standard.maxDays} business days`
+            }
           }
         }
 

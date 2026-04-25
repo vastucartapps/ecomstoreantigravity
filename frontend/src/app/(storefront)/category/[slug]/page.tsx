@@ -192,7 +192,7 @@ function mapQVProduct(p: any): Product {
   const v = p.variants?.[0]; const cp = v?.calculated_price
   const price = (cp?.calculated_amount ?? 0) / 100; const mrp = (cp?.original_amount ?? cp?.calculated_amount ?? 0) / 100
   const curr = (cp?.currency_code || "inr").toUpperCase(); const meta = p.metadata || {}
-  return { id: p.id, name: p.title, slug: p.handle, description: p.description || "", shortDescription: meta.short_description || (p.description || "").slice(0, 200), currency: curr === "USD" ? "USD" : "INR", price, mrp, discountPercent: mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0, rating: 0, reviewCount: 0, inStock: p.variants?.some((v: any) => v.manage_inventory === false || (v.inventory_quantity ?? 1) > 0) ?? true, sku: v?.sku || p.handle || "", isNew: false, expressShipping: meta.express_shipping === "true", deliveryEstimate: meta.delivery_estimate || "3-5 business days", returnPolicy: meta.return_policy || "7-day easy returns" }
+  return { id: p.id, name: p.title, slug: p.handle, description: p.description || "", shortDescription: meta.short_description || (p.description || "").slice(0, 200), currency: curr === "USD" ? "USD" : "INR", price, mrp, discountPercent: mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0, rating: 0, reviewCount: 0, inStock: p.variants?.some((v: any) => v.manage_inventory === false || (v.inventory_quantity ?? 1) > 0) ?? true, sku: v?.sku || p.handle || "", isNew: false, expressShipping: meta.express_shipping === "true", deliveryEstimate: meta.delivery_estimate || "", returnPolicy: meta.return_policy || "" }
 }
 
 function CategoryContent() {

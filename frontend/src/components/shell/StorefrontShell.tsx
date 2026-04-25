@@ -1071,12 +1071,14 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
           </div>
         </section>
 
-        {/* ── 3. Mega-nav columns: Brand | Admin × 2 | Explore | Account ─ */}
+        {/* ── 3. Mega-nav: Brand block on left, ALL link columns auto-flow
+              on the right. No "overflow" row — admin can configure 1, 2,
+              3, or N columns and they distribute evenly without orphans. */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-8">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-10">
+          <div className="flex flex-col lg:flex-row gap-10 lg:gap-12">
 
-            {/* Brand column — spans full width on mobile */}
-            <div className="col-span-2 md:col-span-1 space-y-5">
+            {/* Brand block — fixed width on desktop, full width on mobile */}
+            <div className="lg:w-72 flex-shrink-0 space-y-5">
               <Link href="/" aria-label={`${branding.storeName} home`} className="inline-flex items-center gap-3">
                 <span
                   className="w-12 h-12 rounded-full flex items-center justify-center"
@@ -1130,99 +1132,17 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
               </div>
             </div>
 
-            {/* Admin-configured columns — first 2 slots in main grid */}
-            {footerConfig.columns.slice(0, 2).map((col) => (
-              <div key={col.title} className="space-y-4">
-                <h3
-                  className="font-semibold text-xs uppercase tracking-widest opacity-90"
-                  style={{ fontFamily: fonts.heading }}
-                >
-                  {col.title}
-                </h3>
-                <ul className="space-y-2.5">
-                  {col.links.map((lnk) => (
-                    <li key={lnk.url}>
-                      <Link
-                        href={lnk.url}
-                        className="text-sm opacity-70 hover:opacity-100 transition-opacity"
-                        style={{ fontFamily: fonts.body }}
-                      >
-                        {lnk.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-
-            {/* Ecosystem column — VastuCart services & discovery links */}
-            <div className="space-y-4">
-              <h3
-                className="font-semibold text-xs uppercase tracking-widest opacity-90"
-                style={{ fontFamily: fonts.heading }}
-              >
-                Explore
-              </h3>
-              <ul className="space-y-2.5">
-                {[
-                  ...(consultationsEnabled ? [{ label: "Vastu Consultation", href: "/consultations" }] : []),
-                  { label: "Blog & Articles", href: "/blog" },
-                  { label: "Gift Cards", href: "/gift-cards" },
-                  { label: "Loyalty Rewards", href: "/account/loyalty" },
-                  { label: "New Arrivals", href: "/category/new-arrivals" },
-                  { label: "Offers & Deals", href: "/offers" },
-                  { label: "Bulk Orders", href: "/bulk-orders" },
-                ].map((lnk) => (
-                  <li key={lnk.href}>
-                    <Link
-                      href={lnk.href}
-                      className="text-sm opacity-70 hover:opacity-100 transition-opacity"
-                      style={{ fontFamily: fonts.body }}
-                    >
-                      {lnk.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Customer account quick links */}
-            <div className="space-y-4">
-              <h3
-                className="font-semibold text-xs uppercase tracking-widest opacity-90"
-                style={{ fontFamily: fonts.heading }}
-              >
-                My Account
-              </h3>
-              <ul className="space-y-2.5">
-                {[
-                  { label: "Dashboard", href: "/account" },
-                  { label: "My Orders", href: "/account/orders" },
-                  { label: "Wishlist", href: "/account/wishlist" },
-                  { label: "My Bookings", href: "/account/bookings" },
-                  { label: "Loyalty Points", href: "/account/loyalty" },
-                  { label: "Address Book", href: "/account/addresses" },
-                  { label: "Contact Support", href: "/account/support" },
-                ].map((lnk) => (
-                  <li key={lnk.href}>
-                    <Link
-                      href={lnk.href}
-                      className="text-sm opacity-70 hover:opacity-100 transition-opacity"
-                      style={{ fontFamily: fonts.body }}
-                    >
-                      {lnk.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-          </div>
-
-          {/* Overflow admin columns — rendered when admin configures more than 2 */}
-          {footerConfig.columns.length > 2 && (
-            <div className="mt-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 lg:gap-10">
-              {footerConfig.columns.slice(2).map((col) => (
+            {/* All link columns: every admin column + Explore + Account.
+                grid auto-fit so 1, 2, 3, or N columns all distribute evenly. */}
+            <div
+              className="flex-1 grid gap-8 lg:gap-10"
+              style={{
+                gridTemplateColumns:
+                  "repeat(auto-fit, minmax(160px, 1fr))",
+              }}
+            >
+              {/* Admin-configured columns (any number) */}
+              {footerConfig.columns.map((col) => (
                 <div key={col.title} className="space-y-4">
                   <h3
                     className="font-semibold text-xs uppercase tracking-widest opacity-90"
@@ -1245,8 +1165,70 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                   </ul>
                 </div>
               ))}
+
+              {/* Explore — VastuCart services & discovery links */}
+              <div className="space-y-4">
+                <h3
+                  className="font-semibold text-xs uppercase tracking-widest opacity-90"
+                  style={{ fontFamily: fonts.heading }}
+                >
+                  Explore
+                </h3>
+                <ul className="space-y-2.5">
+                  {[
+                    ...(consultationsEnabled ? [{ label: "Vastu Consultation", href: "/consultations" }] : []),
+                    { label: "Blog & Articles", href: "/blog" },
+                    { label: "Gift Cards", href: "/gift-cards" },
+                    { label: "Loyalty Rewards", href: "/account/loyalty" },
+                    { label: "New Arrivals", href: "/category/new-arrivals" },
+                    { label: "Offers & Deals", href: "/offers" },
+                    { label: "Bulk Orders", href: "/bulk-orders" },
+                  ].map((lnk) => (
+                    <li key={lnk.href}>
+                      <Link
+                        href={lnk.href}
+                        className="text-sm opacity-70 hover:opacity-100 transition-opacity"
+                        style={{ fontFamily: fonts.body }}
+                      >
+                        {lnk.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Customer account quick links */}
+              <div className="space-y-4">
+                <h3
+                  className="font-semibold text-xs uppercase tracking-widest opacity-90"
+                  style={{ fontFamily: fonts.heading }}
+                >
+                  My Account
+                </h3>
+                <ul className="space-y-2.5">
+                  {[
+                    { label: "Dashboard", href: "/account" },
+                    { label: "My Orders", href: "/account/orders" },
+                    { label: "Wishlist", href: "/account/wishlist" },
+                    { label: "My Bookings", href: "/account/bookings" },
+                    { label: "Loyalty Points", href: "/account/loyalty" },
+                    { label: "Address Book", href: "/account/addresses" },
+                    { label: "Contact Support", href: "/account/support" },
+                  ].map((lnk) => (
+                    <li key={lnk.href}>
+                      <Link
+                        href={lnk.href}
+                        className="text-sm opacity-70 hover:opacity-100 transition-opacity"
+                        style={{ fontFamily: fonts.body }}
+                      >
+                        {lnk.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          )}
+          </div>
 
         </div>
 

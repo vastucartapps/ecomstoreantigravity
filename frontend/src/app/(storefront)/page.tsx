@@ -232,8 +232,10 @@ function mapQVProduct(p: any): Product {
     inStock: p.variants?.some((v: any) => v.manage_inventory === false || (v.inventory_quantity ?? 1) > 0) ?? true,
     sku: v?.sku || p.handle || "", isNew: false,
     expressShipping: meta.express_shipping === "true",
-    deliveryEstimate: meta.delivery_estimate || "3-5 business days",
-    returnPolicy: meta.return_policy || "7-day easy returns",
+    // Empty when no per-product override → renderer falls back to admin
+    // operational policies (return window, delivery days).
+    deliveryEstimate: meta.delivery_estimate || "",
+    returnPolicy: meta.return_policy || "",
   }
 }
 

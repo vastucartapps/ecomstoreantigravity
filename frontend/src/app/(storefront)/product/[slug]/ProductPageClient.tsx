@@ -180,8 +180,10 @@ function mapProduct(p: any, reviewCount: number, rating: number): Product {
       (p.created_at &&
         (Date.now() - new Date(p.created_at).getTime()) / 86400000 <= 30),
     expressShipping: meta.express_shipping === "true",
-    deliveryEstimate: meta.delivery_estimate || "3-5 business days",
-    returnPolicy: meta.return_policy || "7-day easy returns",
+    // Empty string when no per-product override → ProductDetail falls
+    // back to admin operational policies (return window, delivery days).
+    deliveryEstimate: meta.delivery_estimate || "",
+    returnPolicy: meta.return_policy || "",
   }
 }
 
