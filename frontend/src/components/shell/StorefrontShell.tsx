@@ -1184,9 +1184,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                     ...(consultationsEnabled ? [{ label: "Vastu Consultation", href: "/consultations" }] : []),
                     { label: "Blog & Articles", href: "/blog" },
                     { label: "Gift Cards", href: "/gift-cards" },
-                    { label: "Loyalty Rewards", href: "/account/loyalty" },
                     { label: "Offers & Deals", href: "/offers" },
-                    { label: "Bulk Orders", href: "/bulk-orders" },
                   ].map((lnk) => (
                     <li key={lnk.href}>
                       <Link
