@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react"
 import type { MarketingSlide } from "@/types/auth"
+import { useBranding } from "@/providers/announcement-provider"
 
 interface MarketingPanelProps {
   slides: MarketingSlide[]
 }
 
 export function MarketingPanel({ slides }: MarketingPanelProps) {
+  const branding = useBranding()
   const activeSlides = slides
     .filter((s) => s.is_active)
     .sort((a, b) => a.display_order - b.display_order)
@@ -38,8 +40,8 @@ export function MarketingPanel({ slides }: MarketingPanelProps) {
         }}
       >
         <img
-          src="/VastuCartLogo.png"
-          alt="VastuCart"
+          src={branding.logoUrl || "/VastuCartLogo.png"}
+          alt={branding.storeName}
           className="h-20 w-auto mb-6 opacity-90"
         />
         <p

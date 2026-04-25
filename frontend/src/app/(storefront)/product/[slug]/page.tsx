@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import ProductPageClient from "./ProductPageClient"
 import { JsonLd } from "@/components/JsonLd"
+import { fetchBrandingForMetadata } from "@/lib/branding-ssr"
 import {
   buildProductGraph,
   type SchemaProductInput,
@@ -220,14 +221,14 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const p = await fetchProduct(slug)
-  if (!p) return { title: "Product Not Found | VastuCart" }
+  const [p, b] = await Promise.all([fetchProduct(slug), fetchBrandingForMetadata()])
+  if (!p) return { title: `Product Not Found | ${b.storeName}` }
 
-  const title = `${p.title} | VastuCart`
+  const title = `${p.title} | ${b.storeName}`
   const description =
     (p.description && p.description.slice(0, 160)) ||
     (p.metadata?.seo_description as string | undefined) ||
-    `Buy ${p.title} online at VastuCart — India's trusted Vastu & wellness store.`
+    `Buy ${p.title} online at ${b.storeName} — India's trusted Vastu & wellness store.`
 
   const rawImage = p.thumbnail || p.images?.[0]?.url || ""
   const imageUrl = toAbsoluteUrl(rawImage)
@@ -255,7 +256,7 @@ export async function generateMetadata({
       description,
       url: pageUrl,
       type: "website",
-      siteName: "VastuCart",
+      siteName: b.storeName,
       ...(imageUrl
         ? { images: [{ url: imageUrl, width: 1200, height: 630, alt: p.title }] }
         : {}),

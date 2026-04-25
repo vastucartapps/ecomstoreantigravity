@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AuthScreen } from "@/components/auth"
 import { useAuth } from "@/providers/auth-provider"
+import { useBranding } from "@/providers/announcement-provider"
 import { medusa } from "@/lib/medusa"
 import type { MarketingSlide, PasswordRequirement } from "@/types/auth"
 import { AUTH_CAROUSEL_IMAGES } from "@/lib/image-constants"
@@ -16,37 +17,46 @@ const PASSWORD_REQUIREMENTS: PasswordRequirement[] = [
   { label: "One special character (!@#$%)", key: "special" },
 ]
 
-const DEFAULT_SLIDES: MarketingSlide[] = [
-  {
-    id: "default-1",
-    image_url: AUTH_CAROUSEL_IMAGES[0].image_url,
-    quote: "Transform your space with the ancient wisdom of Vastu Shastra and the healing power of crystals",
-    attribution: "VastuCart",
-    is_active: true,
-    display_order: 1,
-  },
-  {
-    id: "default-2",
-    image_url: AUTH_CAROUSEL_IMAGES[1].image_url,
-    quote: "Every crystal carries the energy of millions of years. Let their vibrations elevate your life",
-    attribution: "Ancient Wisdom",
-    is_active: true,
-    display_order: 2,
-  },
-  {
-    id: "default-3",
-    image_url: AUTH_CAROUSEL_IMAGES[2].image_url,
-    quote: "Authentic, ethically sourced spiritual products delivered with care to your doorstep",
-    attribution: "VastuCart Promise",
-    is_active: true,
-    display_order: 3,
-  },
-]
+/**
+ * Build the carousel slide defaults with admin's storeName interpolated
+ * into attribution lines so a single edit propagates to the auth carousel.
+ */
+function buildDefaultSlides(storeName: string): MarketingSlide[] {
+  return [
+    {
+      id: "default-1",
+      image_url: AUTH_CAROUSEL_IMAGES[0].image_url,
+      quote: "Transform your space with the ancient wisdom of Vastu Shastra and the healing power of crystals",
+      attribution: storeName,
+      is_active: true,
+      display_order: 1,
+    },
+    {
+      id: "default-2",
+      image_url: AUTH_CAROUSEL_IMAGES[1].image_url,
+      quote: "Every crystal carries the energy of millions of years. Let their vibrations elevate your life",
+      attribution: "Ancient Wisdom",
+      is_active: true,
+      display_order: 2,
+    },
+    {
+      id: "default-3",
+      image_url: AUTH_CAROUSEL_IMAGES[2].image_url,
+      quote: "Authentic, ethically sourced spiritual products delivered with care to your doorstep",
+      attribution: `${storeName} Promise`,
+      is_active: true,
+      display_order: 3,
+    },
+  ]
+}
 
 export default function RegisterPage() {
   const router = useRouter()
   const { user, isAdmin, register } = useAuth()
-  const [slides, setSlides] = useState<MarketingSlide[]>(DEFAULT_SLIDES)
+  const branding = useBranding()
+  const [slides, setSlides] = useState<MarketingSlide[]>(() =>
+    buildDefaultSlides(branding.storeName)
+  )
 
   // Redirect if already logged in
   useEffect(() => {

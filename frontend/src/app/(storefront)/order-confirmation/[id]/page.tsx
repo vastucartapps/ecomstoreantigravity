@@ -120,6 +120,8 @@ export default function OrderConfirmationPage() {
     setDownloadingPdf(true)
     try {
       const { generateGSTInvoicePDF } = await import("@/lib/invoice-generator")
+      const { fetchInvoiceSeller } = await import("@/lib/seller-from-admin")
+      const seller = await fetchInvoiceSeller()
       const addr = order.shipping_address || {}
       const invoiceItems: InvoiceItem[] = (order.items || []).map((item: any) => ({
         name: item.product_title || item.title || "Product",
@@ -148,6 +150,7 @@ export default function OrderConfirmationPage() {
         items: invoiceItems,
         shippingCharge: (order.shipping_total || 0) / 100,
         currency: order.currency_code || "inr",
+        seller,
       }
       await generateGSTInvoicePDF(invoiceData)
     } catch (e) {

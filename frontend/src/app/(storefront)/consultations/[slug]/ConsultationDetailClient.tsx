@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Check, Clock, Monitor, MapPin, Users, ChevronLeft, ChevronRight, Award, ArrowRight, Phone, ArrowLeft } from "lucide-react"
 import { normalizeImageUrl } from "@/lib/image-url"
+import { useBranding } from "@/providers/announcement-provider"
 import type { ConsultationDetailType } from "./page"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
@@ -189,6 +190,7 @@ function OtherConsultations({ currentId }: { currentId: string }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ConsultationDetailClient({ serviceType: s }: { serviceType: ConsultationDetailType }) {
+  const branding = useBranding()
   const included = parseIncluded(s.what_is_included)
   const images = [s.image_1, s.image_2, s.image_3].filter(Boolean)
 
@@ -203,7 +205,7 @@ export default function ConsultationDetailClient({ serviceType: s }: { serviceTy
     ...(images.length > 0 ? { image: images.map(toOgUrl).filter(Boolean) } : {}),
     provider: {
       "@type": "Organization",
-      name: "VastuCart",
+      name: branding.storeName,
       url: SITE_URL,
       logo: `${SITE_URL}/icon.png`,
     },

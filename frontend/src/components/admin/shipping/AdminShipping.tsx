@@ -11,6 +11,7 @@ import {
   Plus,
   Trash2,
   Loader2,
+  RotateCcw,
 } from "lucide-react"
 import { primary, secondary, earth, bg, fonts, shadows, semantic, gradients } from "@/lib/theme"
 import type { AdminShippingProps, DeliveryEstimate } from "@/types/admin-shipping"
@@ -52,12 +53,14 @@ const btnPrimary: React.CSSProperties = {
 
 export function AdminShipping({
   config,
+  returnPolicy,
   isLoading,
   onSaveZones,
   onSaveFreeShipping,
   onSaveCOD,
   onSaveDeliveryEstimates,
   onSaveShippingPolicy,
+  onSaveReturnPolicy,
 }: AdminShippingProps) {
   // --- Zones ---
   const [domesticRate, setDomesticRate] = useState(
@@ -83,6 +86,10 @@ export function AdminShipping({
   // --- Policy ---
   const [policy, setPolicy] = useState(config.shippingPolicy)
   const [savingPolicy, setSavingPolicy] = useState(false)
+
+  // --- Return Policy ---
+  const [returnPol, setReturnPol] = useState(returnPolicy)
+  const [savingReturn, setSavingReturn] = useState(false)
 
   const handleSaveZones = async () => {
     setSavingZones(true)
@@ -291,7 +298,7 @@ export function AdminShipping({
       {/* Free Shipping */}
       <div style={cardStyle}>
         <div
-          style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}
+          style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}
         >
           <DollarSign size={24} style={{ color: primary[500] }} />
           <h2
@@ -306,6 +313,19 @@ export function AdminShipping({
             Free Shipping
           </h2>
         </div>
+        <p
+          style={{
+            fontSize: "12px",
+            color: primary[400],
+            margin: "0 0 20px 0",
+            background: "rgba(1,63,71,0.06)",
+            padding: "8px 12px",
+            borderRadius: "6px",
+            display: "inline-block",
+          }}
+        >
+          📍 Editing the threshold updates: footer trust ribbon · shipping-policy SEO meta · shipping-policy page body · checkout free-shipping check.
+        </p>
 
         <div style={{ marginBottom: "20px" }}>
           <label style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }}>
@@ -445,8 +465,21 @@ export function AdminShipping({
             India Only
           </span>
         </div>
-        <p style={{ fontSize: "13px", color: earth[500], margin: "0 0 24px 0" }}>
+        <p style={{ fontSize: "13px", color: earth[500], margin: "0 0 8px 0" }}>
           COD is available only for domestic orders within India
+        </p>
+        <p
+          style={{
+            fontSize: "12px",
+            color: primary[400],
+            margin: "0 0 24px 0",
+            background: "rgba(1,63,71,0.06)",
+            padding: "8px 12px",
+            borderRadius: "6px",
+            display: "inline-block",
+          }}
+        >
+          📍 Editing min/max/fee updates: checkout COD eligibility check · refund-policy &amp; shipping-policy page bodies (via {`{{codMinOrderInr}}`} / {`{{codMaxOrderInr}}`} / {`{{codFee}}`} variables).
         </p>
 
         <div style={{ marginBottom: "20px" }}>
@@ -750,6 +783,150 @@ export function AdminShipping({
             <Save size={16} />
           )}
           {savingEstimates ? "Saving..." : "Save Delivery Estimates"}
+        </button>
+      </div>
+
+      {/* Return Policy */}
+      <div style={cardStyle}>
+        <div
+          style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px" }}
+        >
+          <RotateCcw size={24} style={{ color: primary[500] }} />
+          <h2
+            style={{
+              fontFamily: fonts.heading,
+              fontSize: "20px",
+              fontWeight: 600,
+              color: earth[700],
+              margin: 0,
+            }}
+          >
+            Return Policy
+          </h2>
+        </div>
+        <p style={{ fontSize: "13px", color: earth[500], margin: "0 0 4px 0" }}>
+          The return-window value below is the <strong>single source of truth</strong> for
+          every place this number appears in the storefront.
+        </p>
+        <p
+          style={{
+            fontSize: "12px",
+            color: primary[400],
+            margin: "0 0 20px 0",
+            background: "rgba(1,63,71,0.06)",
+            padding: "8px 12px",
+            borderRadius: "6px",
+            display: "inline-block",
+          }}
+        >
+          📍 Editing here updates: footer trust ribbon · homepage trust badge ·
+          /refund-policy page · refund-policy SEO meta
+        </p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", marginBottom: "20px" }}>
+          <div>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: earth[700], marginBottom: "6px" }}>
+              Return Window (days)
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={365}
+              value={returnPol.windowDays}
+              onChange={(e) => setReturnPol({ ...returnPol, windowDays: Number(e.target.value) || 0 })}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: `1px solid ${earth[300]}`,
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontFamily: fonts.body,
+                outline: "none",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = primary[400])}
+              onBlur={(e) => (e.target.style.borderColor = earth[300])}
+            />
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: earth[700], marginBottom: "6px" }}>
+              Inspection (business days)
+            </label>
+            <input
+              type="text"
+              value={returnPol.inspectionDays}
+              onChange={(e) => setReturnPol({ ...returnPol, inspectionDays: e.target.value })}
+              placeholder="3-5"
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: `1px solid ${earth[300]}`,
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontFamily: fonts.body,
+                outline: "none",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = primary[400])}
+              onBlur={(e) => (e.target.style.borderColor = earth[300])}
+            />
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: earth[700], marginBottom: "6px" }}>
+              Refund processing (business days)
+            </label>
+            <input
+              type="text"
+              value={returnPol.refundDays}
+              onChange={(e) => setReturnPol({ ...returnPol, refundDays: e.target.value })}
+              placeholder="7-10"
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: `1px solid ${earth[300]}`,
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontFamily: fonts.body,
+                outline: "none",
+              }}
+              onFocus={(e) => (e.target.style.borderColor = primary[400])}
+              onBlur={(e) => (e.target.style.borderColor = earth[300])}
+            />
+          </div>
+        </div>
+
+        <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "20px", cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={returnPol.unboxingVideoRequired}
+            onChange={(e) => setReturnPol({ ...returnPol, unboxingVideoRequired: e.target.checked })}
+            style={{ width: "16px", height: "16px", cursor: "pointer" }}
+          />
+          <span style={{ fontSize: "14px", color: earth[700] }}>
+            Unboxing video required for return claims
+          </span>
+        </label>
+
+        <button
+          onClick={async () => {
+            setSavingReturn(true)
+            try {
+              await onSaveReturnPolicy(returnPol)
+            } finally {
+              setSavingReturn(false)
+            }
+          }}
+          disabled={savingReturn}
+          style={{ ...btnPrimary, opacity: savingReturn ? 0.7 : 1 }}
+          onMouseEnter={(e) => {
+            if (!savingReturn) e.currentTarget.style.background = primary[400]
+          }}
+          onMouseLeave={(e) => (e.currentTarget.style.background = primary[500])}
+        >
+          {savingReturn ? (
+            <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
+          ) : (
+            <Save size={16} />
+          )}
+          {savingReturn ? "Saving..." : "Save Return Policy"}
         </button>
       </div>
 

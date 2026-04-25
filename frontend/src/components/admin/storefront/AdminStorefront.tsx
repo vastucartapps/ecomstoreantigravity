@@ -47,6 +47,7 @@ import type {
   FaqItem,
 } from "@/types/admin-storefront"
 import { normalizeImageUrl } from "@/lib/image-url"
+import { POLICY_VARIABLE_HELP } from "@/lib/policy-template"
 
 type ActiveTab = "announcement" | "branding" | "homepage" | "content" | "footer" | "hero" | "login-slides" | "about-contact" | "consultations"
 
@@ -1312,11 +1313,30 @@ export function AdminStorefront({
               fontSize: "20px",
               fontWeight: 600,
               color: earth[700],
-              margin: "0 0 24px 0",
+              margin: "0 0 8px 0",
             }}
           >
             Store Branding
           </h2>
+          <div
+            style={{
+              fontSize: "12px",
+              color: primary[400],
+              margin: "0 0 24px 0",
+              background: "rgba(1,63,71,0.06)",
+              padding: "10px 14px",
+              borderRadius: "6px",
+            }}
+          >
+            📍 <strong>Single source of truth.</strong> Each field below
+            updates every place that value appears: <em>Store Name</em> →
+            header, footer, page titles (SEO), gift cards page, all 9 legal
+            pages, invoice header, Razorpay modal, auth screens.{" "}
+            <em>Tagline</em> → root SEO meta, footer brand block, auth
+            screens. <em>Contact Email / Phone</em> → footer, contact page,
+            invoice, all 9 legal pages. <em>Logo / Favicon</em> → header,
+            footer, favicon, JSON-LD, auth screens, OpenGraph image alt.
+          </div>
 
           <div style={{ display: "grid", gap: "20px", marginBottom: "24px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
@@ -1989,6 +2009,59 @@ export function AdminStorefront({
                 Markdown is supported: # Heading, ## Sub-heading, **bold**, *italic*,
                 - list item
               </p>
+
+              {/* Template variable cheatsheet — single source of truth for
+                  every value that should stay in sync across legal pages,
+                  footer, invoice, and SEO meta. Authors paste these into
+                  markdown and they get interpolated at render time. */}
+              <details
+                style={{
+                  marginBottom: "16px",
+                  border: `1px solid ${earth[300]}`,
+                  borderRadius: "8px",
+                  background: "rgba(1,63,71,0.03)",
+                  padding: "0",
+                }}
+              >
+                <summary
+                  style={{
+                    cursor: "pointer",
+                    padding: "12px 14px",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                    color: primary[500],
+                    fontFamily: fonts.body,
+                    listStyle: "none",
+                  }}
+                >
+                  📍 Template variables — paste these into your markdown to keep values in sync (click to expand)
+                </summary>
+                <div style={{ padding: "0 14px 14px", borderTop: `1px solid ${earth[200]}` }}>
+                  <p style={{ fontSize: "12px", color: earth[400], margin: "10px 0" }}>
+                    Use these placeholders so a single edit in admin
+                    propagates everywhere they appear:
+                  </p>
+                  <table style={{ width: "100%", fontSize: "12px", fontFamily: fonts.mono, borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ borderBottom: `1px solid ${earth[300]}` }}>
+                        <th style={{ textAlign: "left", padding: "6px 8px", color: earth[700] }}>Variable</th>
+                        <th style={{ textAlign: "left", padding: "6px 8px", color: earth[700] }}>Example</th>
+                        <th style={{ textAlign: "left", padding: "6px 8px", color: earth[700] }}>Source</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {POLICY_VARIABLE_HELP.map((v) => (
+                        <tr key={v.name} style={{ borderBottom: `1px solid ${earth[200]}` }}>
+                          <td style={{ padding: "6px 8px", color: primary[500], whiteSpace: "nowrap" }}>{v.name}</td>
+                          <td style={{ padding: "6px 8px", color: earth[600] }}>{v.example}</td>
+                          <td style={{ padding: "6px 8px", color: earth[400], fontSize: "11px" }}>{v.source}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </details>
+
               <textarea
                 value={pageContent}
                 onChange={(e) => setPageContent(e.target.value)}
@@ -2119,6 +2192,76 @@ export function AdminStorefront({
                 Show Social Links
               </span>
             </label>
+          </div>
+
+          {/* ── Ecosystem section copy (footer cluster cards heading) ── */}
+          <div style={{ marginBottom: "24px", paddingTop: "20px", borderTop: `1px solid ${earth[200]}` }}>
+            <h3 style={{ fontFamily: fonts.heading, fontSize: "16px", fontWeight: 600, color: earth[700], margin: "0 0 6px 0" }}>
+              Ecosystem Section
+            </h3>
+            <p style={{ fontSize: "12px", color: primary[400], margin: "0 0 16px 0", background: "rgba(1,63,71,0.06)", padding: "8px 12px", borderRadius: "6px", display: "inline-block" }}>
+              📍 Editing here updates: footer ecosystem cards heading + intro on every storefront page.
+            </p>
+            <div style={{ marginBottom: "16px" }}>
+              <label style={labelStyle}>Heading (leave empty for &quot;Explore the {`{storeName}`} Ecosystem&quot;)</label>
+              <input
+                type="text"
+                value={footer.ecosystemTitle ?? ""}
+                onChange={(e) => setFooter({ ...footer, ecosystemTitle: e.target.value })}
+                placeholder="Explore the VastuCart Ecosystem"
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                onBlur={(e) => (e.target.style.borderColor = earth[300])}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>Intro (leave empty for default)</label>
+              <textarea
+                value={footer.ecosystemIntro ?? ""}
+                onChange={(e) => setFooter({ ...footer, ecosystemIntro: e.target.value })}
+                placeholder="Nine connected platforms covering every dimension of Vedic life — from daily Panchang to wedding muhurta."
+                rows={2}
+                style={{ ...inputStyle, resize: "vertical" }}
+                onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                onBlur={(e) => (e.target.style.borderColor = earth[300])}
+              />
+            </div>
+          </div>
+
+          {/* ── Newsletter strip copy ── */}
+          <div style={{ marginBottom: "24px", paddingTop: "20px", borderTop: `1px solid ${earth[200]}` }}>
+            <h3 style={{ fontFamily: fonts.heading, fontSize: "16px", fontWeight: 600, color: earth[700], margin: "0 0 6px 0" }}>
+              Newsletter Strip
+            </h3>
+            <p style={{ fontSize: "12px", color: primary[400], margin: "0 0 16px 0", background: "rgba(1,63,71,0.06)", padding: "8px 12px", borderRadius: "6px", display: "inline-block" }}>
+              📍 Editing here updates: the newsletter sign-up section in the footer on every storefront page.
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "16px" }}>
+              <div>
+                <label style={labelStyle}>Title</label>
+                <input
+                  type="text"
+                  value={footer.newsletterTitle ?? ""}
+                  onChange={(e) => setFooter({ ...footer, newsletterTitle: e.target.value })}
+                  placeholder="Stay in the loop"
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                  onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Subtitle</label>
+                <input
+                  type="text"
+                  value={footer.newsletterSubtitle ?? ""}
+                  onChange={(e) => setFooter({ ...footer, newsletterSubtitle: e.target.value })}
+                  placeholder="Weekly Vedic insights, ritual guides, and members-only drops."
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                  onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                />
+              </div>
+            </div>
           </div>
 
           <button

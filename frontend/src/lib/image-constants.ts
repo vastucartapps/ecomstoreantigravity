@@ -13,7 +13,10 @@ export const AUTH_CAROUSEL_IMAGES = [
   {
     image_url:
       "https://images.unsplash.com/photo-1600618528240-fb9fc964b853?w=1200&q=80",
-    title: "Welcome to VastuCart",
+    // Title is interpolated at render time with the admin's storeName.
+    // See app/login/page.tsx and app/register/page.tsx where this slide
+    // gets re-built via buildDefaultSlides(branding.storeName).
+    title: "Welcome",
     subtitle: "Discover harmony in every corner of your home",
   },
   {

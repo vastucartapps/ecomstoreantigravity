@@ -7,6 +7,7 @@ import { QuickViewModal } from "@/components/storefront/product-experience"
 import { useWishlist } from "@/providers/wishlist-provider"
 import { useCart } from "@/providers/cart-provider"
 import { useAuth } from "@/providers/auth-provider"
+import { useOperationalPolicies } from "@/providers/announcement-provider"
 import { medusa } from "@/lib/medusa"
 import type {
   HeroSlide,
@@ -31,32 +32,19 @@ import type { HomepageSection, ConsultationConfig } from "@/types/admin-storefro
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 
-const TRUST_BADGES: TrustBadge[] = [
-  {
-    id: "badge-1",
-    label: "Free Delivery",
-    sublabel: "On all prepaid orders",
-    icon: "truck",
-  },
-  {
-    id: "badge-2",
-    label: "Secure Payment",
-    sublabel: "100% protected checkout",
-    icon: "shield",
-  },
-  {
-    id: "badge-3",
-    label: "Easy Returns",
-    sublabel: "7-day return policy",
-    icon: "refresh",
-  },
-  {
-    id: "badge-4",
-    label: "Authentic Products",
-    sublabel: "Certified & genuine",
-    icon: "badge-check",
-  },
-]
+/**
+ * Trust badges. Return-window copy is derived inside HomePage via
+ * useOperationalPolicies so admin edits to the return window propagate
+ * automatically — no orphan literal "7 days" string here.
+ */
+function buildTrustBadges(returnWindowDays: number): TrustBadge[] {
+  return [
+    { id: "badge-1", label: "Free Delivery",      sublabel: "On all prepaid orders",                  icon: "truck" },
+    { id: "badge-2", label: "Secure Payment",     sublabel: "100% protected checkout",                icon: "shield" },
+    { id: "badge-3", label: "Easy Returns",       sublabel: `${returnWindowDays}-day return policy`,  icon: "refresh" },
+    { id: "badge-4", label: "Authentic Products", sublabel: "Certified & genuine",                    icon: "badge-check" },
+  ]
+}
 
 function mapMedusaProduct(p: any): StorefrontProduct {
   const variant = p.variants?.[0]
@@ -254,6 +242,8 @@ export default function HomePage() {
   const { user } = useAuth()
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
   const { addItem } = useCart()
+  const ops = useOperationalPolicies()
+  const trustBadges = buildTrustBadges(ops.returnWindowDays)
 
   const [isLoading, setIsLoading] = useState(true)
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>([])
@@ -521,7 +511,7 @@ export default function HomePage() {
         bestsellers={bestsellers}
         deals={deals}
         testimonials={testimonials}
-        trustBadges={TRUST_BADGES}
+        trustBadges={trustBadges}
         sectionConfig={sectionConfig}
         onHeroCtaClick={(link) => router.push(link)}
         onCategoryClick={(slug) => router.push(`/category/${slug}`)}

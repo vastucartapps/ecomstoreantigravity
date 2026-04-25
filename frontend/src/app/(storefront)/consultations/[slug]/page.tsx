@@ -3,6 +3,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { normalizeImageUrl } from "@/lib/image-url"
 import ConsultationDetailClient from "./ConsultationDetailClient"
+import { fetchBrandingForMetadata } from "@/lib/branding-ssr"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://sapi.vastucart.in"
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
@@ -70,15 +71,15 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const s = await fetchBySlug(slug)
-  if (!s) return { title: "Consultation Not Found | VastuCart" }
+  const [s, b] = await Promise.all([fetchBySlug(slug), fetchBrandingForMetadata()])
+  if (!s) return { title: `Consultation Not Found | ${b.storeName}` }
 
-  const desc = s.description?.slice(0, 160) || "Expert Vastu consultation service by VastuCart certified consultants."
+  const desc = s.description?.slice(0, 160) || `Expert Vastu consultation service by ${b.storeName} certified consultants.`
   const ogImage = toOgImageUrl(s.image_1)
   const pageUrl = `${SITE_URL}/consultations/${slug}`
 
   return {
-    title: `${s.title} | Vastu Consultation — VastuCart`,
+    title: `${s.title} | Vastu Consultation — ${b.storeName}`,
     description: desc,
     keywords: [
       s.title.toLowerCase(),
@@ -86,14 +87,14 @@ export async function generateMetadata({
       "vastu expert",
       s.mode === "online" ? "online vastu consultation" : "vastu consultant near me",
       "vastu remedies",
-      "vastucart",
+      b.storeName.toLowerCase(),
     ],
     openGraph: {
       title: s.title,
       description: desc,
       url: pageUrl,
       type: "website",
-      siteName: "VastuCart",
+      siteName: b.storeName,
       ...(ogImage ? { images: [{ url: ogImage, width: 1200, height: 630, alt: s.title }] } : {}),
     },
     twitter: {

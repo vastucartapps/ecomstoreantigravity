@@ -6,6 +6,7 @@ import { ProductDetail } from "@/components/storefront/product-experience"
 import { useWishlist } from "@/providers/wishlist-provider"
 import { useCart } from "@/providers/cart-provider"
 import { useAuth } from "@/providers/auth-provider"
+import { useBranding } from "@/providers/announcement-provider"
 import type {
   Product,
   ProductImage,
@@ -284,6 +285,7 @@ export default function ProductPage() {
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
   const { addItem } = useCart()
   const { user } = useAuth()
+  const branding = useBranding()
 
   const [isLoading, setIsLoading] = useState(true)
   const [product, setProduct] = useState<Product | null>(null)
@@ -413,7 +415,7 @@ export default function ProductPage() {
         const cp = variant?.calculated_price
         const price = (cp?.calculated_amount ?? 0) / 100
         const currency = (cp?.currency_code || "inr").toUpperCase()
-        const brand = (rawProduct.metadata?.merchant_centre as { brand?: string } | undefined)?.brand || "VastuCart"
+        const brand = (rawProduct.metadata?.merchant_centre as { brand?: string } | undefined)?.brand || branding.storeName
         const category = rawProduct.categories?.[0]?.name
         trackViewItem({
           item: {
@@ -554,7 +556,7 @@ export default function ProductPage() {
         sku: product.sku,
         brand: {
           "@type": "Brand",
-          name: merchantMeta.brand || "VastuCart",
+          name: merchantMeta.brand || branding.storeName,
         },
         ...(merchantMeta.gtin ? { gtin: merchantMeta.gtin } : {}),
         ...(merchantMeta.mpn ? { mpn: merchantMeta.mpn } : {}),

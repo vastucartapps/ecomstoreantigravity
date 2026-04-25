@@ -1,24 +1,28 @@
 import type { Metadata } from "next"
+import { fetchBrandingForMetadata } from "@/lib/branding-ssr"
 
-export const metadata: Metadata = {
-  title: "Gift Cards — VastuCart",
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await fetchBrandingForMetadata()
+  return {
+  title: "Gift Cards",
   description:
-    "Give the gift of wellness and spirituality. Buy VastuCart gift cards in INR or USD — instantly delivered, valid for 1 year, redeemable on all products.",
-  alternates: { canonical: "https://store.vastucart.in/gift-cards" },
+    `Give the gift of wellness and spirituality. Buy ${b.storeName} gift cards in INR or USD — instantly delivered, valid for 1 year, redeemable on all products.`,
+  alternates: { canonical: `${b.siteUrl}/gift-cards` },
   openGraph: {
-    title: "VastuCart Gift Cards",
+    title: `${b.storeName} Gift Cards`,
     description:
-      "Give the gift of wellness and spirituality. Buy VastuCart gift cards — valid for 1 year, redeemable on all products.",
-    url: "https://store.vastucart.in/gift-cards",
+      `Give the gift of wellness and spirituality. Buy ${b.storeName} gift cards — valid for 1 year, redeemable on all products.`,
+    url: `${b.siteUrl}/gift-cards`,
     type: "website",
-    images: [{ url: "/og-default.png", width: 500, height: 500, alt: "VastuCart Gift Cards" }],
+    images: [{ url: "/og-default.png", width: 500, height: 500, alt: `${b.storeName} Gift Cards` }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "VastuCart Gift Cards",
-    description: "Give the gift of wellness and spirituality. Buy VastuCart gift cards — valid for 1 year.",
+    title: `${b.storeName} Gift Cards`,
+    description: `Give the gift of wellness and spirituality. Buy ${b.storeName} gift cards — valid for 1 year.`,
     images: ["/og-default.png"],
   },
+}
 }
 
 export default function GiftCardsLayout({ children }: { children: React.ReactNode }) {

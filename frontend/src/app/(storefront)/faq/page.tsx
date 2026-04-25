@@ -1,7 +1,9 @@
 "use client"
 import { bg, primary, earth, fonts, shadows } from "@/lib/theme"
+import { useBranding } from "@/providers/announcement-provider"
 
 export default function Page() {
+  const branding = useBranding()
   return (
     <div
       style={{
@@ -44,7 +46,7 @@ export default function Page() {
             marginBottom: "1.5rem",
           }}
         >
-          Frequently asked questions about VastuCart.
+          Frequently asked questions about {branding.storeName}.
         </p>
         <span
           style={{

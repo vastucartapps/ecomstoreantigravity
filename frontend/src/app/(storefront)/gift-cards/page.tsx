@@ -15,6 +15,8 @@ import {
 } from "lucide-react"
 import { primary, secondary, earth, bg, fonts } from "@/lib/theme"
 import { useAuth } from "@/providers/auth-provider"
+import { useBranding } from "@/providers/announcement-provider"
+import { normalizeImageUrl } from "@/lib/image-url"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
@@ -41,6 +43,8 @@ interface SuccessData {
 
 export default function GiftCardsPage() {
   const { user } = useAuth()
+  const branding = useBranding()
+  const heroImage = normalizeImageUrl(branding.gift_card_image_url) || ""
 
   const [currency, setCurrency] = useState<"INR" | "USD">("INR")
   const [denomination, setDenomination] = useState(1000)
@@ -390,16 +394,27 @@ export default function GiftCardsPage() {
   return (
     <div className="min-h-screen py-12 px-4" style={{ background: bg.primary }}>
       <div className="max-w-2xl mx-auto">
-        {/* Header */}
+        {/* Header — admin-uploaded gift_card_image_url renders as the hero
+            when set; otherwise the gradient Gift-icon tile is used. Brand
+            name comes from admin branding so a single edit propagates here. */}
         <div className="text-center mb-8">
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ background: `linear-gradient(135deg, ${primary[500]}, #054348)` }}
-          >
-            <Gift className="w-8 h-8 text-white" />
-          </div>
+          {heroImage ? (
+            <img
+              src={heroImage}
+              alt={`${branding.storeName} Gift Cards`}
+              className="w-full max-w-md mx-auto rounded-2xl mb-4 object-cover"
+              style={{ aspectRatio: "16/9", border: "1px solid #f0ebe4" }}
+            />
+          ) : (
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+              style={{ background: `linear-gradient(135deg, ${primary[500]}, #054348)` }}
+            >
+              <Gift className="w-8 h-8 text-white" />
+            </div>
+          )}
           <h1 className="text-3xl font-bold mb-2" style={{ color: earth[700], fontFamily: fonts.heading }}>
-            VastuCart Gift Cards
+            {branding.storeName} Gift Cards
           </h1>
           <p className="text-base" style={{ color: earth[400] }}>
             The perfect gift for lovers of wellness and spirituality

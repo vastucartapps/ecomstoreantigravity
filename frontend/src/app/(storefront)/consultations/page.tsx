@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import ConsultationsClient from "./ConsultationsClient"
 import type { ConsultationConfig } from "@/types/admin-storefront"
+import { fetchBrandingForMetadata } from "@/lib/branding-ssr"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://sapi.vastucart.in"
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
@@ -41,9 +42,9 @@ async function fetchServiceTypes(): Promise<ServiceType[]> {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const types = await fetchServiceTypes()
+  const [types, b] = await Promise.all([fetchServiceTypes(), fetchBrandingForMetadata()])
   const count = types.length
-  const title = "Vastu Consultations | VastuCart"
+  const title = `Vastu Consultations | ${b.storeName}`
   const description =
     count > 0
       ? `Book from ${count} expert Vastu consultation${count > 1 ? "s" : ""} — home, office, plot analysis. Online & in-person sessions with certified consultants.`
@@ -65,9 +66,9 @@ export async function generateMetadata(): Promise<Metadata> {
       description,
       url: `${SITE_URL}/consultations`,
       type: "website",
-      siteName: "VastuCart",
+      siteName: b.storeName,
       ...(ogImageUrl
-        ? { images: [{ url: ogImageUrl, width: 1200, height: 630, alt: "Vastu Consultations at VastuCart" }] }
+        ? { images: [{ url: ogImageUrl, width: 1200, height: 630, alt: `Vastu Consultations at ${b.storeName}` }] }
         : {}),
     },
     twitter: {
@@ -82,14 +83,14 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-function buildJsonLd(types: ServiceType[]) {
+function buildJsonLd(types: ServiceType[], storeName: string) {
   const services = types.map((t) => ({
     "@type": "Service",
     name: t.title,
     description: t.description || undefined,
     provider: {
       "@type": "Organization",
-      name: "VastuCart",
+      name: storeName,
       url: SITE_URL,
     },
     areaServed: "IN",
@@ -114,7 +115,7 @@ function buildJsonLd(types: ServiceType[]) {
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: "Vastu Consultation Services",
-    description: "Expert Vastu consultation services by VastuCart",
+    description: `Expert Vastu consultation services by ${storeName}`,
     url: `${SITE_URL}/consultations`,
     numberOfItems: types.length,
     itemListElement: types.map((t, i) => ({
@@ -157,9 +158,10 @@ async function fetchConsultationConfig(): Promise<ConsultationConfig | null> {
 }
 
 export default async function ConsultationsPage() {
-  const [serviceTypes, consultationConfig] = await Promise.all([
+  const [serviceTypes, consultationConfig, b] = await Promise.all([
     fetchServiceTypes(),
     fetchConsultationConfig(),
+    fetchBrandingForMetadata(),
   ])
 
   // Gate: if route is disabled, show a minimal fallback
@@ -184,7 +186,7 @@ export default async function ConsultationsPage() {
     )
   }
 
-  const jsonLd = buildJsonLd(serviceTypes)
+  const jsonLd = buildJsonLd(serviceTypes, b.storeName)
 
   return (
     <>

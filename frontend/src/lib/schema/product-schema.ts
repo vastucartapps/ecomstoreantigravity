@@ -6,7 +6,12 @@
  * All entities are cross-referenced via @id so Google's parser treats them
  * as one connected knowledge graph, which is what powers rich results
  * (star ratings, price, availability, FAQ accordion, breadcrumb trail).
+ *
+ * Brand-name fallback uses BRAND_DEFAULTS so a single edit to the
+ * canonical brand seed propagates here. Per-product `merchant_centre.brand`
+ * still overrides if set.
  */
+import { BRAND_DEFAULTS } from "@/lib/brand-defaults"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
 const ORG_ID = `${SITE_URL}/#organization`
@@ -345,14 +350,14 @@ function buildProduct(input: SchemaProductInput, breadcrumbId: string) {
     "@id": `${SITE_URL}/product/${slug}#product`,
     name: title,
     description: cleanText(description) ||
-      `Buy ${title} at VastuCart — authentic spiritual products delivered across India.`,
+      `Buy ${title} at ${BRAND_DEFAULTS.storeName} — authentic spiritual products delivered across India.`,
     image: images.length ? images : [`${SITE_URL}/og-default.png`],
     url: `${SITE_URL}/product/${slug}`,
     sku: primarySku,
     productID: id,
     brand: {
       "@type": "Brand",
-      name: merchantCentre.brand || "VastuCart",
+      name: merchantCentre.brand || BRAND_DEFAULTS.storeName,
     },
     itemCondition: conditionUrl(merchantCentre.condition),
     offers: buildOffers(input),

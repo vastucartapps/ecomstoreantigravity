@@ -19,6 +19,20 @@ export interface GSTConfig {
   gstin: string
   defaultRate: number
   defaultHSN: string
+  /** Seller's registered legal entity name as it appears on tax filings.
+   *  E.g. "Prashant Kumar, Sole Proprietor". Used in invoice header and
+   *  legal page boilerplate ("VastuCart is operated by ...") via the
+   *  {{legalName}} template variable. */
+  legalName?: string
+  /** Seller's registered legal address per GSTIN registration. Different
+   *  from branding.streetAddress (which is the customer-facing/operational
+   *  address). Used in legal pages via the {{registeredAddress}} template
+   *  variable. E.g. "VastuCart Premiere Enc, HN 2, Via Udaipurwati,
+   *  Jhunjhunu, Rajasthan – 333307". */
+  registeredAddress?: string
+  /** State of registration — drives intra/inter-state GST split. ISO 3166-2
+   *  Indian state code or full name. */
+  sellerState?: string
 }
 
 export interface InternationalTaxConfig {

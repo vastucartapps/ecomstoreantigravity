@@ -7,8 +7,9 @@ import { Search, Heart, ShoppingBag, User, Menu, X, Bell, ExternalLink, Truck, R
 import { useAuth } from "@/providers/auth-provider"
 import { useCart } from "@/providers/cart-provider"
 import { useWishlist } from "@/providers/wishlist-provider"
-import { useAnnouncement, useBranding, useStorefrontFooter, useConsultationsEnabled } from "@/providers/announcement-provider"
+import { useAnnouncement, useBranding, useStorefrontFooter, useConsultationsEnabled, useOperationalPolicies } from "@/providers/announcement-provider"
 import { CartDrawer } from "@/components/storefront/cart/CartDrawer"
+import { CLUSTER_SITES } from "@/lib/cluster-sites"
 import { primary, secondary, earth, bg, gradients, fonts } from "./theme"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -28,36 +29,9 @@ interface StorefrontShellProps {
   categories?: { name: string; handle: string; image_url?: string }[]
 }
 
-/**
- * The 9 sibling sites in the VastuCart cluster, surfaced as discovery cards
- * in the footer "Ecosystem" section. Source of truth for URLs is the brand-
- * level Organization JSON-LD in `lib/schema/site-schema.ts`. The current
- * site (store.vastucart.in) is included to mirror the canonical brand grid;
- * its card opens "/" in the same tab while siblings open in a new tab.
- *
- * Tone classes map to a coloured icon tile — same palette as the standalone
- * footer prototypes at /public/footer-prototypes/.
- */
-const ECOSYSTEM_SITES: ReadonlyArray<{
-  name: string
-  url: string
-  desc: string
-  glyph: string
-  bg: string
-  fg?: string
-  badge?: string
-  isCurrent?: boolean
-}> = [
-  { name: "Kundali Decoded",   url: "https://kundali.vastucart.in",   desc: "Enterprise-grade birth-chart platform with 74 Vedic modules.",  glyph: "✦", bg: "#c2410c", badge: "PREMIUM" },
-  { name: "VastuCart Store",   url: "/",                              desc: "Handcrafted yantras, rudraksha, idols, and Vastu décor.",       glyph: "◈", bg: "#0d7a89", isCurrent: true },
-  { name: "VastuCart Blog",    url: "https://blog.vastucart.in",      desc: "Long-form Jyotish research by practising Vedic astrologers.",   glyph: "❡", bg: "#d4a13c", fg: "#2a1f08" },
-  { name: "Panchang",          url: "https://panchang.vastucart.in",  desc: "Daily Vedic almanac — tithi, nakshatra, yoga, karana.",         glyph: "☀", bg: "#eab308", fg: "#2a1f08" },
-  { name: "Stotra",            url: "https://stotra.vastucart.in",    desc: "Library of Hindu hymns with audio and translations.",           glyph: "ॐ", bg: "#e11d48" },
-  { name: "Divine Path",       url: "https://horoscope.vastucart.in", desc: "Daily, weekly, and yearly horoscope predictions.",              glyph: "✧", bg: "#8b5cf6" },
-  { name: "Shubh Muhurta",     url: "https://muhurta.vastucart.in",   desc: "Find auspicious timings for any life event.",                   glyph: "◷", bg: "#10b981" },
-  { name: "Wedding Muhurta",   url: "https://wedding.vastucart.in",   desc: "Dedicated wedding date selection with full Vedic matching.",    glyph: "◆", bg: "#ec4899" },
-  { name: "Tarot by VastuCart", url: "https://tarot.vastucart.in",    desc: "Rider-Waite tarot readings with contextual guidance.",          glyph: "☽", bg: "#d946ef" },
-]
+// Ecosystem cards source: lib/cluster-sites.ts (CLUSTER_SITES) — single
+// source of truth shared with site-schema.ts, robots.ts, and the storefront
+// layout's DNS-prefetch list. Editing this file does NOT change the cards.
 
 /**
  * Inline newsletter subscribe form. Posts to the existing /store/newsletter
@@ -145,6 +119,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
   const branding = useBranding()
   const footerConfig = useStorefrontFooter()
   const consultationsEnabled = useConsultationsEnabled()
+  const ops = useOperationalPolicies()
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
@@ -1004,10 +979,10 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
         <section className="border-b" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { Icon: Truck,        title: "Free Shipping",      desc: "On orders above ₹999 across India." },
-              { Icon: RotateCcw,    title: "30-Day Returns",     desc: "Hassle-free refunds, no questions asked." },
-              { Icon: ShieldCheck,  title: "Secure Checkout",    desc: "Razorpay · Stripe · UPI · COD." },
-              { Icon: Sparkles,     title: "Authentic Sourcing", desc: "Energised by Vedic priests, every piece." },
+              { Icon: Truck,        title: "Free Shipping",                       desc: `On orders above ₹${ops.freeShippingThresholdInr.toLocaleString("en-IN")} across India.` },
+              { Icon: RotateCcw,    title: `${ops.returnWindowDays}-Day Returns`, desc: `Raise a return within ${ops.returnWindowDays} days of delivery.` },
+              { Icon: ShieldCheck,  title: "Secure Checkout",                     desc: "Razorpay · Stripe · UPI · COD." },
+              { Icon: Sparkles,     title: "Authentic Sourcing",                  desc: "Energised by Vedic priests, every piece." },
             ].map(({ Icon, title, desc }) => (
               <div key={title} className="flex items-start gap-3">
                 <div
@@ -1028,18 +1003,18 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
         {/* ── 2. Ecosystem discovery cards ────────────────────────────── */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-2">
           <h2 className="text-2xl font-semibold" style={{ fontFamily: fonts.heading }}>
-            Explore the VastuCart Ecosystem
+            {footerConfig.ecosystemTitle?.trim() || `Explore the ${branding.storeName} Ecosystem`}
           </h2>
           <p className="text-sm opacity-70 mt-1 max-w-xl" style={{ fontFamily: fonts.body }}>
-            Nine connected platforms covering every dimension of Vedic life — from daily Panchang to wedding muhurta.
+            {footerConfig.ecosystemIntro?.trim() || `${CLUSTER_SITES.length} connected platforms covering every dimension of Vedic life — from daily Panchang to wedding muhurta.`}
           </p>
           <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {ECOSYSTEM_SITES.map((site) => {
+            {CLUSTER_SITES.map((site) => {
               const inner = (
                 <>
                   <div
                     className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 text-xl"
-                    style={{ backgroundColor: site.bg, color: site.fg || "#fff" }}
+                    style={{ backgroundColor: site.iconBg, color: site.iconFg || "#fff" }}
                   >
                     {site.glyph}
                   </div>
@@ -1056,7 +1031,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                       )}
                     </h4>
                     <p className="text-xs opacity-65 mt-0.5 line-clamp-2" style={{ fontFamily: fonts.body }}>
-                      {site.desc}
+                      {site.description}
                     </p>
                   </div>
                 </>
@@ -1067,14 +1042,15 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                 backgroundColor: "rgba(255,255,255,0.04)",
                 border: "1px solid rgba(255,255,255,0.08)",
               } as React.CSSProperties
+              const href = site.isCurrent ? "/" : site.url
               return site.isCurrent ? (
-                <Link key={site.name} href={site.url} className={className} style={style}>
+                <Link key={site.slug} href={href} className={className} style={style}>
                   {inner}
                 </Link>
               ) : (
                 <a
-                  key={site.name}
-                  href={site.url}
+                  key={site.slug}
+                  href={href}
                   target="_blank"
                   rel="noopener"
                   className={className}
@@ -1116,12 +1092,6 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                   ) : (
                     <span className="block text-[1.4rem] font-semibold">{branding.storeName}</span>
                   )}
-                  <span
-                    className="block text-[10px] uppercase tracking-[0.18em] opacity-50 mt-1"
-                    style={{ fontFamily: fonts.body }}
-                  >
-                    Heritage in every box
-                  </span>
                 </span>
               </Link>
               <p
@@ -1279,9 +1249,11 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
         >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between gap-6 flex-wrap">
             <div>
-              <h4 className="text-base font-semibold" style={{ fontFamily: fonts.heading }}>Stay in the loop</h4>
+              <h4 className="text-base font-semibold" style={{ fontFamily: fonts.heading }}>
+                {footerConfig.newsletterTitle || "Stay in the loop"}
+              </h4>
               <p className="text-xs opacity-65 mt-0.5" style={{ fontFamily: fonts.body }}>
-                Weekly Vedic insights, ritual guides, and members-only drops.
+                {footerConfig.newsletterSubtitle || "Weekly Vedic insights, ritual guides, and members-only drops."}
               </p>
             </div>
             <FooterNewsletterForm />

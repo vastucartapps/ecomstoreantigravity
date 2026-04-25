@@ -6,10 +6,12 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ChevronDown, Settings, ExternalLink, LogOut } from "lucide-react"
 import { useAuth } from "@/providers/auth-provider"
+import { useBranding } from "@/providers/announcement-provider"
 import { primary, secondary, gradients, fonts } from "./theme"
 
 export default function AdminHeader() {
   const { user, logout } = useAuth()
+  const branding = useBranding()
   const router = useRouter()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -69,8 +71,8 @@ export default function AdminHeader() {
       <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
         <Link href="/admin" style={{ display: "flex", alignItems: "center", gap: "0.5rem", textDecoration: "none" }}>
           <Image
-            src="/VastuCartLogo.png"
-            alt="VastuCart"
+            src={branding.logoUrl || "/VastuCartLogo.png"}
+            alt={branding.storeName}
             width={32}
             height={32}
             style={{ objectFit: "contain", borderRadius: "4px" }}
@@ -84,7 +86,7 @@ export default function AdminHeader() {
               letterSpacing: "-0.01em",
             }}
           >
-            VastuCart
+            {branding.storeName}
           </span>
         </Link>
         {/* Admin badge */}

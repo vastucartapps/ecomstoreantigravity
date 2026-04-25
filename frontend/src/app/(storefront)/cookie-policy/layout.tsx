@@ -1,24 +1,28 @@
 import type { Metadata } from "next"
+import { fetchBrandingForMetadata } from "@/lib/branding-ssr"
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await fetchBrandingForMetadata()
+  return {
   title: "Cookie Policy",
   description:
-    "VastuCart's cookie policy — how we use cookies and similar technologies to enhance your browsing experience and improve our services.",
-  alternates: { canonical: "https://store.vastucart.in/cookie-policy" },
+    `${b.storeName}'s cookie policy — how we use cookies and similar technologies to enhance your browsing experience and improve our services.`,
+  alternates: { canonical: `${b.siteUrl}/cookie-policy` },
   openGraph: {
-    title: "Cookie Policy — VastuCart",
+    title: "Cookie Policy",
     description:
-      "How VastuCart uses cookies and similar technologies to enhance your browsing experience.",
-    url: "https://store.vastucart.in/cookie-policy",
+      `How ${b.storeName} uses cookies and similar technologies to enhance your browsing experience.`,
+    url: `${b.siteUrl}/cookie-policy`,
     type: "website",
-    images: [{ url: "/og-default.png", width: 500, height: 500, alt: "VastuCart Cookie Policy" }],
+    images: [{ url: "/og-default.png", width: 500, height: 500, alt: `${b.storeName} Cookie Policy` }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Cookie Policy — VastuCart",
-    description: "How VastuCart uses cookies to enhance your browsing experience.",
+    title: "Cookie Policy",
+    description: `How ${b.storeName} uses cookies to enhance your browsing experience.`,
     images: ["/og-default.png"],
   },
+}
 }
 
 export default function CookiePolicyLayout({ children }: { children: React.ReactNode }) {

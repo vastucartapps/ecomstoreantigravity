@@ -3,17 +3,26 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { primary, secondary, earth, bg, fonts, gradients, shadows } from "@/lib/theme"
+import { BRAND_DEFAULTS } from "@/lib/brand-defaults"
+import { useBranding } from "@/providers/announcement-provider"
 import type { ContactConfig, FaqItem } from "@/types/admin-storefront"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
 const PK = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
+/**
+ * Defaults for the contact page configuration. The phone/email/address
+ * fields here are seeded from BRAND_DEFAULTS so the contact-page admin and
+ * the global branding admin start aligned. At render time the page reads
+ * branding.contactEmail / branding.contactPhone (canonical SSoT) and only
+ * falls back to ContactConfig fields if branding has not loaded yet.
+ */
 const DEFAULT_CONTACT_CONFIG: ContactConfig = {
-  phone: "+91 98765 43210",
-  email: "support@vastucart.com",
-  whatsapp: "+91 98765 43210",
+  phone: BRAND_DEFAULTS.contactPhone,
+  email: BRAND_DEFAULTS.contactEmail,
+  whatsapp: BRAND_DEFAULTS.whatsapp,
   wholesaleEmail: "wholesale@vastucart.com",
-  address: "42 Temple Lane, Varanasi, Uttar Pradesh 221001, India",
+  address: `${BRAND_DEFAULTS.streetAddress}, ${BRAND_DEFAULTS.addressLocality}, ${BRAND_DEFAULTS.addressRegion} ${BRAND_DEFAULTS.postalCode}, India`,
   workingHours: {
     weekdays: "Mon – Sat: 9:00 AM – 6:00 PM IST",
     weekends: "Sunday: Closed",
@@ -43,7 +52,7 @@ const DEFAULT_CONTACT_CONFIG: ContactConfig = {
   grievanceOfficer: {
     name: "Prashant Vaishnav",
     email: "grievance@vastucart.com",
-    address: "42 Temple Lane, Varanasi, Uttar Pradesh 221001, India",
+    address: `${BRAND_DEFAULTS.streetAddress}, ${BRAND_DEFAULTS.addressLocality}, ${BRAND_DEFAULTS.addressRegion} ${BRAND_DEFAULTS.postalCode}, India`,
   },
 }
 
@@ -154,6 +163,13 @@ interface Props {
 export function ContactPage({ config: propConfig }: Props) {
   const [config, setConfig] = useState<ContactConfig>(propConfig ?? DEFAULT_CONTACT_CONFIG)
   const [open, setOpen] = useState(isCurrentlyOpen())
+  // Branding is the canonical source for storefront-wide contact info
+  // (matches footer, schema, and legal pages). The contact-page-specific
+  // ContactConfig.phone/email fields are deprecated duplicates; we read
+  // from branding here so a single edit in admin propagates everywhere.
+  const branding = useBranding()
+  const phoneSSoT = branding.contactPhone || config.phone
+  const emailSSoT = branding.contactEmail || config.email
 
   // Form state
   const [name, setName] = useState("")
@@ -222,14 +238,14 @@ export function ContactPage({ config: propConfig }: Props) {
   const contactPageSchema = {
     "@context": "https://schema.org",
     "@type": "ContactPage",
-    name: "Contact VastuCart",
-    url: "https://store.vastucart.in/contact",
-    description: "Get in touch with VastuCart for support, wholesale, or Vastu consultations.",
+    name: `Contact ${branding.storeName}`,
+    url: `${process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"}/contact`,
+    description: `Get in touch with ${branding.storeName} for support, wholesale, or Vastu consultations.`,
     mainEntity: {
       "@type": "Organization",
-      name: "VastuCart",
-      telephone: config.phone,
-      email: config.email,
+      name: branding.storeName,
+      telephone: phoneSSoT,
+      email: emailSSoT,
       address: {
         "@type": "PostalAddress",
         streetAddress: "42 Temple Lane",
@@ -388,25 +404,25 @@ export function ContactPage({ config: propConfig }: Props) {
         >
           {/* Phone */}
           <a
-            href={`tel:${config.phone.replace(/\s/g, "")}`}
+            href={`tel:${phoneSSoT.replace(/\s/g, "")}`}
             style={{ textDecoration: "none" }}
           >
             <ContactCard
               icon="📞"
               iconBg={primary[500]}
               title="Call Us"
-              value={config.phone}
+              value={phoneSSoT}
               cta="Call Now"
             />
           </a>
 
           {/* Email */}
-          <a href={`mailto:${config.email}`} style={{ textDecoration: "none" }}>
+          <a href={`mailto:${emailSSoT}`} style={{ textDecoration: "none" }}>
             <ContactCard
               icon="✉️"
               iconBg={secondary[500]}
               title="Email Support"
-              value={config.email}
+              value={emailSSoT}
               cta="Send Email"
             />
           </a>

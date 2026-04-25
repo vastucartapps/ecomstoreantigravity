@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { primary, earth, bg, fonts } from "@/lib/theme"
 import { useAuth } from "@/providers/auth-provider"
+import { useBranding } from "@/providers/announcement-provider"
 import { medusa } from "@/lib/medusa"
 
 const CATEGORIES = [
@@ -69,6 +70,7 @@ interface Ticket {
 
 function TicketCard({ ticket }: { ticket: Ticket }) {
   const isOpen = ticket.status === "open"
+  const branding = useBranding()
 
   return (
     <div
@@ -114,7 +116,7 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
           <div className="flex items-center gap-1.5 mb-1.5">
             <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#10B981" }} />
             <span className="text-xs font-semibold" style={{ color: "#065F46" }}>
-              {ticket.admin_reply_by || "VastuCart Support"} replied
+              {ticket.admin_reply_by || (branding.storeName + " Support")} replied
               {ticket.admin_reply_at
                 ? ` · ${new Date(ticket.admin_reply_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}`
                 : ""}
@@ -139,6 +141,7 @@ function TicketCard({ ticket }: { ticket: Ticket }) {
 
 export function SupportSection() {
   const { user } = useAuth()
+  const branding = useBranding()
 
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [ticketsLoading, setTicketsLoading] = useState(true)
@@ -250,7 +253,7 @@ export function SupportSection() {
           </div>
           <div>
             <p className="text-xs font-semibold" style={{ color: earth[500] }}>WhatsApp</p>
-            <p className="text-sm font-bold" style={{ color: "#25D366" }}>+91 94611 94356</p>
+            <p className="text-sm font-bold" style={{ color: "#25D366" }}>{branding.contactPhone}</p>
           </div>
         </a>
       </div>

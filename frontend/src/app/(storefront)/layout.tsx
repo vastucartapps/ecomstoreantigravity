@@ -3,6 +3,7 @@ import { TrackingScripts } from "@/components/storefront/TrackingScripts"
 import { JsonLd } from "@/components/JsonLd"
 import { buildSiteGraph } from "@/lib/schema/site-schema"
 import { normalizeImageUrl } from "@/lib/image-url"
+import { SIBLING_URLS, BRAND_URL } from "@/lib/cluster-sites"
 
 const BACKEND_URL =
   process.env.MEDUSA_INTERNAL_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -86,20 +87,13 @@ export default async function StorefrontLayout({
     <>
       {/*
         Cross-domain DNS prefetch + preconnect for the VastuCart cluster.
-        Resolves DNS (and warms the TLS handshake for the parent brand) before
-        the user clicks a sister-site link, so cross-domain navigation feels
-        instant. Source: /Presence links.txt at repo root.
+        URLs sourced from the single cluster-sites manifest.
       */}
-      <link rel="preconnect" href="https://vastucart.in" crossOrigin="anonymous" />
-      <link rel="dns-prefetch" href="https://vastucart.in" />
-      <link rel="dns-prefetch" href="https://kundali.vastucart.in" />
-      <link rel="dns-prefetch" href="https://blog.vastucart.in" />
-      <link rel="dns-prefetch" href="https://panchang.vastucart.in" />
-      <link rel="dns-prefetch" href="https://stotra.vastucart.in" />
-      <link rel="dns-prefetch" href="https://horoscope.vastucart.in" />
-      <link rel="dns-prefetch" href="https://muhurta.vastucart.in" />
-      <link rel="dns-prefetch" href="https://wedding.vastucart.in" />
-      <link rel="dns-prefetch" href="https://tarot.vastucart.in" />
+      <link rel="preconnect" href={BRAND_URL} crossOrigin="anonymous" />
+      <link rel="dns-prefetch" href={BRAND_URL} />
+      {SIBLING_URLS.map((url) => (
+        <link key={url} rel="dns-prefetch" href={url} />
+      ))}
       <JsonLd data={siteGraph} id="site-schema" />
       <StorefrontShellWrapper categories={categories}>
         {children}

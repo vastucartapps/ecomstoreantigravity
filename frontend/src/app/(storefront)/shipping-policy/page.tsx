@@ -1,23 +1,27 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { DynamicContentPage } from "@/components/storefront/DynamicContentPage"
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
+const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
 const FALLBACK = `# Shipping Policy
 
 **Effective Date:** February 26, 2026
 **Last Updated:** February 26, 2026
 
-This Shipping Policy governs all shipments made through the VastuCart® Platform. By placing an order, you acknowledge and agree to the terms of this Policy.
+This Shipping Policy governs all shipments made through the {{storeName}}® Platform. By placing an order, you acknowledge and agree to the terms of this Policy.
 
-VastuCart is operated by Prashant Kumar, Sole Proprietor, GSTIN 08AWUPV3378A1ZY, VastuCart Premiere Enc, HN 2, Via Udaipurwati, Jhunjhunu, Rajasthan – 333307.
+{{storeName}} is operated by {{legalName}}, GSTIN {{gstin}}, {{registeredAddress}}.
 
 ---
 
-## 1. What VastuCart Guarantees
+## 1. What {{storeName}} Guarantees
 
-**VastuCart guarantees dispatch — not delivery.**
+**{{storeName}} guarantees dispatch — not delivery.**
 
-We commit to processing and handing over your order to our courier partner within the timeframes described below. Once the order is dispatched and handed over to the courier, VastuCart's control over the shipment ends. Delivery timelines are provided as estimates only and are subject to factors outside our control including but not limited to:
+We commit to processing and handing over your order to our courier partner within the timeframes described below. Once the order is dispatched and handed over to the courier, {{storeName}}'s control over the shipment ends. Delivery timelines are provided as estimates only and are subject to factors outside our control including but not limited to:
 - Courier partner operations, capacity, and network coverage
 - Weather conditions, natural disasters, or force majeure events
 - Government restrictions, curfews, or bandhs
@@ -26,7 +30,7 @@ We commit to processing and handing over your order to our courier partner withi
 - Public holidays and peak season volumes
 - Incorrect or incomplete address provided by the customer
 
-VastuCart shall not be held liable for any delays, losses, or damages caused by courier partners or any of the above circumstances.
+{{storeName}} shall not be held liable for any delays, losses, or damages caused by courier partners or any of the above circumstances.
 
 ---
 
@@ -40,13 +44,13 @@ VastuCart shall not be held liable for any delays, losses, or damages caused by 
 
 2.4 Business days are Monday through Saturday, excluding national public holidays.
 
-2.5 VastuCart reserves the right to revise dispatch timelines at any time without prior notice due to operational requirements, peak seasons, inventory constraints, or any other reason.
+2.5 {{storeName}} reserves the right to revise dispatch timelines at any time without prior notice due to operational requirements, peak seasons, inventory constraints, or any other reason.
 
 ---
 
 ## 3. Courier Partners
 
-VastuCart ships via reputed courier partners selected at our discretion based on your location, the nature of the shipment, and service availability. We do not commit to any specific courier service. The courier partner for your shipment will be determined at the time of dispatch.
+{{storeName}} ships via reputed courier partners selected at our discretion based on your location, the nature of the shipment, and service availability. We do not commit to any specific courier service. The courier partner for your shipment will be determined at the time of dispatch.
 
 For **Express Shipping**, we use the fastest available courier option at the time of dispatch. For **Standard Shipping**, we use standard courier services which may take variable time depending on the destination.
 
@@ -61,7 +65,7 @@ For **Express Shipping**, we use the fastest available courier option at the tim
 
 4.1 These timelines are estimates only and are not guaranteed. Actual delivery may take longer depending on your location, courier operations, and other factors.
 
-4.2 Delivery to remote areas, hilly regions, or locations with limited courier coverage may take longer than the above estimates. VastuCart is not liable for such extended timelines.
+4.2 Delivery to remote areas, hilly regions, or locations with limited courier coverage may take longer than the above estimates. {{storeName}} is not liable for such extended timelines.
 
 4.3 Shipping charges, if any, are displayed at checkout and are calculated based on your location, order weight, and selected shipping method.
 
@@ -74,11 +78,11 @@ For **Express Shipping**, we use the fastest available courier option at the tim
 | Standard International | 20–30 business days from dispatch |
 | Express International | 15–20 business days from dispatch |
 
-5.1 International delivery estimates are approximate and are significantly subject to customs clearance timelines, which vary by country and are entirely outside VastuCart's control.
+5.1 International delivery estimates are approximate and are significantly subject to customs clearance timelines, which vary by country and are entirely outside {{storeName}}'s control.
 
-5.2 **Customs Duties & Import Taxes:** All customs duties, import taxes, VAT, and any other charges levied by the destination country's authorities are the sole responsibility of the recipient. VastuCart has no control over these charges and cannot predict their amount. Non-payment of customs duties may result in the shipment being held, returned, or destroyed by customs authorities, and VastuCart will not be liable for any resulting loss.
+5.2 **Customs Duties & Import Taxes:** All customs duties, import taxes, VAT, and any other charges levied by the destination country's authorities are the sole responsibility of the recipient. {{storeName}} has no control over these charges and cannot predict their amount. Non-payment of customs duties may result in the shipment being held, returned, or destroyed by customs authorities, and {{storeName}} will not be liable for any resulting loss.
 
-5.3 VastuCart is not responsible for items confiscated, held, or destroyed by customs or import authorities.
+5.3 {{storeName}} is not responsible for items confiscated, held, or destroyed by customs or import authorities.
 
 5.4 International orders are subject to export regulations of India and import regulations of the destination country. By placing an international order, you confirm that the products ordered are legally importable in your country.
 
@@ -90,7 +94,7 @@ For **Express Shipping**, we use the fastest available courier option at the tim
 
 6.2 **Prepaid orders are given strict priority over COD orders** in all circumstances, including dispatch scheduling. COD orders may be dispatched after prepaid orders even if placed earlier.
 
-6.3 VastuCart reserves the right to cancel any COD order at any time before dispatch without liability.
+6.3 {{storeName}} reserves the right to cancel any COD order at any time before dispatch without liability.
 
 6.4 COD orders are not eligible for free gifts, promotional offers, or any special benefits unless explicitly stated.
 
@@ -104,51 +108,85 @@ For **Express Shipping**, we use the fastest available courier option at the tim
 
 7.2 You can track your order from the **My Orders** section of your account dashboard, or directly on the courier partner's website using the tracking number provided.
 
-7.3 VastuCart is not responsible for delays or inaccuracies in tracking information, as this is managed by the courier partner.
+7.3 {{storeName}} is not responsible for delays or inaccuracies in tracking information, as this is managed by the courier partner.
 
 ---
 
 ## 8. Failed Delivery & Returns to Origin
 
-8.1 If a delivery attempt is unsuccessful because of an incorrect address, customer unavailability, or refusal to accept, the courier partner will make a limited number of attempts (subject to their policy) before returning the shipment to VastuCart.
+8.1 If a delivery attempt is unsuccessful because of an incorrect address, customer unavailability, or refusal to accept, the courier partner will make a limited number of attempts (subject to their policy) before returning the shipment to {{storeName}}.
 
-8.2 For prepaid orders returned to origin due to reasons attributable to the customer (wrong address, unavailability, refusal), reshipping charges will apply and are the customer's responsibility. VastuCart will contact you to arrange reshipment.
+8.2 For prepaid orders returned to origin due to reasons attributable to the customer (wrong address, unavailability, refusal), reshipping charges will apply and are the customer's responsibility. {{storeName}} will contact you to arrange reshipment.
 
-8.3 If a prepaid order is returned to origin and the customer does not wish to reship, a partial refund may be issued after deducting original shipping charges, return shipping charges, and a handling fee. The amount will be determined at VastuCart's sole discretion.
+8.3 If a prepaid order is returned to origin and the customer does not wish to reship, a partial refund may be issued after deducting original shipping charges, return shipping charges, and a handling fee. The amount will be determined at {{storeName}}'s sole discretion.
 
-8.4 For COD orders returned to origin, VastuCart reserves the right to restrict future COD access for the customer.
+8.4 For COD orders returned to origin, {{storeName}} reserves the right to restrict future COD access for the customer.
 
 ---
 
 ## 9. Safe Packaging
 
-VastuCart takes pride in safe, secure, and sustainable packaging. All orders are carefully packed to minimise the risk of damage in transit. However, VastuCart's responsibility for the safe condition of the product ends upon handover to the courier. Please refer to our **Return & Refund Policy** for procedures in case of transit damage.
+{{storeName}} takes pride in safe, secure, and sustainable packaging. All orders are carefully packed to minimise the risk of damage in transit. However, {{storeName}}'s responsibility for the safe condition of the product ends upon handover to the courier. Please refer to our **Return & Refund Policy** for procedures in case of transit damage.
 
 ---
 
 ## 10. Policy Changes
 
-VastuCart reserves the right to update or modify this Shipping Policy at any time without prior notice. Changes take effect immediately upon posting. It is your responsibility to review this Policy before placing each order.
+{{storeName}} reserves the right to update or modify this Shipping Policy at any time without prior notice. Changes take effect immediately upon posting. It is your responsibility to review this Policy before placing each order.
 
 ---
 
 ## Contact for Shipping Queries
 
-**Email:** vastucartcare@gmail.com
-**WhatsApp:** +91 94611 94356 *(WhatsApp messages only — voice calls will not be answered)*
+**Email:** {{contactEmail}}
+**WhatsApp:** {{contactPhone}} *(WhatsApp messages only — voice calls will not be answered)*
 
 Please allow 48–72 business hours for a response.
 
 ---
 
-*VastuCart® is a registered trademark (Class 21) of Prashant Kumar, Sole Proprietor. GSTIN: 08AWUPV3378A1ZY.*`
+*{{storeName}}® is a registered trademark (Class 21) of {{legalName}}. GSTIN: {{gstin}}.*`
 
+/**
+ * Shipping policy resolution order (most explicit wins):
+ *   1. contentPages slug "shipping-policy" (admin Storefront → Content Pages)
+ *      — handled by DynamicContentPage internally.
+ *   2. shipping_config.shippingPolicy markdown (admin Shipping → Shipping
+ *      Policy) — fetched here and passed as fallback. Resolves the long-
+ *      standing disconnect where admin could save markdown in shipping but
+ *      it was never rendered.
+ *   3. The hardcoded FALLBACK constant — last resort.
+ */
 export default function ShippingPolicyPage() {
+  const [legacyMarkdown, setLegacyMarkdown] = useState<string | null>(null)
+  const [resolved, setResolved] = useState(false)
+
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/store/shipping-config`, {
+      headers: { "x-publishable-api-key": PUB_KEY },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        const policy = data?.config?.shippingPolicy
+        if (typeof policy === "string" && policy.trim().length > 50) {
+          setLegacyMarkdown(policy)
+        }
+      })
+      .catch(() => {})
+      .finally(() => setResolved(true))
+  }, [])
+
+  if (!resolved) {
+    // Don't pass fallback to DynamicContentPage until we know whether the
+    // legacy shipping-config markdown should override the hardcoded fallback.
+    return null
+  }
+
   return (
     <DynamicContentPage
       slug="shipping-policy"
       fallbackTitle="Shipping Policy"
-      fallbackContent={FALLBACK}
+      fallbackContent={legacyMarkdown ?? FALLBACK}
     />
   )
 }

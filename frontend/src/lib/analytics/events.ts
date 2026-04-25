@@ -16,6 +16,8 @@
  * interaction fires. Never throws; never blocks UI.
  */
 
+import { BRAND_DEFAULTS } from "@/lib/brand-defaults"
+
 // ─── Window type augmentation ────────────────────────────────────
 
 declare global {
@@ -409,7 +411,7 @@ export function mapLineItems(
       : {}),
     ...(li.product?.metadata && (li.product.metadata as { merchant_centre?: { brand?: string } }).merchant_centre?.brand
       ? { item_brand: ((li.product.metadata as { merchant_centre: { brand: string } }).merchant_centre.brand) }
-      : { item_brand: "VastuCart" }),
+      : { item_brand: BRAND_DEFAULTS.storeName }),
     currency,
   }))
 }

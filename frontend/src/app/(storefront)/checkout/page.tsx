@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { ShieldCheck, Lock } from "lucide-react"
 import { useCart } from "@/providers/cart-provider"
 import { CheckoutProvider, useCheckout } from "@/providers/checkout-provider"
+import { useBranding } from "@/providers/announcement-provider"
 import { OrderSummary } from "@/components/storefront/cart/OrderSummary"
 import {
   StepIndicator,
@@ -26,6 +27,7 @@ const STEP_META: { id: CheckoutStepId; label: string }[] = [
 
 function CheckoutContent() {
   const router = useRouter()
+  const branding = useBranding()
   const { cart, isLoading } = useCart()
   const { step, goToStep, completedOrderId, appliedGiftCard, giftCardDiscount } = useCheckout()
 
@@ -90,7 +92,7 @@ function CheckoutContent() {
       <div className="border-b" style={{ borderColor: "#f0ebe4", background: bg.card }}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <span className="font-bold text-lg" style={{ color: primary[500], fontFamily: fonts.heading }}>
-            VastuCart
+            {branding.storeName}
           </span>
           <div className="flex items-center gap-1.5 text-xs" style={{ color: earth[400] }}>
             <Lock className="w-3.5 h-3.5" />

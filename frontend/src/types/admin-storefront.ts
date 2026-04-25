@@ -74,6 +74,17 @@ export interface FooterConfig {
   columns: FooterColumn[]
   copyrightText: string
   showSocialLinks: boolean
+  /** Optional: heading for the Ecosystem cards section in the footer.
+   *  Empty string falls back to "Explore the {storeName} Ecosystem" with
+   *  brand name interpolated dynamically. */
+  ecosystemTitle?: string
+  /** Optional intro text below the ecosystem heading. Empty string falls
+   *  back to a default that mentions the cluster site count. */
+  ecosystemIntro?: string
+  /** Optional title for the newsletter strip ("Stay in the loop" by default). */
+  newsletterTitle?: string
+  /** Optional subtitle for the newsletter strip. */
+  newsletterSubtitle?: string
 }
 
 export interface HeroSlide {

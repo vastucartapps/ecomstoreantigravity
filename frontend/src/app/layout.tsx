@@ -4,6 +4,7 @@ import { AuthProvider } from "@/providers/auth-provider"
 import { CartProvider } from "@/providers/cart-provider"
 import { WishlistProvider } from "@/providers/wishlist-provider"
 import { AnnouncementProvider } from "@/providers/announcement-provider"
+import { fetchBrandingForMetadata } from "@/lib/branding-ssr"
 import "./globals.css"
 
 const lora = Lora({
@@ -27,50 +28,52 @@ const ibmPlexMono = IBM_Plex_Mono({
   display: "swap",
 })
 
-export const metadata: Metadata = {
-  title: {
-    default: "VastuCart — Authentic Spiritual Products",
-    template: "%s | VastuCart",
-  },
-  description:
-    "Your trusted destination for authentic spiritual products, crystals, yantras, and Vastu Shastra tools.",
-  metadataBase: new URL("https://store.vastucart.in"),
-  icons: {
-    icon: "/favicon.png",
-  },
-  openGraph: {
-    siteName: "VastuCart",
-    title: "VastuCart — Authentic Spiritual Products",
-    description:
-      "Your trusted destination for authentic spiritual products, crystals, yantras, and Vastu Shastra tools.",
-    url: "https://store.vastucart.in",
-    type: "website",
-    locale: "en_IN",
-    images: [
-      {
-        url: "/og-default.png",
-        width: 500,
-        height: 500,
-        alt: "VastuCart — Authentic Spiritual Products",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "VastuCart — Authentic Spiritual Products",
-    description:
-      "Your trusted destination for authentic spiritual products, crystals, yantras, and Vastu Shastra tools.",
-    images: ["/og-default.png"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: { index: true, follow: true },
-  },
-  manifest: "/manifest.json",
-  other: {
-    "theme-color": "#013f47",
-  },
+/**
+ * Dynamic root metadata. Reads admin's branding via SSR so changes to
+ * Store Name, tagline, or favicon in admin propagate to every page's
+ * <title>, <meta description>, OpenGraph siteName, Twitter card, and
+ * favicon. Hard-coded BRAND_DEFAULTS only apply on first paint before
+ * admin has saved (or if backend is unreachable).
+ *
+ * NOTE: this is intentionally NOT cached aggressively — Next.js will
+ * cache the metadata response per route via the fetch revalidate, so
+ * admin edits show up in SEO crawlers within ~5 minutes of save.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await fetchBrandingForMetadata()
+  const titleDefault = `${b.storeName} — ${b.tagline}`
+
+  return {
+    title: {
+      default: titleDefault,
+      template: `%s | ${b.storeName}`,
+    },
+    description: b.tagline,
+    metadataBase: new URL(b.siteUrl),
+    icons: { icon: b.faviconUrl },
+    openGraph: {
+      siteName: b.storeName,
+      title: titleDefault,
+      description: b.tagline,
+      url: b.siteUrl,
+      type: "website",
+      locale: "en_IN",
+      images: [{ url: "/og-default.png", width: 500, height: 500, alt: titleDefault }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: titleDefault,
+      description: b.tagline,
+      images: ["/og-default.png"],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true },
+    },
+    manifest: "/manifest.json",
+    other: { "theme-color": "#013f47" },
+  }
 }
 
 export default function RootLayout({

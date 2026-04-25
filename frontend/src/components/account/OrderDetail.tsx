@@ -68,6 +68,8 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
     setDownloadingPdf(true)
     try {
       const { generateGSTInvoicePDF } = await import("@/lib/invoice-generator")
+      const { fetchInvoiceSeller } = await import("@/lib/seller-from-admin")
+      const seller = await fetchInvoiceSeller()
       const addr = rawOrder.shipping_address || {}
       const invoiceItems: InvoiceItem[] = (rawOrder.items || []).map((item: any) => ({
         name: item.product_title || item.title || "Product",
@@ -96,6 +98,7 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
         items: invoiceItems,
         shippingCharge: (rawOrder.shipping_total || 0) / 100,
         currency: rawOrder.currency_code || "inr",
+        seller,
       }
       await generateGSTInvoicePDF(invoiceData)
     } catch (e) {

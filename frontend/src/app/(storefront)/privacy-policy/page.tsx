@@ -7,11 +7,11 @@ const FALLBACK = `# Privacy Policy
 **Effective Date:** February 26, 2026
 **Last Updated:** February 26, 2026
 
-VastuCart® ("we", "us", "our") is committed to protecting your personal data. This Privacy Policy explains how we collect, use, store, share, and protect your personal information when you access or use our Platform at store.vastucart.in and its associated domains (vastucart.in, kundali.vastucart.in, panchang.vastucart.in, and any other sub-domains under the VastuCart ecosystem).
+{{storeName}}® ("we", "us", "our") is committed to protecting your personal data. This Privacy Policy explains how we collect, use, store, share, and protect your personal information when you access or use our Platform at store.vastucart.in and its associated domains (vastucart.in, kundali.vastucart.in, panchang.vastucart.in, and any other sub-domains under the {{storeName}} ecosystem).
 
 This Policy is published in accordance with the **Information Technology Act, 2000**, the **Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011**, and the **Digital Personal Data Protection Act, 2023 (DPDP Act)**.
 
-VastuCart is operated by **Prashant Kumar**, Sole Proprietor, GSTIN **08AWUPV3378A1ZY**, VastuCart Premiere Enc, HN 2, Via Udaipurwati, Jhunjhunu, Rajasthan – 333307.
+{{storeName}} is operated by **Prashant Kumar**, Sole Proprietor, GSTIN **{{gstin}}**, {{registeredAddress}}.
 
 By using this Platform, you consent to the collection and use of your personal data as described in this Policy.
 
@@ -46,7 +46,7 @@ We use your personal data for the following purposes:
 - **Order fulfilment:** Processing your orders, arranging dispatch, and coordinating delivery with courier partners
 - **Account management:** Creating and maintaining your account, authenticating logins
 - **Communications:** Sending order confirmations, dispatch notifications, delivery updates, and order-related alerts
-- **Marketing communications:** Sending you updates about new arrivals, seasonal offers, promotions, festival greetings, and VastuCart news. You may opt out of marketing communications at any time by contacting us at vastucartcare@gmail.com
+- **Marketing communications:** Sending you updates about new arrivals, seasonal offers, promotions, festival greetings, and {{storeName}} news. You may opt out of marketing communications at any time by contacting us at {{contactEmail}}
 - **Personalisation:** Improving your shopping experience, showing relevant products and recommendations
 - **Analytics:** Understanding how the Platform is used to improve performance, design, and features
 - **Fraud prevention:** Detecting, preventing, and investigating fraudulent transactions and misuse
@@ -54,18 +54,18 @@ We use your personal data for the following purposes:
 
 ---
 
-## 3. Cross-Platform Data Use Within the VastuCart Ecosystem
+## 3. Cross-Platform Data Use Within the {{storeName}} Ecosystem
 
-3.1 VastuCart operates multiple digital properties under the VastuCart brand, including but not limited to:
+3.1 {{storeName}} operates multiple digital properties under the {{storeName}} brand, including but not limited to:
 - store.vastucart.in
 - vastucart.in
 - kundali.vastucart.in
 - panchang.vastucart.in
-- Any future sub-domains or affiliated platforms under the VastuCart brand
+- Any future sub-domains or affiliated platforms under the {{storeName}} brand
 
-3.2 Your personal data may be shared, used, and accessed across all properties within the VastuCart ecosystem for the purpose of providing you with a seamless, personalised, and integrated user experience. This includes but is not limited to cross-platform login, personalised recommendations, and awareness of relevant services.
+3.2 Your personal data may be shared, used, and accessed across all properties within the {{storeName}} ecosystem for the purpose of providing you with a seamless, personalised, and integrated user experience. This includes but is not limited to cross-platform login, personalised recommendations, and awareness of relevant services.
 
-3.3 This cross-ecosystem data use is conducted solely for improving your experience and for legitimate business purposes. VastuCart does not engage in or intend to engage in any sale, rental, or exchange of your personal data with third parties outside the VastuCart ecosystem for commercial purposes.
+3.3 This cross-ecosystem data use is conducted solely for improving your experience and for legitimate business purposes. {{storeName}} does not engage in or intend to engage in any sale, rental, or exchange of your personal data with third parties outside the {{storeName}} ecosystem for commercial purposes.
 
 ---
 
@@ -87,9 +87,9 @@ We require all third parties to maintain adequate security measures and to use y
 
 5.1 We implement industry-standard technical and organisational security measures to protect your personal data against unauthorised access, alteration, disclosure, or destruction. These measures include SSL/TLS encryption for data in transit, hashed storage of passwords, and access controls.
 
-5.2 In the event of a personal data breach that is likely to result in a risk to your rights and freedoms, VastuCart will notify affected users as required under the Digital Personal Data Protection Act, 2023, and take all reasonable steps to mitigate the impact of such a breach.
+5.2 In the event of a personal data breach that is likely to result in a risk to your rights and freedoms, {{storeName}} will notify affected users as required under the Digital Personal Data Protection Act, 2023, and take all reasonable steps to mitigate the impact of such a breach.
 
-5.3 Despite our best efforts, no method of data transmission over the internet or method of electronic storage is 100% secure. You acknowledge and accept this inherent risk. In the event of a breach caused by factors beyond VastuCart's reasonable control, VastuCart's liability shall be limited to notification obligations under applicable law.
+5.3 Despite our best efforts, no method of data transmission over the internet or method of electronic storage is 100% secure. You acknowledge and accept this inherent risk. In the event of a breach caused by factors beyond {{storeName}}'s reasonable control, {{storeName}}'s liability shall be limited to notification obligations under applicable law.
 
 ---
 
@@ -112,7 +112,7 @@ As a data principal under the Digital Personal Data Protection Act, 2023, you ha
 - **Right to Withdraw Consent:** Withdraw consent for non-essential data processing at any time (note: this may affect your ability to use certain features)
 - **Right to Nominate:** Nominate another individual to exercise your rights in the event of your death or incapacity
 
-To exercise any of these rights, contact our Grievance Officer at vastucartcare@gmail.com. We will respond within 30 days.
+To exercise any of these rights, contact our Grievance Officer at {{contactEmail}}. We will respond within 30 days.
 
 ---
 
@@ -130,7 +130,7 @@ Our Platform is not directed at individuals under the age of 18. We do not knowi
 
 ## 10. Changes to This Policy
 
-VastuCart reserves the right to update or modify this Privacy Policy at any time without prior notice. The updated Policy will be effective immediately upon posting. We encourage you to review this Policy periodically. Continued use of the Platform after any modification constitutes acceptance of the revised Policy.
+{{storeName}} reserves the right to update or modify this Privacy Policy at any time without prior notice. The updated Policy will be effective immediately upon posting. We encourage you to review this Policy periodically. Continued use of the Platform after any modification constitutes acceptance of the revised Policy.
 
 ---
 
@@ -140,15 +140,15 @@ For privacy-related queries, concerns, or to exercise your rights under the DPDP
 
 **Name:** Prashant Kumar
 **Designation:** Proprietor & Grievance Officer
-**Email:** vastucartcare@gmail.com
-**WhatsApp:** +91 94611 94356 *(WhatsApp messages only — voice calls will not be answered)*
-**Address:** VastuCart Premiere Enc, HN 2, Via Udaipurwati, Jhunjhunu, Rajasthan – 333307
+**Email:** {{contactEmail}}
+**WhatsApp:** {{contactPhone}} *(WhatsApp messages only — voice calls will not be answered)*
+**Address:** {{registeredAddress}}
 
 Grievances will be acknowledged within **48 hours** and resolved within **30 days** of receipt.
 
 ---
 
-*VastuCart® is a registered trademark (Class 21) of Prashant Kumar, Sole Proprietor. GSTIN: 08AWUPV3378A1ZY.*`
+*{{storeName}}® is a registered trademark (Class 21) of {{legalName}}. GSTIN: {{gstin}}.*`
 
 export default function PrivacyPolicyPage() {
   return (

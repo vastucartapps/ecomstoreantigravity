@@ -9,6 +9,7 @@ import {
 import { useRouter } from "next/navigation"
 import { useCart } from "@/providers/cart-provider"
 import { useCheckout } from "@/providers/checkout-provider"
+import { useBranding } from "@/providers/announcement-provider"
 import { Gift, X, CheckCircle2 } from "lucide-react"
 import { primary, earth, bg, fonts, secondary } from "@/lib/theme"
 import { normalizeImageUrl } from "@/lib/image-url"
@@ -400,6 +401,7 @@ const inputStyle = (valid: boolean | null): React.CSSProperties => ({
 
 export function PaymentStep() {
   const router = useRouter()
+  const branding = useBranding()
   const { cart, applyGiftCard, removeGiftCard } = useCart()
   const {
     contactEmail, paymentMethod, setPaymentMethod,
@@ -573,7 +575,7 @@ export function PaymentStep() {
           // Fallback: Standard Checkout, card-only
           const rzpStd = new (window as any).Razorpay({
             key: key_id || RZP_KEY, amount: Math.round(paymentAmount * 100), currency: "INR",
-            order_id, name: "VastuCart",
+            order_id, name: branding.storeName,
             prefill: { name: cardName.trim(), email: contactEmail, contact: shippingAddr?.phone || "", method: "card" },
             config: { display: { blocks: { c: { name: "Card", instruments: [{ method: "card" }] } }, sequence: ["block.c"], preferences: { show_default_blocks: false } } },
             theme: { color: primary[500] },
@@ -630,7 +632,7 @@ export function PaymentStep() {
         const labels: Record<string, string> = { upi: "UPI", netbanking: "Net Banking", wallet: "Wallet" }
         const rzp = new (window as any).Razorpay({
           key: key_id || RZP_KEY, amount: Math.round(paymentAmount * 100), currency: "INR", order_id,
-          name: "VastuCart", description: "Secure Checkout",
+          name: branding.storeName, description: "Secure Checkout",
           prefill: { email: contactEmail, contact: shippingAddr?.phone || "", method },
           config: {
             display: {
@@ -1029,7 +1031,7 @@ export function PaymentStep() {
                 </div>
 
                 <p style={{ fontSize: 10, color: earth[400], fontFamily: fonts.body }}>
-                  🔒 Your card details are encrypted and processed directly by Razorpay — never stored on VastuCart servers.
+                  🔒 Your card details are encrypted and processed directly by Razorpay — never stored on {branding.storeName} servers.
                 </p>
               </div>
             </PayMethodCard>
@@ -1289,7 +1291,7 @@ export function PaymentStep() {
 
       {/* ── Bottom brand line ── */}
       <p style={{ textAlign: "center", fontSize: 10, color: earth[400], fontFamily: fonts.body }}>
-        Your payment is processed securely. VastuCart does not store your card information.
+        Your payment is processed securely. {branding.storeName} does not store your card information.
       </p>
     </div>
   )

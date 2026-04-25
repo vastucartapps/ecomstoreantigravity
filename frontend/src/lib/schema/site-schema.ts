@@ -37,44 +37,16 @@ export interface SiteSocialLinks {
   amazon?: string
 }
 
-/**
- * Sister sites in the VastuCart cluster — each is a separate WebSite owned by
- * the same Organization. Listing them in the brand's `sameAs` tells Google
- * these subdomains all represent the same entity, which strengthens the whole
- * cluster's authority (the "ecosystem juice" effect).
- *
- * Source of truth: /Presence links.txt at repo root.
- */
-const SISTER_SITES: readonly string[] = [
-  "https://kundali.vastucart.in",
-  "https://blog.vastucart.in",
-  "https://panchang.vastucart.in",
-  "https://stotra.vastucart.in",
-  "https://horoscope.vastucart.in",
-  "https://muhurta.vastucart.in",
-  "https://wedding.vastucart.in",
-  "https://tarot.vastucart.in",
-]
+import { SIBLING_URLS } from "@/lib/cluster-sites"
+import { BRAND_DEFAULTS } from "@/lib/brand-defaults"
 
 /**
- * Brand-level social and marketplace presence. These are properties of the
- * VastuCart brand itself — independent of any per-store admin config. They
- * always belong in the Organization `sameAs` array regardless of what the
- * admin has entered. Marketplaces (Etsy, Amazon) appear here for SEO/
- * knowledge-graph signal only — they are intentionally NOT surfaced on
- * product pages, only as minimal footer icons.
+ * Brand-level social and marketplace presence. Sourced from the canonical
+ * BRAND_DEFAULTS so admin defaults, schema fallbacks, and provider seeds
+ * stay aligned. Admin-saved socials (passed via `input.socials`) override
+ * these on a per-key basis at runtime.
  */
-const BRAND_PRESENCE: Required<Pick<SiteSocialLinks,
-  "facebook" | "instagram" | "twitter" | "pinterest" | "threads" | "etsy" | "amazon"
->> = {
-  facebook: "https://www.facebook.com/vastucartindia",
-  instagram: "https://www.instagram.com/vastucart/",
-  twitter: "https://x.com/vastucart",
-  pinterest: "https://in.pinterest.com/vastucart/",
-  threads: "https://www.threads.com/@vastucart",
-  etsy: "https://vastucart.etsy.com",
-  amazon: "https://www.amazon.in/s?k=vastucart",
-}
+const BRAND_PRESENCE = BRAND_DEFAULTS.socialLinks
 
 export interface SiteContactInfo {
   phone?: string
@@ -120,7 +92,7 @@ export function buildSiteGraph(input: SiteSchemaInput = {}) {
   // entries override defaults when set. Deduplicated at the end.
   const sameAsRaw = [
     BRAND_URL !== SITE_URL ? SITE_URL : null,
-    ...SISTER_SITES,
+    ...SIBLING_URLS,
     socials.facebook ?? BRAND_PRESENCE.facebook,
     socials.instagram ?? BRAND_PRESENCE.instagram,
     socials.twitter ?? BRAND_PRESENCE.twitter,

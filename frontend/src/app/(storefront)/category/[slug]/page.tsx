@@ -7,6 +7,7 @@ import { QuickViewModal } from "@/components/storefront/product-experience"
 import { useWishlist } from "@/providers/wishlist-provider"
 import { useCart } from "@/providers/cart-provider"
 import { useAuth } from "@/providers/auth-provider"
+import { useBranding } from "@/providers/announcement-provider"
 import type {
   StorefrontProduct,
   CategoryHero,
@@ -203,6 +204,7 @@ function CategoryContent() {
   const { user } = useAuth()
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
   const { addItem } = useCart()
+  const branding = useBranding()
 
   const [isLoading, setIsLoading] = useState(true)
   const [products, setProducts] = useState<StorefrontProduct[]>([])
@@ -286,7 +288,7 @@ function CategoryContent() {
               item_name: p.name,
               price: p.price,
               quantity: 1,
-              item_brand: "VastuCart",
+              item_brand: branding.storeName,
             })),
           })
         })

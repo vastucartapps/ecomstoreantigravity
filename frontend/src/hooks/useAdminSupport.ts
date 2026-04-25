@@ -1,5 +1,6 @@
 import { useCallback } from "react"
 import { adminFetch } from "@/lib/medusa"
+import { BRAND_DEFAULTS } from "@/lib/brand-defaults"
 
 export interface SupportTicket {
   id: string
@@ -33,7 +34,7 @@ export function useAdminSupport() {
   const replyTicket = useCallback(async (
     id: string,
     reply: string,
-    repliedBy = "VastuCart Support"
+    repliedBy = `${BRAND_DEFAULTS.storeName} Support`
   ): Promise<boolean> => {
     try {
       await adminFetch(`/admin/support-tickets/${id}/reply`, {

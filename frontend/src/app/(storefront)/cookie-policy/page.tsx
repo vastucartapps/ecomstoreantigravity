@@ -7,9 +7,9 @@ const FALLBACK = `# Cookie Policy
 **Effective Date:** February 26, 2026
 **Last Updated:** February 26, 2026
 
-This Cookie Policy explains how VastuCart® uses cookies and similar tracking technologies on our Platform at store.vastucart.in and its associated domains. It should be read alongside our **Privacy Policy**.
+This Cookie Policy explains how {{storeName}}® uses cookies and similar tracking technologies on our Platform at store.vastucart.in and its associated domains. It should be read alongside our **Privacy Policy**.
 
-VastuCart® is operated by Prashant Kumar, Sole Proprietor, GSTIN 08AWUPV3378A1ZY, VastuCart Premiere Enc, HN 2, Via Udaipurwati, Jhunjhunu, Rajasthan – 333307.
+{{storeName}}® is operated by {{legalName}}, GSTIN {{gstin}}, {{registeredAddress}}.
 
 ---
 
@@ -54,7 +54,7 @@ Some of our payment and service partners may set their own cookies when you inte
 - **Stripe:** Sets cookies for payment fraud detection and security
 - **Google (reCAPTCHA / OAuth):** May set cookies if you use Google Sign-In
 
-These third-party cookies are governed by the respective third party's cookie and privacy policies. VastuCart does not control or have access to the data collected by these cookies.
+These third-party cookies are governed by the respective third party's cookie and privacy policies. {{storeName}} does not control or have access to the data collected by these cookies.
 
 ---
 
@@ -96,19 +96,19 @@ Specific retention periods may vary based on the third-party service. Refer to t
 
 **Analytics Opt-Out:**
 - Google Analytics: You can opt out via the [Google Analytics Opt-out Browser Add-on](https://tools.google.com/dlpage/gaoptout)
-- PostHog: You may opt out of session recording and analytics by contacting us at vastucartcare@gmail.com
+- PostHog: You may opt out of session recording and analytics by contacting us at {{contactEmail}}
 
 ---
 
 ## 6. Do Not Track
 
-Some browsers support a "Do Not Track" (DNT) signal. At this time, VastuCart does not alter its data collection practices in response to DNT signals, as there is no universal standard for interpreting these signals.
+Some browsers support a "Do Not Track" (DNT) signal. At this time, {{storeName}} does not alter its data collection practices in response to DNT signals, as there is no universal standard for interpreting these signals.
 
 ---
 
 ## 7. Changes to This Cookie Policy
 
-VastuCart reserves the right to update this Cookie Policy at any time without prior notice. Changes take effect immediately upon posting on the Platform. We encourage you to review this Policy periodically.
+{{storeName}} reserves the right to update this Cookie Policy at any time without prior notice. Changes take effect immediately upon posting on the Platform. We encourage you to review this Policy periodically.
 
 ---
 
@@ -116,12 +116,12 @@ VastuCart reserves the right to update this Cookie Policy at any time without pr
 
 For questions about our use of cookies or to request analytics opt-out:
 
-**Email:** vastucartcare@gmail.com
-**WhatsApp:** +91 94611 94356 *(WhatsApp messages only — voice calls will not be answered)*
+**Email:** {{contactEmail}}
+**WhatsApp:** {{contactPhone}} *(WhatsApp messages only — voice calls will not be answered)*
 
 ---
 
-*VastuCart® is a registered trademark (Class 21) of Prashant Kumar, Sole Proprietor. GSTIN: 08AWUPV3378A1ZY.*`
+*{{storeName}}® is a registered trademark (Class 21) of {{legalName}}. GSTIN: {{gstin}}.*`
 
 export default function CookiePolicyPage() {
   return (

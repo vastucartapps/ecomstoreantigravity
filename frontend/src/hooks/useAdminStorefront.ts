@@ -1,4 +1,5 @@
 import { adminFetch } from "@/lib/medusa"
+import { BRAND_DEFAULTS } from "@/lib/brand-defaults"
 import type {
   StorefrontConfig,
   Announcement,
@@ -24,22 +25,18 @@ const DEFAULT_ANNOUNCEMENT: Announcement = {
 }
 
 const DEFAULT_BRANDING: Branding = {
-  storeName: "VastuCart",
-  tagline: "Sacred Essentials for Your Spiritual Journey",
-  contactEmail: "support@vastucart.com",
-  contactPhone: "+91 98765 43210",
-  streetAddress: "42 Temple Lane",
-  addressLocality: "Varanasi",
-  addressRegion: "Uttar Pradesh",
-  postalCode: "221001",
-  addressCountry: "IN",
-  logoUrl: "/VastuCartLogo.png",
-  faviconUrl: "/favicon.ico",
-  socialLinks: {
-    instagram: "https://instagram.com/vastucart",
-    facebook: "https://facebook.com/vastucart",
-    youtube: "https://youtube.com/vastucart",
-  },
+  storeName: BRAND_DEFAULTS.storeName,
+  tagline: BRAND_DEFAULTS.tagline,
+  contactEmail: BRAND_DEFAULTS.contactEmail,
+  contactPhone: BRAND_DEFAULTS.contactPhone,
+  streetAddress: BRAND_DEFAULTS.streetAddress,
+  addressLocality: BRAND_DEFAULTS.addressLocality,
+  addressRegion: BRAND_DEFAULTS.addressRegion,
+  postalCode: BRAND_DEFAULTS.postalCode,
+  addressCountry: BRAND_DEFAULTS.addressCountry,
+  logoUrl: BRAND_DEFAULTS.logoUrl,
+  faviconUrl: BRAND_DEFAULTS.faviconUrl,
+  socialLinks: { ...BRAND_DEFAULTS.socialLinks },
   gift_card_image_url: "",
 }
 
@@ -157,8 +154,12 @@ const DEFAULT_FOOTER: FooterConfig = {
       ],
     },
   ],
-  copyrightText: `© ${new Date().getFullYear()} VastuCart. All rights reserved.`,
+  copyrightText: `© ${new Date().getFullYear()} ${BRAND_DEFAULTS.storeName}. All rights reserved.`,
   showSocialLinks: true,
+  ecosystemTitle: "",
+  ecosystemIntro: "",
+  newsletterTitle: "Stay in the loop",
+  newsletterSubtitle: "Weekly Vedic insights, ritual guides, and members-only drops.",
 }
 
 const DEFAULT_ABOUT_CONFIG: AboutConfig = {
@@ -178,12 +179,19 @@ const DEFAULT_ABOUT_CONFIG: AboutConfig = {
   artisanRegions: ["Moradabad", "Varanasi", "Jaipur", "Bengaluru", "Rajkot", "Pune"],
 }
 
+/**
+ * Contact-page-specific config. NOTE: phone/email/address fields here are
+ * intentionally seeded from BRAND_DEFAULTS so they stay aligned with the
+ * canonical branding source. The contact page should still prefer
+ * branding.contactEmail / branding.contactPhone at render time \u2014 these
+ * fields exist in ContactConfig only as the legacy schema.
+ */
 const DEFAULT_CONTACT_CONFIG: ContactConfig = {
-  phone: "+91 98765 43210",
-  email: "support@vastucart.com",
-  whatsapp: "+91 98765 43210",
+  phone: BRAND_DEFAULTS.contactPhone,
+  email: BRAND_DEFAULTS.contactEmail,
+  whatsapp: BRAND_DEFAULTS.whatsapp,
   wholesaleEmail: "wholesale@vastucart.com",
-  address: "42 Temple Lane, Varanasi, Uttar Pradesh 221001, India",
+  address: `${BRAND_DEFAULTS.streetAddress}, ${BRAND_DEFAULTS.addressLocality}, ${BRAND_DEFAULTS.addressRegion} ${BRAND_DEFAULTS.postalCode}, India`,
   workingHours: {
     weekdays: "Mon \u2013 Sat: 9:00 AM \u2013 6:00 PM IST",
     weekends: "Sunday: Closed",
@@ -197,7 +205,7 @@ const DEFAULT_CONTACT_CONFIG: ContactConfig = {
   grievanceOfficer: {
     name: "Prashant Vaishnav",
     email: "grievance@vastucart.com",
-    address: "42 Temple Lane, Varanasi, Uttar Pradesh 221001, India",
+    address: `${BRAND_DEFAULTS.streetAddress}, ${BRAND_DEFAULTS.addressLocality}, ${BRAND_DEFAULTS.addressRegion} ${BRAND_DEFAULTS.postalCode}, India`,
   },
 }
 

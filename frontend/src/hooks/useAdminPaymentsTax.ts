@@ -54,7 +54,14 @@ const DEFAULT_CONFIG: PaymentsTaxConfig = {
     stripe: { publishableKey: "", secretKey: "", isConnected: false },
   },
   paymentMethods: DEFAULT_PAYMENT_METHODS,
-  gstConfig: { gstin: "", defaultRate: 18, defaultHSN: "8306" },
+  gstConfig: {
+    gstin: "",
+    defaultRate: 18,
+    defaultHSN: "8306",
+    legalName: "",
+    registeredAddress: "",
+    sellerState: "",
+  },
   internationalTax: { taxExempt: false, lutNumber: "" },
 }
 

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { primary, secondary, earth, bg, fonts, gradients, shadows } from "@/lib/theme"
 import type { AboutConfig } from "@/types/admin-storefront"
+import { useBranding } from "@/providers/announcement-provider"
+import { normalizeImageUrl } from "@/lib/image-url"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
 const PK = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
@@ -61,6 +63,9 @@ interface Props {
 export function AboutPage({ config: propConfig }: Props) {
   const [config, setConfig] = useState<AboutConfig>(propConfig ?? DEFAULT_ABOUT_CONFIG)
   const [loaded, setLoaded] = useState(!!propConfig)
+  const branding = useBranding()
+  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
+  const logoAbs = normalizeImageUrl(branding.logoUrl) || `${SITE_URL}/VastuCartLogo.png`
 
   useEffect(() => {
     if (propConfig) return
@@ -87,9 +92,9 @@ export function AboutPage({ config: propConfig }: Props) {
   const orgSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "VastuCart",
-    url: "https://store.vastucart.in",
-    logo: "https://store.vastucart.in/VastuCartLogo.png",
+    name: branding.storeName,
+    url: SITE_URL,
+    logo: logoAbs,
     description: config.heroSubtext,
     foundingDate: "2014",
     founder: {
@@ -98,7 +103,7 @@ export function AboutPage({ config: propConfig }: Props) {
     },
     contactPoint: {
       "@type": "ContactPoint",
-      telephone: "+91-98765-43210",
+      telephone: branding.contactPhone,
       contactType: "customer service",
       availableLanguage: ["English", "Hindi"],
     },
@@ -389,7 +394,7 @@ export function AboutPage({ config: propConfig }: Props) {
                 margin: "0 0 12px",
               }}
             >
-              Why VastuCart?
+              Why {branding.storeName}?
             </h2>
             <p
               style={{

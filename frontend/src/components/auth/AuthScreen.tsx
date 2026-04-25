@@ -15,6 +15,7 @@ import type { AuthView, GuestConversion, PasswordRequirement } from "@/types/aut
 import type { MarketingSlide } from "@/types/auth"
 import { MarketingPanel } from "./MarketingPanel"
 import { PasswordStrengthMeter } from "./PasswordStrengthMeter"
+import { useBranding } from "@/providers/announcement-provider"
 
 interface AuthScreenProps {
   view: AuthView
@@ -157,6 +158,9 @@ export function AuthScreen({
   onNavigate,
   serverError,
 }: AuthScreenProps) {
+  // Brand name + tagline come from admin so a single edit propagates here
+  // (login / register / forgot / reset / guest-conversion screens).
+  const branding = useBranding()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -229,12 +233,12 @@ export function AuthScreen({
   > = {
     login: {
       title: "Welcome Back",
-      subtitle: "Sign in to your VastuCart account",
+      subtitle: `Sign in to your ${branding.storeName} account`,
       cta: "Sign In",
     },
     register: {
       title: "Create Account",
-      subtitle: "Join VastuCart and discover sacred living",
+      subtitle: `Join ${branding.storeName} and discover sacred living`,
       cta: "Create Account",
     },
     "forgot-password": {
@@ -263,11 +267,12 @@ export function AuthScreen({
       {/* Left — Form Side */}
       <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 lg:px-16">
         <div className="w-full max-w-md">
-          {/* Brand header */}
+          {/* Brand header — logo, name, and tagline all read from admin so a
+              single edit (Storefront → Branding) updates this screen. */}
           <div className="mb-10 text-center">
             <img
-              src="/VastuCartLogo.png"
-              alt="VastuCart"
+              src={branding.logoUrl || "/VastuCartLogo.png"}
+              alt={branding.storeName}
               className="h-16 w-auto mx-auto"
             />
             <h2
@@ -277,7 +282,7 @@ export function AuthScreen({
                 color: colors.primary500,
               }}
             >
-              VastuCart
+              {branding.storeName}
               <span
                 style={{
                   color: colors.secondary500,
@@ -296,7 +301,7 @@ export function AuthScreen({
                 fontFamily: "'Open Sans', sans-serif",
               }}
             >
-              With Heritage in Every Box From VastuCart
+              {branding.tagline}
             </p>
           </div>
 

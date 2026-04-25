@@ -1,6 +1,11 @@
 /**
- * GST Invoice PDF generator for VastuCart
- * Uses jsPDF for client-side generation
+ * GST Invoice PDF generator. Seller details (legal name, address, GSTIN,
+ * contact) are passed in via `data.seller` — sourced from admin branding
+ * + tax config — so a single edit in admin updates every invoice
+ * generated thereafter. If `seller` is omitted, falls back to the
+ * hardcoded constants from gst-utils so older callers still work.
+ *
+ * Uses jsPDF for client-side generation.
  */
 
 import {
@@ -22,6 +27,24 @@ export interface InvoiceItem {
   buyerState?: string
 }
 
+/** Seller-side details rendered on the invoice. Sourced from admin
+ *  branding + GST config — pass these from callers, do not hardcode. */
+export interface InvoiceSeller {
+  /** Display brand name (header). E.g. "VastuCart". */
+  storeName: string
+  /** Legal entity name (sold-by block). E.g. "VastuCart (OPC) Pvt. Ltd." */
+  legalName: string
+  /** Public website / contact line shown beneath the brand header. */
+  websiteAndEmail: string
+  /** Seller GSTIN (15 chars). */
+  gstin: string
+  /** Seller's registered state — drives intra/inter-state GST split. */
+  state: string
+  /** Multi-line seller address: line 1 + locality+state+pincode. */
+  addressLine1: string
+  addressLine2: string
+}
+
 export interface InvoiceData {
   orderId: string
   orderDate: string
@@ -39,11 +62,27 @@ export interface InvoiceData {
   items: InvoiceItem[]
   shippingCharge: number
   currency: string
+  /** Optional: pass admin-sourced seller info. Omit to fall back to
+   *  the hardcoded constants in gst-utils (legacy behaviour). */
+  seller?: InvoiceSeller
 }
 
 export async function generateGSTInvoicePDF(data: InvoiceData): Promise<void> {
   // Dynamic import to avoid SSR issues
   const { jsPDF } = await import("jspdf")
+
+  // Resolve seller info: admin-supplied wins, hardcoded constants fall
+  // back. This is the SSoT seam — every literal seller value below now
+  // routes through `seller`, so admin edits propagate to invoices.
+  const seller: InvoiceSeller = data.seller || {
+    storeName: "VastuCart",
+    legalName: "VastuCart (OPC) Pvt. Ltd.",
+    websiteAndEmail: "vastucart.com  |  support@vastucart.com",
+    gstin: SELLER_GSTIN,
+    state: SELLER_STATE,
+    addressLine1: "123, MG Road, Andheri East",
+    addressLine2: `Mumbai, ${SELLER_STATE} - 400069`,
+  }
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
   const invoiceNo = generateInvoiceNumber(data.orderId)
@@ -83,15 +122,15 @@ export async function generateGSTInvoicePDF(data: InvoiceData): Promise<void> {
   rect(0, 0, pageW, 3, "#2C7A7B")
 
   y = 10
-  text("VastuCart", margin, y, { size: 18, bold: true, color: "#2C7A7B" })
+  text(seller.storeName, margin, y, { size: 18, bold: true, color: "#2C7A7B" })
   text("TAX INVOICE", pageW - margin, y, { size: 14, bold: true, color: "#2C7A7B", align: "right" })
 
   y += 5
-  text("vastucart.com  |  support@vastucart.com", margin, y, { size: 8, color: "#8a7968" })
+  text(seller.websiteAndEmail, margin, y, { size: 8, color: "#8a7968" })
   text(`Invoice No: ${invoiceNo}`, pageW - margin, y, { size: 8, color: "#8a7968", align: "right" })
 
   y += 4
-  text(`GSTIN: ${SELLER_GSTIN}`, margin, y, { size: 8, color: "#8a7968" })
+  text(`GSTIN: ${seller.gstin}`, margin, y, { size: 8, color: "#8a7968" })
   text(`Date: ${data.orderDate}`, pageW - margin, y, { size: 8, color: "#8a7968", align: "right" })
 
   y += 3
@@ -106,15 +145,15 @@ export async function generateGSTInvoicePDF(data: InvoiceData): Promise<void> {
   text("SHIP TO", col2, y, { size: 7, bold: true, color: "#8a7968" })
 
   y += 4
-  text("VastuCart (OPC) Pvt. Ltd.", margin, y, { size: 8, bold: true })
+  text(seller.legalName, margin, y, { size: 8, bold: true })
   text(data.customerName, col2, y, { size: 8, bold: true })
 
   y += 4
-  text("123, MG Road, Andheri East", margin, y, { size: 8 })
+  text(seller.addressLine1, margin, y, { size: 8 })
   text(data.shippingAddress.address1, col2, y, { size: 8 })
 
   y += 4
-  text(`Mumbai, ${SELLER_STATE} - 400069`, margin, y, { size: 8 })
+  text(seller.addressLine2, margin, y, { size: 8 })
   const buyerLine2 = [
     data.shippingAddress.address2,
     `${data.shippingAddress.city}, ${data.shippingAddress.state} - ${data.shippingAddress.postalCode}`,
@@ -284,7 +323,7 @@ export async function generateGSTInvoicePDF(data: InvoiceData): Promise<void> {
 
   const footerY = 287
   rect(0, footerY, pageW, 10, "#2C7A7B")
-  text("Thank you for shopping with VastuCart!", pageW / 2, footerY + 6, {
+  text(`Thank you for shopping with ${seller.storeName}!`, pageW / 2, footerY + 6, {
     size: 8,
     bold: true,
     color: "#ffffff",
@@ -293,5 +332,5 @@ export async function generateGSTInvoicePDF(data: InvoiceData): Promise<void> {
 
   // ─── Save ────────────────────────────────────────────────────────────────────
 
-  doc.save(`VastuCart-Invoice-${invoiceNo.replace(/\//g, "-")}.pdf`)
+  doc.save(`${seller.storeName}-Invoice-${invoiceNo.replace(/\//g, "-")}.pdf`)
 }

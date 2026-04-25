@@ -826,6 +826,98 @@ export function AdminPaymentsTax({
                 />
               </div>
             </div>
+
+            {/* Legal entity block — these values appear on every invoice
+                AND in legal page boilerplate ("VastuCart is operated by…")
+                via the {{legalName}} / {{registeredAddress}} / {{gstin}}
+                template variables. Single source of truth. */}
+            <div
+              style={{
+                marginTop: "20px",
+                padding: "16px",
+                background: "rgba(1,63,71,0.04)",
+                borderRadius: "8px",
+                fontSize: "12px",
+                color: primary[400],
+              }}
+            >
+              📍 Editing the fields below updates: every invoice header · all 9
+              legal pages (refund, terms, privacy, etc.) · invoice GSTIN line.
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginTop: "16px" }}>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: earth[700],
+                    marginBottom: "8px",
+                  }}
+                >
+                  Legal Entity Name
+                </label>
+                <input
+                  type="text"
+                  value={gstConfig.legalName ?? ""}
+                  onChange={(e) =>
+                    setGstConfig({ ...gstConfig, legalName: e.target.value })
+                  }
+                  placeholder="Prashant Kumar, Sole Proprietor"
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                  onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                />
+              </div>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: earth[700],
+                    marginBottom: "8px",
+                  }}
+                >
+                  Registered State
+                </label>
+                <input
+                  type="text"
+                  value={gstConfig.sellerState ?? ""}
+                  onChange={(e) =>
+                    setGstConfig({ ...gstConfig, sellerState: e.target.value })
+                  }
+                  placeholder="Rajasthan"
+                  style={inputStyle}
+                  onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                  onBlur={(e) => (e.target.style.borderColor = earth[300])}
+                />
+              </div>
+            </div>
+            <div style={{ marginTop: "16px" }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: earth[700],
+                  marginBottom: "8px",
+                }}
+              >
+                Registered Address (per GSTIN)
+              </label>
+              <input
+                type="text"
+                value={gstConfig.registeredAddress ?? ""}
+                onChange={(e) =>
+                  setGstConfig({ ...gstConfig, registeredAddress: e.target.value })
+                }
+                placeholder="VastuCart Premiere Enc, HN 2, Via Udaipurwati, Jhunjhunu, Rajasthan – 333307"
+                style={inputStyle}
+                onFocus={(e) => (e.target.style.borderColor = primary[400])}
+                onBlur={(e) => (e.target.style.borderColor = earth[300])}
+              />
+            </div>
             <button
               onClick={handleSaveGST}
               disabled={isSavingGST}

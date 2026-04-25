@@ -22,6 +22,7 @@ import type {
 } from "@/types/storefront"
 import type { ConsultationConfig } from "@/types/admin-storefront"
 import { ProductCard } from "./ProductCard"
+import { useBranding } from "@/providers/announcement-provider"
 import {
   primary,
   secondary,
@@ -313,6 +314,7 @@ export function Homepage({
   isWishlisted,
   consultationConfig: cc,
 }: HomepageProps) {
+  const branding = useBranding()
   const [heroIndex, setHeroIndex] = useState(0)
   const [heroFade, setHeroFade] = useState(true)
   const [email, setEmail] = useState("")
@@ -1004,7 +1006,7 @@ export function Homepage({
               className="text-2xl sm:text-3xl font-semibold text-white"
               style={{ fontFamily: fonts.heading }}
             >
-              Stay Connected with VastuCart
+              Stay Connected with {branding.storeName}
             </h2>
             <p
               className="mt-2 text-sm sm:text-base"

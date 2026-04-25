@@ -1,34 +1,18 @@
 import type { MetadataRoute } from "next"
+import { CLUSTER_SITEMAPS as CLUSTER_SITEMAPS_FROM_LIB } from "@/lib/cluster-sites"
 
 const BACKEND_URL =
   process.env.MEDUSA_INTERNAL_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY =
   process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
-
 /**
- * Cross-domain sitemap discovery for the VastuCart cluster. Listing every
- * sister subdomain's sitemap here lets Google discover and crawl the whole
- * ecosystem from any single robots.txt — a standard SEO pattern for
- * multi-domain brands. Source: /Presence links.txt at repo root.
- *
- * `vastucart.in` is the canonical brand URL and listed first; `store` is
- * inferred from SITE_URL so this works regardless of env override.
+ * Cross-domain sitemap discovery for the VastuCart cluster. Sourced from
+ * the single cluster-sites manifest so adding a new sister subdomain
+ * propagates here automatically. Materialised as a mutable array because
+ * Next.js' MetadataRoute.Robots `sitemap` field expects `string | string[]`.
  */
-const CLUSTER_SITEMAPS: string[] = [
-  "https://vastucart.in/sitemap.xml",
-  `${SITE_URL}/sitemap.xml`,
-  "https://kundali.vastucart.in/sitemap.xml",
-  "https://blog.vastucart.in/sitemap.xml",
-  "https://panchang.vastucart.in/sitemap.xml",
-  "https://stotra.vastucart.in/sitemap.xml",
-  "https://horoscope.vastucart.in/sitemap.xml",
-  "https://muhurta.vastucart.in/sitemap.xml",
-  "https://wedding.vastucart.in/sitemap.xml",
-  "https://tarot.vastucart.in/sitemap.xml",
-]
+const CLUSTER_SITEMAPS: string[] = [...CLUSTER_SITEMAPS_FROM_LIB]
 
 const DEFAULT_RULES: MetadataRoute.Robots = {
   rules: [

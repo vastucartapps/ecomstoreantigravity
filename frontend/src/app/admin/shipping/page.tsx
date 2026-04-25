@@ -11,7 +11,9 @@ import type {
   FreeShippingConfig,
   CODConfig,
   DeliveryEstimate,
+  ReturnPolicy,
 } from "@/types/admin-shipping"
+import { DEFAULT_RETURN_POLICY } from "@/hooks/useAdminShipping"
 import { primary, earth, fonts, bg, shadows, gradients, semantic } from "@/lib/theme"
 
 // ─── Medusa Shipping Setup Panel ─────────────────────────────────────────────
@@ -204,16 +206,19 @@ function MedusaShippingPanel() {
 
 export default function AdminShippingPage() {
   const [config, setConfig] = useState<ShippingConfig | null>(null)
+  const [returnPolicy, setReturnPolicy] = useState<ReturnPolicy>(DEFAULT_RETURN_POLICY)
   const [isLoading, setIsLoading] = useState(true)
   const [toast, setToast] = useState<string | null>(null)
 
   const {
     fetchShippingConfig,
+    fetchReturnPolicy,
     saveZones,
     saveFreeShipping,
     saveCOD,
     saveDeliveryEstimates,
     saveShippingPolicy,
+    saveReturnPolicy,
   } = useAdminShipping()
 
   const showToast = (msg: string) => {
@@ -224,8 +229,12 @@ export default function AdminShippingPage() {
   const loadConfig = async () => {
     setIsLoading(true)
     try {
-      const c = await fetchShippingConfig()
+      const [c, rp] = await Promise.all([
+        fetchShippingConfig(),
+        fetchReturnPolicy(),
+      ])
       setConfig(c)
+      setReturnPolicy(rp)
     } catch {
       // error state handled below
     } finally {
@@ -268,6 +277,12 @@ export default function AdminShippingPage() {
     showToast("Shipping policy saved")
   }
 
+  const handleSaveReturnPolicy = async (rp: ReturnPolicy) => {
+    await saveReturnPolicy(rp)
+    setReturnPolicy(rp)
+    showToast("Return policy saved")
+  }
+
   return (
     <div style={{ padding: "32px", fontFamily: fonts.body }}>
       {/* Header */}
@@ -295,12 +310,14 @@ export default function AdminShippingPage() {
       {config ? (
         <AdminShipping
           config={config}
+          returnPolicy={returnPolicy}
           isLoading={false}
           onSaveZones={handleSaveZones}
           onSaveFreeShipping={handleSaveFreeShipping}
           onSaveCOD={handleSaveCOD}
           onSaveDeliveryEstimates={handleSaveEstimates}
           onSaveShippingPolicy={handleSavePolicy}
+          onSaveReturnPolicy={handleSaveReturnPolicy}
         />
       ) : isLoading ? (
         <div

@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import type { ReactNode } from "react"
+import { fetchBrandingForMetadata } from "@/lib/branding-ssr"
 
 const BACKEND_URL =
   process.env.MEDUSA_INTERNAL_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -11,6 +12,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
+  const b = await fetchBrandingForMetadata()
 
   try {
     const res = await fetch(
@@ -23,16 +25,16 @@ export async function generateMetadata({
     const data = await res.json()
     const category = data.product_categories?.[0]
 
-    if (!category) return { title: "Category | VastuCart", openGraph: { images: [{ url: "/og-default.png" }] } }
+    if (!category) return { title: "Category", openGraph: { images: [{ url: "/og-default.png" }] } }
 
     const name = category.name
     const title = `${name} — Authentic Spiritual Products`
     const description =
       category.metadata?.description ||
       category.description ||
-      `Shop authentic ${name} at VastuCart. Premium quality spiritual products delivered across India.`
+      `Shop authentic ${name} at ${b.storeName}. Premium quality spiritual products delivered across India.`
     const heroImage = category.metadata?.hero_image || category.metadata?.image_url || ""
-    const url = `https://store.vastucart.in/category/${slug}`
+    const url = `${b.siteUrl}/category/${slug}`
 
     return {
       title,
@@ -55,7 +57,7 @@ export async function generateMetadata({
       },
     }
   } catch {
-    return { title: "Category | VastuCart", openGraph: { images: [{ url: "/og-default.png" }] } }
+    return { title: "Category", openGraph: { images: [{ url: "/og-default.png" }] } }
   }
 }
 

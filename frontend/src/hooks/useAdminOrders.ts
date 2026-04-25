@@ -499,6 +499,11 @@ export function useAdminOrders() {
     const order = await fetchOrderDetail(orderId)
     if (!order) throw new Error("Order not found")
 
+    // Pull seller info from admin (branding + GST config) so the invoice
+    // header / GSTIN / address match what's saved — no hardcoded values.
+    const { fetchInvoiceSeller } = await import("@/lib/seller-from-admin")
+    const seller = await fetchInvoiceSeller()
+
     const invoiceItems: InvoiceItem[] = order.items.map((item) => ({
       name: item.productName + (item.variantLabel ? ` — ${item.variantLabel}` : ""),
       hsn: "",
@@ -528,6 +533,7 @@ export function useAdminOrders() {
       items: invoiceItems,
       shippingCharge: order.shippingFee,
       currency: order.currency,
+      seller,
     }
 
     await generateGSTInvoicePDF(invoiceData)
