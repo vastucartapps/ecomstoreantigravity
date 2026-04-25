@@ -1139,10 +1139,10 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                 content scanner picks them up at build time. */}
             <div
               className={`flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 lg:gap-10 ${
-                (footerConfig.columns.length + 2) <= 3 ? "lg:grid-cols-3" :
-                (footerConfig.columns.length + 2) === 4 ? "lg:grid-cols-4" :
-                (footerConfig.columns.length + 2) === 5 ? "lg:grid-cols-5" :
-                (footerConfig.columns.length + 2) === 6 ? "lg:grid-cols-6" :
+                (footerConfig.columns.length + 1) <= 3 ? "lg:grid-cols-3" :
+                (footerConfig.columns.length + 1) === 4 ? "lg:grid-cols-4" :
+                (footerConfig.columns.length + 1) === 5 ? "lg:grid-cols-5" :
+                (footerConfig.columns.length + 1) === 6 ? "lg:grid-cols-6" :
                 "lg:grid-cols-7"
               }`}
             >
@@ -1202,36 +1202,6 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                 </ul>
               </div>
 
-              {/* Customer account quick links */}
-              <div className="space-y-4 min-w-0">
-                <h3
-                  className="font-semibold text-xs uppercase tracking-widest opacity-90"
-                  style={{ fontFamily: fonts.heading }}
-                >
-                  My Account
-                </h3>
-                <ul className="space-y-2.5">
-                  {[
-                    { label: "Dashboard", href: "/account" },
-                    { label: "My Orders", href: "/account/orders" },
-                    { label: "Wishlist", href: "/account/wishlist" },
-                    { label: "My Bookings", href: "/account/bookings" },
-                    { label: "Loyalty Points", href: "/account/loyalty" },
-                    { label: "Address Book", href: "/account/addresses" },
-                    { label: "Contact Support", href: "/account/support" },
-                  ].map((lnk) => (
-                    <li key={lnk.href}>
-                      <Link
-                        href={lnk.href}
-                        className="text-sm opacity-70 hover:opacity-100 transition-opacity"
-                        style={{ fontFamily: fonts.body }}
-                      >
-                        {lnk.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
             </div>
           </div>
 
