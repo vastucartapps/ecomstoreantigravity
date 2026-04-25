@@ -152,6 +152,7 @@ const DEFAULT_FOOTER: FooterConfig = {
         { label: "Our Story", url: "/about" },
         { label: "Privacy Policy", url: "/privacy-policy" },
         { label: "Terms & Conditions", url: "/terms" },
+        { label: "Bulk Orders", url: "/bulk-orders" },
       ],
     },
   ],

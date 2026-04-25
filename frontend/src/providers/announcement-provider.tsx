@@ -165,6 +165,7 @@ const DEFAULT_FOOTER: FooterValue = {
         { label: "Our Story", url: "/about" },
         { label: "Privacy Policy", url: "/privacy-policy" },
         { label: "Terms & Conditions", url: "/terms" },
+        { label: "Bulk Orders", url: "/bulk-orders" },
       ],
     },
   ],
