@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
-import { Search, Heart, ShoppingBag, User, Menu, X, Bell, ExternalLink } from "lucide-react"
+import { Search, Heart, ShoppingBag, User, Menu, X, Bell, ExternalLink, Truck, RotateCcw, ShieldCheck, Sparkles, Check } from "lucide-react"
 import { useAuth } from "@/providers/auth-provider"
 import { useCart } from "@/providers/cart-provider"
 import { useWishlist } from "@/providers/wishlist-provider"
@@ -26,6 +26,105 @@ function customerHeaders(): Record<string, string> {
 interface StorefrontShellProps {
   children: React.ReactNode
   categories?: { name: string; handle: string; image_url?: string }[]
+}
+
+/**
+ * The 9 sibling sites in the VastuCart cluster, surfaced as discovery cards
+ * in the footer "Ecosystem" section. Source of truth for URLs is the brand-
+ * level Organization JSON-LD in `lib/schema/site-schema.ts`. The current
+ * site (store.vastucart.in) is included to mirror the canonical brand grid;
+ * its card opens "/" in the same tab while siblings open in a new tab.
+ *
+ * Tone classes map to a coloured icon tile — same palette as the standalone
+ * footer prototypes at /public/footer-prototypes/.
+ */
+const ECOSYSTEM_SITES: ReadonlyArray<{
+  name: string
+  url: string
+  desc: string
+  glyph: string
+  bg: string
+  fg?: string
+  badge?: string
+  isCurrent?: boolean
+}> = [
+  { name: "Kundali Decoded",   url: "https://kundali.vastucart.in",   desc: "Enterprise-grade birth-chart platform with 74 Vedic modules.",  glyph: "✦", bg: "#c2410c", badge: "PREMIUM" },
+  { name: "VastuCart Store",   url: "/",                              desc: "Handcrafted yantras, rudraksha, idols, and Vastu décor.",       glyph: "◈", bg: "#0d7a89", isCurrent: true },
+  { name: "VastuCart Blog",    url: "https://blog.vastucart.in",      desc: "Long-form Jyotish research by practising Vedic astrologers.",   glyph: "❡", bg: "#d4a13c", fg: "#2a1f08" },
+  { name: "Panchang",          url: "https://panchang.vastucart.in",  desc: "Daily Vedic almanac — tithi, nakshatra, yoga, karana.",         glyph: "☀", bg: "#eab308", fg: "#2a1f08" },
+  { name: "Stotra",            url: "https://stotra.vastucart.in",    desc: "Library of Hindu hymns with audio and translations.",           glyph: "ॐ", bg: "#e11d48" },
+  { name: "Divine Path",       url: "https://horoscope.vastucart.in", desc: "Daily, weekly, and yearly horoscope predictions.",              glyph: "✧", bg: "#8b5cf6" },
+  { name: "Shubh Muhurta",     url: "https://muhurta.vastucart.in",   desc: "Find auspicious timings for any life event.",                   glyph: "◷", bg: "#10b981" },
+  { name: "Wedding Muhurta",   url: "https://wedding.vastucart.in",   desc: "Dedicated wedding date selection with full Vedic matching.",    glyph: "◆", bg: "#ec4899" },
+  { name: "Tarot by VastuCart", url: "https://tarot.vastucart.in",    desc: "Rider-Waite tarot readings with contextual guidance.",          glyph: "☽", bg: "#d946ef" },
+]
+
+/**
+ * Inline newsletter subscribe form. Posts to the existing /store/newsletter
+ * endpoint, which dedupes and syncs to Listmonk. Fails open: any backend
+ * error is swallowed and the user still sees the success state — newsletter
+ * sign-up should never block the footer UX.
+ */
+function FooterNewsletterForm() {
+  const [email, setEmail] = useState("")
+  const [state, setState] = useState<"idle" | "submitting" | "done">("idle")
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email.includes("@") || state !== "idle") return
+    setState("submitting")
+    try {
+      await fetch(`${BACKEND_URL}/store/newsletter`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-publishable-api-key": PUB_KEY },
+        body: JSON.stringify({ email }),
+      })
+    } catch {}
+    setState("done")
+  }
+
+  if (state === "done") {
+    return (
+      <div
+        className="flex items-center gap-2 text-sm rounded-md px-4 py-3"
+        style={{ backgroundColor: "rgba(16,185,129,0.15)", color: "#a7f3d0", fontFamily: fonts.body }}
+      >
+        <Check size={16} />
+        <span>Subscribed. Check your inbox to confirm.</span>
+      </div>
+    )
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="flex gap-2 w-full sm:w-auto">
+      <input
+        type="email"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="you@example.com"
+        className="flex-1 sm:w-64 px-4 py-2.5 rounded-md text-sm outline-none focus:ring-2"
+        style={{
+          backgroundColor: "rgba(0,0,0,0.25)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          color: "white",
+          fontFamily: fonts.body,
+        }}
+      />
+      <button
+        type="submit"
+        disabled={state === "submitting"}
+        className="px-5 py-2.5 rounded-md text-sm font-semibold transition-opacity disabled:opacity-60"
+        style={{
+          background: gradients.secondaryButton,
+          color: "white",
+          fontFamily: fonts.body,
+        }}
+      >
+        {state === "submitting" ? "..." : "Subscribe"}
+      </button>
+    </form>
+  )
 }
 
 export default function StorefrontShell({ children, categories = [] }: StorefrontShellProps) {
@@ -893,39 +992,140 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
       {/* Main content */}
       <main className="flex-1">{children}</main>
 
-      {/* Footer */}
-      <footer
-        className="text-white"
-        style={{ background: gradients.footer }}
-      >
+      {/* Footer — Mega Premium layout: trust ribbon → ecosystem cards →
+          5-col mega-nav → newsletter strip → social/payments → legal bar.
+          Admin-configured FooterColumn[] are spliced into the mega-nav so
+          saved CMS links continue to work. */}
+      <footer className="text-white" style={{ background: gradients.footer }}>
         {/* Gradient accent border at top */}
-        <div
-          className="h-1 w-full"
-          style={{ background: gradients.accentBorder }}
-        />
+        <div className="h-1 w-full" style={{ background: gradients.accentBorder }} />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+        {/* ── 1. Trust ribbon ─────────────────────────────────────────── */}
+        <section className="border-b" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { Icon: Truck,        title: "Free Shipping",      desc: "On orders above ₹999 across India." },
+              { Icon: RotateCcw,    title: "30-Day Returns",     desc: "Hassle-free refunds, no questions asked." },
+              { Icon: ShieldCheck,  title: "Secure Checkout",    desc: "Razorpay · Stripe · UPI · COD." },
+              { Icon: Sparkles,     title: "Authentic Sourcing", desc: "Energised by Vedic priests, every piece." },
+            ].map(({ Icon, title, desc }) => (
+              <div key={title} className="flex items-start gap-3">
+                <div
+                  className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)", color: "#e8c97a" }}
+                >
+                  <Icon size={18} />
+                </div>
+                <div>
+                  <h5 className="text-sm font-semibold" style={{ fontFamily: fonts.heading }}>{title}</h5>
+                  <p className="text-xs opacity-65 mt-0.5" style={{ fontFamily: fonts.body }}>{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
-          {/* ── Main link grid: Brand | Admin cols | Ecosystem | My Account ── */}
+        {/* ── 2. Ecosystem discovery cards ────────────────────────────── */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-2">
+          <h2 className="text-2xl font-semibold" style={{ fontFamily: fonts.heading }}>
+            Explore the VastuCart Ecosystem
+          </h2>
+          <p className="text-sm opacity-70 mt-1 max-w-xl" style={{ fontFamily: fonts.body }}>
+            Nine connected platforms covering every dimension of Vedic life — from daily Panchang to wedding muhurta.
+          </p>
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {ECOSYSTEM_SITES.map((site) => {
+              const inner = (
+                <>
+                  <div
+                    className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 text-xl"
+                    style={{ backgroundColor: site.bg, color: site.fg || "#fff" }}
+                  >
+                    {site.glyph}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-semibold flex items-center gap-2" style={{ fontFamily: fonts.heading }}>
+                      <span className="truncate">{site.name}</span>
+                      {site.badge && (
+                        <span
+                          className="px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider"
+                          style={{ backgroundColor: secondary[500], color: "white", fontFamily: fonts.body }}
+                        >
+                          {site.badge}
+                        </span>
+                      )}
+                    </h4>
+                    <p className="text-xs opacity-65 mt-0.5 line-clamp-2" style={{ fontFamily: fonts.body }}>
+                      {site.desc}
+                    </p>
+                  </div>
+                </>
+              )
+              const className =
+                "flex gap-3.5 items-start p-4 rounded-xl transition-all hover:-translate-y-0.5"
+              const style = {
+                backgroundColor: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+              } as React.CSSProperties
+              return site.isCurrent ? (
+                <Link key={site.name} href={site.url} className={className} style={style}>
+                  {inner}
+                </Link>
+              ) : (
+                <a
+                  key={site.name}
+                  href={site.url}
+                  target="_blank"
+                  rel="noopener"
+                  className={className}
+                  style={style}
+                >
+                  {inner}
+                </a>
+              )
+            })}
+          </div>
+        </section>
+
+        {/* ── 3. Mega-nav columns: Brand | Admin × 2 | Explore | Account ─ */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-8">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-10">
 
             {/* Brand column — spans full width on mobile */}
             <div className="col-span-2 md:col-span-1 space-y-5">
-              <div className="flex items-center gap-2">
-                <img
-                  src={branding.logoUrl || "/VastuCartLogo.png"}
-                  alt={branding.storeName}
-                  className="h-10 w-10 object-contain"
-                />
+              <Link href="/" aria-label={`${branding.storeName} home`} className="inline-flex items-center gap-3">
                 <span
-                  className="font-bold text-xl"
-                  style={{ fontFamily: fonts.heading }}
+                  className="w-12 h-12 rounded-full flex items-center justify-center"
+                  style={{
+                    backgroundColor: "white",
+                    padding: "4px",
+                    boxShadow: "0 4px 14px -4px rgba(0,0,0,0.45), 0 0 0 1px rgba(212,161,60,0.18)",
+                  }}
                 >
-                  {branding.storeName}
+                  <img
+                    src={branding.logoUrl || "/VastuCartLogo.png"}
+                    alt=""
+                    className="w-full h-full object-contain"
+                  />
                 </span>
-              </div>
+                <span style={{ fontFamily: fonts.heading, lineHeight: 1 }}>
+                  {branding.storeName === "VastuCart" ? (
+                    <span className="block text-[1.4rem] font-semibold">
+                      Vastu<span style={{ color: "#e8c97a" }}>Cart</span>
+                    </span>
+                  ) : (
+                    <span className="block text-[1.4rem] font-semibold">{branding.storeName}</span>
+                  )}
+                  <span
+                    className="block text-[10px] uppercase tracking-[0.18em] opacity-50 mt-1"
+                    style={{ fontFamily: fonts.body }}
+                  >
+                    Heritage in every box
+                  </span>
+                </span>
+              </Link>
               <p
-                className="text-sm leading-relaxed opacity-80"
+                className="text-sm leading-relaxed opacity-75"
                 style={{ fontFamily: fonts.body }}
               >
                 {branding.tagline}
@@ -950,80 +1150,6 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
                   </a>
                 )}
               </div>
-              {footerConfig.showSocialLinks && (
-                <div className="flex items-center gap-3 pt-1">
-                  {branding.socialLinks?.instagram && (
-                    <a
-                      href={branding.socialLinks.instagram}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                      style={{ backgroundColor: "rgba(255,255,255,0.12)" }}
-                      aria-label="Instagram"
-                    >
-                      <svg width="17" height="17" fill="white" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
-                      </svg>
-                    </a>
-                  )}
-                  {branding.socialLinks?.facebook && (
-                    <a
-                      href={branding.socialLinks.facebook}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                      style={{ backgroundColor: "rgba(255,255,255,0.12)" }}
-                      aria-label="Facebook"
-                    >
-                      <svg width="17" height="17" fill="white" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                      </svg>
-                    </a>
-                  )}
-                  {branding.socialLinks?.youtube && (
-                    <a
-                      href={branding.socialLinks.youtube}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                      style={{ backgroundColor: "rgba(255,255,255,0.12)" }}
-                      aria-label="YouTube"
-                    >
-                      <svg width="19" height="17" fill="white" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M23.495 6.205a3.007 3.007 0 00-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 00.527 6.205a31.247 31.247 0 00-.522 5.805 31.247 31.247 0 00.522 5.783 3.007 3.007 0 002.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 002.088-2.088 31.247 31.247 0 00.5-5.783 31.247 31.247 0 00-.5-5.805zM9.609 15.601V8.408l6.264 3.602z" />
-                      </svg>
-                    </a>
-                  )}
-                  {branding.socialLinks?.twitter && (
-                    <a
-                      href={branding.socialLinks.twitter}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                      style={{ backgroundColor: "rgba(255,255,255,0.12)" }}
-                      aria-label="Twitter / X"
-                    >
-                      <svg width="16" height="16" fill="white" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                      </svg>
-                    </a>
-                  )}
-                  {branding.socialLinks?.pinterest && (
-                    <a
-                      href={branding.socialLinks.pinterest}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                      style={{ backgroundColor: "rgba(255,255,255,0.12)" }}
-                      aria-label="Pinterest"
-                    >
-                      <svg width="17" height="17" fill="white" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 01.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z" />
-                      </svg>
-                    </a>
-                  )}
-                </div>
-              )}
             </div>
 
             {/* Admin-configured columns — first 2 slots in main grid */}
@@ -1144,71 +1270,120 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
             </div>
           )}
 
-          {/* ── Legal & Policies ─────────────────────────────────────────── */}
-          <div
-            className="mt-10 pt-8 border-t"
-            style={{ borderColor: "rgba(255,255,255,0.12)" }}
-          >
-            <p
-              className="text-xs font-semibold uppercase tracking-widest mb-4 opacity-45"
-              style={{ fontFamily: fonts.body }}
-            >
-              Legal &amp; Policies
+        </div>
+
+        {/* ── 4. Newsletter strip ─────────────────────────────────────── */}
+        <section
+          className="border-t border-b"
+          style={{ borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(0,0,0,0.18)" }}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between gap-6 flex-wrap">
+            <div>
+              <h4 className="text-base font-semibold" style={{ fontFamily: fonts.heading }}>Stay in the loop</h4>
+              <p className="text-xs opacity-65 mt-0.5" style={{ fontFamily: fonts.body }}>
+                Weekly Vedic insights, ritual guides, and members-only drops.
+              </p>
+            </div>
+            <FooterNewsletterForm />
+          </div>
+        </section>
+
+        {/* ── 5. Social + payments strip ──────────────────────────────── */}
+        <section
+          className="border-b"
+          style={{ borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(0,0,0,0.18)" }}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-6 flex-wrap">
+            {footerConfig.showSocialLinks && (
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-[10px] uppercase tracking-[0.18em] opacity-50" style={{ fontFamily: fonts.body }}>
+                  Connect
+                </span>
+                {([
+                  ["instagram", "Instagram", "M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.81.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.81-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.81-.25-2.23-.41-.56-.22-.96-.48-1.38-.9-.42-.42-.68-.82-.9-1.38-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.81.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16zm0 5.18a4.66 4.66 0 100 9.32 4.66 4.66 0 000-9.32zm6.06-.27a1.09 1.09 0 11-2.18 0 1.09 1.09 0 012.18 0zM12 9.5a2.5 2.5 0 110 5 2.5 2.5 0 010-5z"],
+                  ["facebook", "Facebook", "M22 12a10 10 0 10-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.5-3.9 3.78-3.9 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0022 12z"],
+                  ["twitter", "X", "M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.16 17.52h1.833L7.084 4.126H5.117L17.084 19.77z"],
+                  ["pinterest", "Pinterest", "M12 2C6.48 2 2 6.48 2 12c0 4.24 2.64 7.85 6.36 9.3-.09-.79-.17-2 .04-2.86.19-.78 1.21-4.99 1.21-4.99s-.31-.62-.31-1.53c0-1.43.83-2.5 1.86-2.5.88 0 1.31.66 1.31 1.45 0 .88-.56 2.2-.85 3.43-.24 1.02.51 1.85 1.52 1.85 1.83 0 3.23-1.93 3.23-4.71 0-2.46-1.77-4.18-4.3-4.18-2.93 0-4.65 2.2-4.65 4.47 0 .89.34 1.84.77 2.36.08.1.09.19.07.29-.08.32-.25 1.02-.28 1.16-.04.19-.15.23-.34.14-1.27-.59-2.06-2.45-2.06-3.94 0-3.21 2.33-6.16 6.71-6.16 3.52 0 6.26 2.51 6.26 5.86 0 3.5-2.21 6.32-5.27 6.32-1.03 0-2-.54-2.33-1.17l-.63 2.4c-.23.88-.85 1.99-1.26 2.66.95.29 1.96.45 3.01.45 5.52 0 10-4.48 10-10S17.52 2 12 2z"],
+                  ["youtube", "YouTube", "M21.58 7.19c-.23-.87-.91-1.55-1.78-1.78C18.25 5 12 5 12 5s-6.25 0-7.8.41c-.87.23-1.55.91-1.78 1.78C2 8.75 2 12 2 12s0 3.25.42 4.81c.23.87.91 1.55 1.78 1.78C5.75 19 12 19 12 19s6.25 0 7.8-.41c.87-.23 1.55-.91 1.78-1.78C22 15.25 22 12 22 12s0-3.25-.42-4.81zM10 15V9l5.2 3-5.2 3z"],
+                  ["threads", "Threads", "M12.18 2C6.84 2.02 3.5 5.31 3.5 12c0 6.7 3.36 9.99 8.7 10h.04c2.43 0 4.45-.7 5.85-2.04 1.84-1.74 1.78-3.97 1.21-5.34-.42-1-1.18-1.83-2.18-2.4.18-.92.16-1.78-.07-2.55-.45-1.5-1.74-2.6-3.55-3.02-1.4-.32-3.06-.13-4.42.5-.95.43-1.55 1.04-1.78 1.79.31.27.69.5 1.13.69.45-.94 1.4-1.41 2.74-1.41 1.96 0 3.06.95 3.46 2.69-.85-.21-1.79-.32-2.78-.32-2.74 0-4.7 1.31-4.7 3.53 0 1.93 1.62 3.31 3.95 3.31 1.96 0 3.45-.85 4.21-2.42.62.36 1.06.85 1.27 1.43.34.94-.04 2.05-1.03 3-1.06 1-2.65 1.55-4.6 1.55-4.16 0-6.78-2.41-6.78-7.99 0-5.59 2.62-7.99 6.79-8 3.62 0 5.97 1.81 6.5 5.05.42.07.83.2 1.21.4-.61-3.79-3.39-6.04-7.71-6.06zm-.21 13.31c-1.18 0-2.06-.5-2.06-1.32 0-.92 1.04-1.39 2.55-1.39.85 0 1.65.1 2.36.27-.42 1.55-1.42 2.44-2.85 2.44z"],
+                  ["etsy", "Etsy", "M9.16 4.42v6.36s2.27 0 3.48-.08c.96-.16 1.13-.24 1.29-1.21l.24-1.05h.81L14.9 12l.08 3.71h-.8l-.25-.96c-.16-.97-.4-1.05-1.28-1.21-1.13-.08-3.48-.08-3.48-.08v5.32c0 1.05.49 1.45 1.61 1.45h3.4c1.05 0 2.1-.08 2.66-1.45l.65-1.69h.73l-.4 4.11H6.3v-.81h.97c1.13 0 1.45-.32 1.45-1.13V6.84c0-.81-.32-1.13-1.45-1.13H6.3V4.9h11.34l.16 3.55h-.73l-.24-.81c-.32-1.13-.81-1.86-2.5-1.86H9.16z"],
+                  ["amazon", "Amazon", "M14.27 14.34a8.7 8.7 0 01-3.74.78c-3.04 0-5.78-1.13-7.85-3.01-.16-.15 0-.35.18-.24a13.04 13.04 0 006.85 1.81c1.66 0 3.5-.34 5.18-1.06.25-.1.46.17.21.34zm.92-1.05c-.21-.27-1.4-.13-1.94-.07-.16.02-.18-.12-.04-.22.95-.67 2.5-.48 2.69-.25.18.23-.05 1.78-.94 2.52-.14.11-.27.05-.21-.1.21-.49.66-1.6.44-1.88zM7.04 16.29c-1.65 0-3.2-.61-4.34-1.62-.09-.08-.01-.18.1-.12 1.27.74 2.85 1.18 4.48 1.18 1.06 0 2.23-.22 3.31-.68.16-.07.3.11.13.23a8.6 8.6 0 01-3.68.99zm9.55-7.08c-1.18 0-2.04 1.07-2.04 2.42 0 1.55.86 2.6 2.04 2.6 1.19 0 2.05-1.05 2.05-2.6 0-1.45-.91-2.42-2.05-2.42zm0 4.13c-.63 0-.84-.56-.84-1.71 0-1.05.21-1.51.84-1.51.62 0 .85.46.85 1.51 0 1.15-.23 1.71-.85 1.71z"],
+                ] as const).map(([key, label, path]) => {
+                  const url = (branding.socialLinks as Record<string, string | undefined>)?.[key]
+                  if (!url) return null
+                  return (
+                    <a
+                      key={key}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-9 h-9 rounded-md flex items-center justify-center transition-all hover:opacity-100 opacity-70"
+                      style={{ backgroundColor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}
+                      aria-label={label}
+                      title={label}
+                    >
+                      <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d={path} />
+                      </svg>
+                    </a>
+                  )
+                })}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[10px] uppercase tracking-[0.18em] opacity-50" style={{ fontFamily: fonts.body }}>
+                We accept
+              </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {["VISA", "Mastercard", "UPI", "Razorpay", "Stripe", "PayPal", "COD"].map((method) => (
+                  <span
+                    key={method}
+                    className="px-2 py-1 rounded text-[10px] font-bold tracking-wide opacity-75"
+                    style={{
+                      backgroundColor: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      color: "#ffffff",
+                      fontFamily: fonts.body,
+                    }}
+                  >
+                    {method}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 6. Bottom legal bar: copyright + inline links ───────────── */}
+        <section style={{ backgroundColor: "rgba(0,0,0,0.18)" }}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between gap-4 flex-wrap">
+            <p className="text-xs opacity-55" style={{ fontFamily: fonts.body }}>
+              {footerConfig.copyrightText}
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-4 gap-y-2.5">
+            <nav className="flex items-center gap-x-5 gap-y-2 flex-wrap">
               {[
-                { label: "Terms & Conditions", href: "/terms" },
-                { label: "Privacy Policy", href: "/privacy-policy" },
-                { label: "Return & Refund", href: "/refund-policy" },
-                { label: "Shipping Policy", href: "/shipping-policy" },
+                { label: "Privacy", href: "/privacy-policy" },
+                { label: "Terms", href: "/terms" },
+                { label: "Refund", href: "/refund-policy" },
+                { label: "Shipping", href: "/shipping-policy" },
+                { label: "Cookies", href: "/cookie-policy" },
                 { label: "Disclaimer", href: "/disclaimer" },
-                { label: "Cookie Policy", href: "/cookie-policy" },
-                { label: "Consultation Terms", href: "/consultation-terms" },
-                { label: "Intellectual Property", href: "/intellectual-property" },
                 { label: "Acceptable Use", href: "/acceptable-use" },
+                { label: "IP", href: "/intellectual-property" },
               ].map((lnk) => (
                 <Link
                   key={lnk.href}
                   href={lnk.href}
-                  className="text-xs opacity-55 hover:opacity-90 transition-opacity py-0.5"
+                  className="text-xs opacity-55 hover:opacity-90 transition-opacity"
                   style={{ fontFamily: fonts.body }}
                 >
                   {lnk.label}
                 </Link>
               ))}
-            </div>
+            </nav>
           </div>
-
-          {/* ── Bottom bar: copyright + payment badges ───────────────────── */}
-          <div
-            className="mt-6 pt-5 border-t flex flex-col sm:flex-row items-center justify-between gap-4"
-            style={{ borderColor: "rgba(255,255,255,0.08)" }}
-          >
-            <p
-              className="text-sm opacity-60 text-center sm:text-left"
-              style={{ fontFamily: fonts.body }}
-            >
-              {footerConfig.copyrightText}
-            </p>
-
-            <div className="flex items-center gap-2 flex-wrap justify-center">
-              {["VISA", "Mastercard", "UPI", "Razorpay", "Net Banking", "COD"].map((method) => (
-                <div
-                  key={method}
-                  className="px-2.5 py-1 rounded text-xs font-bold tracking-wide"
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.15)",
-                    color: "#ffffff",
-                    fontFamily: fonts.body,
-                  }}
-                >
-                  {method}
-                </div>
-              ))}
-            </div>
-          </div>
-
-        </div>
+        </section>
       </footer>
 
       {/* Cart Drawer */}
