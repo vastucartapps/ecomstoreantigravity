@@ -18,6 +18,7 @@ import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
 import { buildMetaFeed } from "../../../lib/meta-transformer"
 import type { RawMedusaProduct } from "../../../lib/meta-transformer"
+import { fetchBrandFromStore } from "../../../lib/brand-from-store"
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   try {
@@ -52,7 +53,8 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       }
     )
 
-    const tsv = buildMetaFeed(products as RawMedusaProduct[])
+    const brand = await fetchBrandFromStore(req.scope)
+    const tsv = buildMetaFeed(products as RawMedusaProduct[], brand.storeName)
 
     res.setHeader("Content-Type", "text/tab-separated-values; charset=utf-8")
     res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=3600")

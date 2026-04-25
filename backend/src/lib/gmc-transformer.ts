@@ -12,8 +12,12 @@
  *  - prices in major units (INR) — Medusa stores in paise, divide /100
  */
 
+import { brandFallback } from "./brand-from-store"
+
 const STORE_URL = process.env.NEXT_PUBLIC_STORE_URL || "https://store.vastucart.in"
-const DEFAULT_BRAND = "VastuCart"
+/** Last-resort brand fallback. The async route handler should pass an
+ *  admin-sourced brand via `defaultBrand` to override. */
+const HARDCODED_BRAND = brandFallback().storeName
 const FEED_COUNTRY = "IN"
 const FEED_LANGUAGE = "en"
 
@@ -166,13 +170,14 @@ function resolveAvailability(
  */
 export function toGmcPayload(
   product: RawMedusaProduct,
-  variant: RawMedusaVariant
+  variant: RawMedusaVariant,
+  defaultBrand: string = HARDCODED_BRAND
 ): GmcProduct {
   const meta = (product.metadata || {}) as Record<string, unknown>
   const mc = (meta.merchant_centre || {}) as Record<string, string>
   const catMeta = (product.categories?.[0]?.metadata || {}) as Record<string, string>
 
-  const brand = cleanText(mc.brand || DEFAULT_BRAND)
+  const brand = cleanText(mc.brand || defaultBrand)
   const gender = cleanText(mc.gender || "")
   const ageGroup = (mc.ageGroup || "adult") as GmcProduct["ageGroup"]
   const condition = (mc.condition || "new") as GmcProduct["condition"]
@@ -249,8 +254,10 @@ export function toGmcPayload(
  * Build a Google Shopping XML feed (RSS 2.0 with g: namespace) from a list
  * of raw Medusa products. Each published variant becomes a separate <item>.
  */
-export function buildXmlFeed(products: RawMedusaProduct[]): string {
-  const storeName = "VastuCart"
+export function buildXmlFeed(
+  products: RawMedusaProduct[],
+  storeName: string = HARDCODED_BRAND
+): string {
   const storeUrl = STORE_URL
 
   const items: string[] = []
@@ -259,7 +266,7 @@ export function buildXmlFeed(products: RawMedusaProduct[]): string {
     if (product.status !== "published") continue
 
     for (const variant of product.variants || []) {
-      const gmc = toGmcPayload(product, variant)
+      const gmc = toGmcPayload(product, variant, storeName)
       const price = `${gmc.price.value} ${gmc.price.currency}`
 
       let xml = `    <item>\n`

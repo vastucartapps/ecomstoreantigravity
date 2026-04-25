@@ -17,6 +17,7 @@ import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
 import { buildXmlFeed } from "../../../lib/gmc-transformer"
 import type { RawMedusaProduct } from "../../../lib/gmc-transformer"
+import { fetchBrandFromStore } from "../../../lib/brand-from-store"
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   try {
@@ -51,7 +52,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       }
     )
 
-    const xml = buildXmlFeed(products as RawMedusaProduct[])
+    // Brand falls through admin-saved storeName so renaming the store
+    // updates GMC feed brand for products without merchant_centre.brand.
+    const brand = await fetchBrandFromStore(req.scope)
+    const xml = buildXmlFeed(products as RawMedusaProduct[], brand.storeName)
 
     res.setHeader("Content-Type", "application/xml; charset=utf-8")
     res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=3600")

@@ -7,7 +7,7 @@ import { Search, Heart, ShoppingBag, User, Menu, X, Bell, ExternalLink, Truck, R
 import { useAuth } from "@/providers/auth-provider"
 import { useCart } from "@/providers/cart-provider"
 import { useWishlist } from "@/providers/wishlist-provider"
-import { useAnnouncement, useBranding, useStorefrontFooter, useConsultationsEnabled, useOperationalPolicies } from "@/providers/announcement-provider"
+import { useAnnouncement, useBranding, useStorefrontFooter, useConsultationsEnabled, useOperationalPolicies, useStorefrontRegion } from "@/providers/announcement-provider"
 import { CartDrawer } from "@/components/storefront/cart/CartDrawer"
 import { CLUSTER_SITES } from "@/lib/cluster-sites"
 import { primary, secondary, earth, bg, gradients, fonts } from "./theme"
@@ -120,6 +120,14 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
   const footerConfig = useStorefrontFooter()
   const consultationsEnabled = useConsultationsEnabled()
   const ops = useOperationalPolicies()
+  const region = useStorefrontRegion()
+  // Region-aware free-shipping threshold — USD visitors see "$50" instead
+  // of "₹999" (which they can never trigger because they pay in USD).
+  const freeShippingDisplay =
+    region === "INTERNATIONAL"
+      ? `$${ops.freeShippingThresholdUsd.toLocaleString("en-US")}`
+      : `₹${ops.freeShippingThresholdInr.toLocaleString("en-IN")}`
+  const freeShippingScope = region === "INTERNATIONAL" ? "worldwide" : "across India"
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
@@ -979,9 +987,9 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
         <section className="border-b" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { Icon: Truck,        title: "Free Shipping",                       desc: `On orders above ₹${ops.freeShippingThresholdInr.toLocaleString("en-IN")} across India.` },
+              { Icon: Truck,        title: "Free Shipping",                       desc: `On orders above ${freeShippingDisplay} ${freeShippingScope}.` },
               { Icon: RotateCcw,    title: `${ops.returnWindowDays}-Day Returns`, desc: `Raise a return within ${ops.returnWindowDays} days of delivery.` },
-              { Icon: ShieldCheck,  title: "Secure Checkout",                     desc: "Razorpay · Stripe · UPI · COD." },
+              { Icon: ShieldCheck,  title: "Secure Checkout",                     desc: region === "INTERNATIONAL" ? "Stripe · PayPal · cards." : "Razorpay · Stripe · UPI · COD." },
               { Icon: Sparkles,     title: "Authentic Sourcing",                  desc: "Energised by Vedic priests, every piece." },
             ].map(({ Icon, title, desc }) => (
               <div key={title} className="flex items-start gap-3">

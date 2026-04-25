@@ -3,6 +3,7 @@ import { Modules } from "@medusajs/framework/utils"
 import { MetaClient, readMetaConfig } from "../../lib/meta-client"
 import { toMetaProduct } from "../../lib/meta-transformer"
 import type { RawMedusaProduct } from "../../lib/meta-transformer"
+import { fetchBrandFromStore } from "../../lib/brand-from-store"
 
 export type SyncMetaProductsStepInput = {
   products: RawMedusaProduct[]
@@ -21,12 +22,16 @@ export const syncMetaProductsStep = createStep(
 
     const client = new MetaClient(config.catalogId, config.accessToken)
 
+    // Default brand for products without merchant_centre.brand — sourced
+    // from admin's storeName so a single edit propagates to Meta catalogue.
+    const brand = await fetchBrandFromStore(container)
+
     // Build Meta payloads for all variants of published products
     const payloads: import("../../lib/meta-client").MetaProduct[] = []
     for (const product of products) {
       if (product.status !== "published") continue
       for (const variant of product.variants || []) {
-        payloads.push(toMetaProduct(product, variant))
+        payloads.push(toMetaProduct(product, variant, brand.storeName))
       }
     }
 

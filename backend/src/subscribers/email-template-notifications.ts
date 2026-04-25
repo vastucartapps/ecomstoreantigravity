@@ -1,5 +1,6 @@
 import type { SubscriberArgs, SubscriberConfig } from "@medusajs/framework"
 import { sendTransactional, isListmonkConfigured } from "../lib/listmonk-client"
+import { fetchBrandFromStore } from "../lib/brand-from-store"
 
 function fmt(n: number): string {
   return `₹${(n / 100).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -84,9 +85,12 @@ export default async function emailTemplateNotificationsHandler({
     const { count: itemsCount, summary: itemsSummary } = buildItemsSummary(order.items || [])
     const { name: shippingName, address: shippingAddress } = buildShipping(order)
 
-    const storeUrl = process.env.STORE_URL || "https://store.vastucart.in"
+    // Pull brand info from admin's store metadata so subject lines + email
+    // copy match what's saved in the storefront admin (single source of truth).
+    const brand = await fetchBrandFromStore(container)
+    const storeUrl = brand.storeUrl
     const orderUrl = `${storeUrl}/account/orders/${orderId}`
-    const supportEmail = process.env.SUPPORT_EMAIL || "support@vastucart.in"
+    const supportEmail = brand.contactEmail
 
     const base = {
       customer_name: customerName,
@@ -134,7 +138,7 @@ export default async function emailTemplateNotificationsHandler({
         email: customerEmail,
         name: customerName,
         templateName: "VC Order Shipped",
-        subject: `Your VastuCart order #${orderId2} is on its way! 🚚`,
+        subject: `Your ${brand.storeName} order #${orderId2} is on its way! 🚚`,
         data: {
           ...base,
           tracking_number: trackingNumber,
@@ -156,7 +160,7 @@ export default async function emailTemplateNotificationsHandler({
         email: customerEmail,
         name: customerName,
         templateName: "VC Order Delivered",
-        subject: `Your VastuCart order #${orderId2} has arrived! ✦`,
+        subject: `Your ${brand.storeName} order #${orderId2} has arrived! ✦`,
         data: {
           ...base,
           loyalty_points: loyaltyPoints,
@@ -176,7 +180,7 @@ export default async function emailTemplateNotificationsHandler({
         email: customerEmail,
         name: customerName,
         templateName: "VC Order Cancelled",
-        subject: `Your VastuCart order #${orderId2} has been cancelled`,
+        subject: `Your ${brand.storeName} order #${orderId2} has been cancelled`,
         data: {
           ...base,
           refund_amount: refundAmount,

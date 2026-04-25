@@ -4,6 +4,7 @@ import {
   findActiveTemplate,
   renderTemplate,
 } from "../lib/notification-utils"
+import { fetchBrandFromStore } from "../lib/brand-from-store"
 
 const EVENT_TRIGGER_MAP: Record<string, string> = {
   "order.placed": "order.placed",
@@ -48,11 +49,12 @@ export default async function smsNotificationsHandler({
     const customerName = order.billing_address?.first_name || "Customer"
     const displayId = order.display_id || orderId.slice(-6).toUpperCase()
 
+    const brand = await fetchBrandFromStore(container)
     const message = renderTemplate(tpl.template, {
       customer_name: customerName,
       order_id: String(displayId),
       amount: order.total ? String(Math.round(order.total / 100)) : "0",
-      store_name: process.env.STORE_NAME || "VastuCart",
+      store_name: brand.storeName,
     })
 
     // Dynamic import

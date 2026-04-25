@@ -4,6 +4,7 @@ import {
   findActiveTemplate,
   renderTemplate,
 } from "../lib/notification-utils"
+import { fetchBrandFromStore } from "../lib/brand-from-store"
 
 const EVENT_TRIGGER_MAP: Record<string, string> = {
   "order.placed": "order.placed",
@@ -50,11 +51,14 @@ export default async function whatsappNotificationsHandler({
     const displayId = order.display_id || orderId.slice(-6).toUpperCase()
     const amount = order.total ? String(Math.round(order.total / 100)) : "0"
 
+    // Brand info is read from admin's store metadata so a single edit in
+    // admin storeName updates every WhatsApp message template variable.
+    const brand = await fetchBrandFromStore(container)
     const messageText = renderTemplate(tpl.template, {
       customer_name: customerName,
       order_id: String(displayId),
       amount,
-      store_name: process.env.STORE_NAME || "VastuCart",
+      store_name: brand.storeName,
       delivery_date: "soon",
     })
 

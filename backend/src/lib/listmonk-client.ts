@@ -50,12 +50,19 @@ async function resolveTemplateId(name: string): Promise<number> {
 // ── Newsletter list ID cache ─────────────────────────────────────────────────
 let newsletterListId: number | null = null
 
+/** Listmonk list name — must match the list created in the Listmonk admin
+ *  console. Override with LISTMONK_NEWSLETTER_LIST_NAME if the brand has
+ *  been renamed in admin (e.g. "Acme Newsletter"). */
+const LISTMONK_LIST_NAME =
+  process.env.LISTMONK_NEWSLETTER_LIST_NAME ||
+  `${process.env.STORE_NAME || "VastuCart"} Newsletter`
+
 async function resolveNewsletterListId(): Promise<number | null> {
   if (newsletterListId !== null) return newsletterListId
   try {
     const data = await lkFetch<{ data: any }>("/api/lists?page=1&per_page=100")
     const list: any[] = data?.data?.results || data?.data || []
-    const found = list.find((l: any) => l.name === "VastuCart Newsletter")
+    const found = list.find((l: any) => l.name === LISTMONK_LIST_NAME)
     if (found) { newsletterListId = found.id; return found.id }
   } catch { /* best effort */ }
   return null

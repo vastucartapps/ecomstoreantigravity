@@ -5,6 +5,7 @@ import {
   renderTemplate,
 } from "../lib/notification-utils"
 import { PUSH_SUBSCRIPTIONS_MODULE } from "../modules/push-subscriptions"
+import { fetchBrandFromStore } from "../lib/brand-from-store"
 
 const EVENT_TRIGGER_MAP: Record<string, string> = {
   "order.placed": "order.placed",
@@ -25,7 +26,10 @@ export default async function pushNotificationsHandler({
 
   const vapidPublicKey = process.env.VAPID_PUBLIC_KEY
   const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY
-  const vapidSubject = process.env.VAPID_SUBJECT || "mailto:admin@vastucart.com"
+  // VAPID subject defaults to admin email from store metadata so
+  // changing brand contact in admin updates push contact too.
+  const brandPreContact = await fetchBrandFromStore(container)
+  const vapidSubject = process.env.VAPID_SUBJECT || `mailto:${brandPreContact.contactEmail}`
 
   if (!vapidPublicKey || !vapidPrivateKey) return
 
@@ -48,7 +52,7 @@ export default async function pushNotificationsHandler({
       order_id: String(displayId),
       amount,
       order_status: order.status,
-      store_name: process.env.STORE_NAME || "VastuCart",
+      store_name: brandPreContact.storeName,
     })
 
     const pushSvc = container.resolve(PUSH_SUBSCRIPTIONS_MODULE) as any

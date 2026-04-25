@@ -71,6 +71,11 @@ export interface OperationalPolicies {
   unboxingVideoRequired: boolean
 }
 
+/** Geo-detected region — set by middleware via Cloudflare CF-IPCountry
+ *  cookie. Drives currency-aware values in the trust ribbon, legal pages,
+ *  and anywhere ₹ vs $ should differ. */
+export type StorefrontRegion = "IN" | "INTERNATIONAL"
+
 interface StorefrontContextValue {
   // Announcement
   text: string | null
@@ -89,6 +94,8 @@ interface StorefrontContextValue {
   consultationsRouteEnabled: boolean
   // Operational policies (drives trust ribbon, homepage badge, legal pages)
   operationalPolicies: OperationalPolicies
+  // Region (drives currency formatting in operational values)
+  region: StorefrontRegion
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
@@ -183,10 +190,24 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
   const [consultationsRouteEnabled, setConsultationsRouteEnabled] = useState(true)
   const [operationalPolicies, setOperationalPolicies] =
     useState<OperationalPolicies>(DEFAULT_OPERATIONAL_POLICIES)
+  // Region defaults to IN (we ship from India); flips to INTERNATIONAL on
+  // mount once we read the vc-region cookie set by middleware.
+  const [region, setRegion] = useState<StorefrontRegion>("IN")
 
   useEffect(() => {
     if (typeof window !== "undefined" && sessionStorage.getItem(DISMISSED_KEY)) {
       setIsDismissed(true)
+    }
+
+    // Read geo-IP region cookie (set by middleware from CF-IPCountry).
+    // "international" → USD pricing + $ thresholds in trust ribbon.
+    if (typeof window !== "undefined") {
+      const cookie = document.cookie
+        .split("; ")
+        .find((c) => c.startsWith("vc-region="))
+      if (cookie?.split("=")[1] === "international") {
+        setRegion("INTERNATIONAL")
+      }
     }
 
     const fetchConfig = async () => {
@@ -320,6 +341,7 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
         footer,
         consultationsRouteEnabled,
         operationalPolicies,
+        region,
       }}
     >
       {children}
@@ -363,4 +385,15 @@ export function useOperationalPolicies(): OperationalPolicies {
   const ctx = useContext(StorefrontContext)
   if (!ctx) throw new Error("useOperationalPolicies must be used within AnnouncementProvider")
   return ctx.operationalPolicies
+}
+
+/**
+ * Geo-detected region. "INTERNATIONAL" visitors should see USD thresholds
+ * (e.g. "$50 free shipping") instead of INR. Set by middleware via the
+ * Cloudflare CF-IPCountry header → vc-region cookie.
+ */
+export function useStorefrontRegion(): StorefrontRegion {
+  const ctx = useContext(StorefrontContext)
+  if (!ctx) throw new Error("useStorefrontRegion must be used within AnnouncementProvider")
+  return ctx.region
 }

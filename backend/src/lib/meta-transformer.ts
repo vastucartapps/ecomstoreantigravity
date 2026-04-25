@@ -16,9 +16,12 @@
  */
 
 import type { MetaProduct } from "./meta-client"
+import { brandFallback } from "./brand-from-store"
 
 const STORE_URL = process.env.STORE_URL || "https://store.vastucart.in"
-const DEFAULT_BRAND = "VastuCart"
+/** Last-resort brand fallback. Callers (workflow steps + route handlers)
+ *  should pass an admin-sourced brand via `defaultBrand` to override. */
+const HARDCODED_BRAND = brandFallback().storeName
 
 // ─── Shared raw Medusa types (same as gmc-transformer) ────────────────────────
 
@@ -132,13 +135,14 @@ function resolveAvailability(
  */
 export function toMetaProduct(
   product: RawMedusaProduct,
-  variant: RawMedusaVariant
+  variant: RawMedusaVariant,
+  defaultBrand: string = HARDCODED_BRAND
 ): MetaProduct {
   const meta = (product.metadata || {}) as Record<string, unknown>
   const mc = (meta.merchant_centre || {}) as Record<string, string>
   const catMeta = (product.categories?.[0]?.metadata || {}) as Record<string, string>
 
-  const brand = cleanText(mc.brand || DEFAULT_BRAND)
+  const brand = cleanText(mc.brand || defaultBrand)
   const gender = cleanText(mc.gender || "")
   const ageGroup = cleanText(mc.ageGroup || "adult")
 
@@ -242,14 +246,17 @@ function tsvEscape(val: string | undefined): string {
  * Returns a string with header row + one row per published variant.
  * Meta Commerce Manager accepts this format for scheduled feed imports.
  */
-export function buildMetaFeed(products: RawMedusaProduct[]): string {
+export function buildMetaFeed(
+  products: RawMedusaProduct[],
+  defaultBrand: string = HARDCODED_BRAND
+): string {
   const rows: string[] = [TSV_HEADERS.join("\t")]
 
   for (const product of products) {
     if (product.status !== "published") continue
 
     for (const variant of product.variants || []) {
-      const p = toMetaProduct(product, variant)
+      const p = toMetaProduct(product, variant, defaultBrand)
 
       const row = [
         tsvEscape(p.retailer_id),
