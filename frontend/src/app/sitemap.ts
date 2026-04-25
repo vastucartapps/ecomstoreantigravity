@@ -4,7 +4,7 @@ const BACKEND_URL =
   process.env.MEDUSA_INTERNAL_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://vastucart.com"
+  process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
 
 const STATIC_PAGES: MetadataRoute.Sitemap = [
   {

@@ -84,6 +84,22 @@ export default async function StorefrontLayout({
 
   return (
     <>
+      {/*
+        Cross-domain DNS prefetch + preconnect for the VastuCart cluster.
+        Resolves DNS (and warms the TLS handshake for the parent brand) before
+        the user clicks a sister-site link, so cross-domain navigation feels
+        instant. Source: /Presence links.txt at repo root.
+      */}
+      <link rel="preconnect" href="https://vastucart.in" crossOrigin="anonymous" />
+      <link rel="dns-prefetch" href="https://vastucart.in" />
+      <link rel="dns-prefetch" href="https://kundali.vastucart.in" />
+      <link rel="dns-prefetch" href="https://blog.vastucart.in" />
+      <link rel="dns-prefetch" href="https://panchang.vastucart.in" />
+      <link rel="dns-prefetch" href="https://stotra.vastucart.in" />
+      <link rel="dns-prefetch" href="https://horoscope.vastucart.in" />
+      <link rel="dns-prefetch" href="https://muhurta.vastucart.in" />
+      <link rel="dns-prefetch" href="https://wedding.vastucart.in" />
+      <link rel="dns-prefetch" href="https://tarot.vastucart.in" />
       <JsonLd data={siteGraph} id="site-schema" />
       <StorefrontShellWrapper categories={categories}>
         {children}

@@ -32,6 +32,48 @@ export interface SiteSocialLinks {
   youtube?: string
   linkedin?: string
   pinterest?: string
+  threads?: string
+  etsy?: string
+  amazon?: string
+}
+
+/**
+ * Sister sites in the VastuCart cluster — each is a separate WebSite owned by
+ * the same Organization. Listing them in the brand's `sameAs` tells Google
+ * these subdomains all represent the same entity, which strengthens the whole
+ * cluster's authority (the "ecosystem juice" effect).
+ *
+ * Source of truth: /Presence links.txt at repo root.
+ */
+const SISTER_SITES: readonly string[] = [
+  "https://kundali.vastucart.in",
+  "https://blog.vastucart.in",
+  "https://panchang.vastucart.in",
+  "https://stotra.vastucart.in",
+  "https://horoscope.vastucart.in",
+  "https://muhurta.vastucart.in",
+  "https://wedding.vastucart.in",
+  "https://tarot.vastucart.in",
+]
+
+/**
+ * Brand-level social and marketplace presence. These are properties of the
+ * VastuCart brand itself — independent of any per-store admin config. They
+ * always belong in the Organization `sameAs` array regardless of what the
+ * admin has entered. Marketplaces (Etsy, Amazon) appear here for SEO/
+ * knowledge-graph signal only — they are intentionally NOT surfaced on
+ * product pages, only as minimal footer icons.
+ */
+const BRAND_PRESENCE: Required<Pick<SiteSocialLinks,
+  "facebook" | "instagram" | "twitter" | "pinterest" | "threads" | "etsy" | "amazon"
+>> = {
+  facebook: "https://www.facebook.com/vastucartindia",
+  instagram: "https://www.instagram.com/vastucart/",
+  twitter: "https://x.com/vastucart",
+  pinterest: "https://in.pinterest.com/vastucart/",
+  threads: "https://www.threads.com/@vastucart",
+  etsy: "https://vastucart.etsy.com",
+  amazon: "https://www.amazon.in/s?k=vastucart",
 }
 
 export interface SiteContactInfo {
@@ -72,17 +114,24 @@ export function buildSiteGraph(input: SiteSchemaInput = {}) {
   const socials = input.socials || {}
   const contact = input.contact || {}
 
-  // Build sameAs list: parent brand URL (if distinct from store) + all socials.
-  // This tells Google both domains represent the same Organization entity.
-  const sameAs = [
+  // Build sameAs list: this store's URL + every sister subdomain in the
+  // cluster + all brand socials/marketplaces + any admin-entered overrides.
+  // Hardcoded brand presence wins over admin entries that are missing; admin
+  // entries override defaults when set. Deduplicated at the end.
+  const sameAsRaw = [
     BRAND_URL !== SITE_URL ? SITE_URL : null,
-    socials.facebook,
-    socials.instagram,
-    socials.twitter,
+    ...SISTER_SITES,
+    socials.facebook ?? BRAND_PRESENCE.facebook,
+    socials.instagram ?? BRAND_PRESENCE.instagram,
+    socials.twitter ?? BRAND_PRESENCE.twitter,
+    socials.pinterest ?? BRAND_PRESENCE.pinterest,
+    socials.threads ?? BRAND_PRESENCE.threads,
+    socials.etsy ?? BRAND_PRESENCE.etsy,
+    socials.amazon ?? BRAND_PRESENCE.amazon,
     socials.youtube,
     socials.linkedin,
-    socials.pinterest,
   ].filter(Boolean) as string[]
+  const sameAs = Array.from(new Set(sameAsRaw))
 
   const organization: Record<string, unknown> = {
     "@type": "Organization",

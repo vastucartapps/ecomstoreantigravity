@@ -19,6 +19,9 @@ export interface SocialLinks {
   youtube?: string
   twitter?: string
   pinterest?: string
+  threads?: string
+  etsy?: string
+  amazon?: string
 }
 
 export interface BrandingValue {
@@ -70,9 +73,14 @@ const DEFAULT_BRANDING: BrandingValue = {
   contactPhone: "+91 98765 43210",
   address: "42 Temple Lane, Varanasi, Uttar Pradesh 221001, India",
   socialLinks: {
-    instagram: "https://instagram.com/vastucart",
-    facebook: "https://facebook.com/vastucart",
+    instagram: "https://www.instagram.com/vastucart/",
+    facebook: "https://www.facebook.com/vastucartindia",
     youtube: "https://youtube.com/vastucart",
+    twitter: "https://x.com/vastucart",
+    pinterest: "https://in.pinterest.com/vastucart/",
+    threads: "https://www.threads.com/@vastucart",
+    etsy: "https://vastucart.etsy.com",
+    amazon: "https://www.amazon.in/s?k=vastucart",
   },
   gift_card_image_url: "",
 }
