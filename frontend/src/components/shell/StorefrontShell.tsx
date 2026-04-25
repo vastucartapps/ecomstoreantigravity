@@ -1132,18 +1132,23 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
               </div>
             </div>
 
-            {/* All link columns: every admin column + Explore + Account.
-                grid auto-fit so 1, 2, 3, or N columns all distribute evenly. */}
+            {/* Explicit grid: one row on desktop, stacks responsively on
+                mobile. No flex-wrap orphan-column bug — every column gets
+                an equal share of the row regardless of total count. The
+                lg:grid-cols-N classes are literal strings so Tailwind's
+                content scanner picks them up at build time. */}
             <div
-              className="flex-1 grid gap-8 lg:gap-10"
-              style={{
-                gridTemplateColumns:
-                  "repeat(auto-fit, minmax(160px, 1fr))",
-              }}
+              className={`flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 lg:gap-10 ${
+                (footerConfig.columns.length + 2) <= 3 ? "lg:grid-cols-3" :
+                (footerConfig.columns.length + 2) === 4 ? "lg:grid-cols-4" :
+                (footerConfig.columns.length + 2) === 5 ? "lg:grid-cols-5" :
+                (footerConfig.columns.length + 2) === 6 ? "lg:grid-cols-6" :
+                "lg:grid-cols-7"
+              }`}
             >
               {/* Admin-configured columns (any number) */}
               {footerConfig.columns.map((col) => (
-                <div key={col.title} className="space-y-4">
+                <div key={col.title} className="space-y-4 min-w-0">
                   <h3
                     className="font-semibold text-xs uppercase tracking-widest opacity-90"
                     style={{ fontFamily: fonts.heading }}
@@ -1167,7 +1172,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
               ))}
 
               {/* Explore — VastuCart services & discovery links */}
-              <div className="space-y-4">
+              <div className="space-y-4 min-w-0">
                 <h3
                   className="font-semibold text-xs uppercase tracking-widest opacity-90"
                   style={{ fontFamily: fonts.heading }}
@@ -1198,7 +1203,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
               </div>
 
               {/* Customer account quick links */}
-              <div className="space-y-4">
+              <div className="space-y-4 min-w-0">
                 <h3
                   className="font-semibold text-xs uppercase tracking-widest opacity-90"
                   style={{ fontFamily: fonts.heading }}

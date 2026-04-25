@@ -245,7 +245,10 @@ export function ProductDetail({
               </p>
             )}
 
-            {/* Delivery & Returns strip */}
+            {/* Delivery + middle card + Returns strip — always 3 cards.
+                Middle card swaps between Express (when product flagged) and
+                Free Shipping threshold (admin operational policy). Card
+                count stays constant so the strip never has stretched cells. */}
             <div className="mt-5 rounded-2xl overflow-hidden" style={{ border: "1px solid #f0ebe4" }}>
               <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#f0ebe4]">
                 <div className="flex items-center gap-3 p-4" style={{ background: bg.card }}>
@@ -258,7 +261,7 @@ export function ProductDetail({
                   </div>
                 </div>
 
-                {product.expressShipping && (
+                {product.expressShipping ? (
                   <div className="flex items-center gap-3 p-4" style={{ background: bg.card }}>
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${secondary[500]}12` }}>
                       <Zap className="w-5 h-5" style={{ color: secondary[500] }} />
@@ -266,6 +269,18 @@ export function ProductDetail({
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: earth[300], fontFamily: fonts.body }}>Express</p>
                       <p className="text-sm font-medium mt-0.5" style={{ color: secondary[500], fontFamily: fonts.body }}>Fast Shipping Available</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 p-4" style={{ background: bg.card }}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: primary[50] }}>
+                      <Truck className="w-5 h-5" style={{ color: primary[500] }} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: earth[300], fontFamily: fonts.body }}>Free Shipping</p>
+                      <p className="text-sm font-medium mt-0.5" style={{ color: earth[700], fontFamily: fonts.body }}>
+                        Above ₹{ops.freeShippingThresholdInr.toLocaleString("en-IN")}
+                      </p>
                     </div>
                   </div>
                 )}
