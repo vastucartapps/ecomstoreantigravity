@@ -12,6 +12,7 @@ import type {
   AboutConfig,
   ContactConfig,
   ConsultationConfig,
+  ClusterSite,
 } from "@/types/admin-storefront"
 
 const DEFAULT_ANNOUNCEMENT: Announcement = {
@@ -180,15 +181,12 @@ const DEFAULT_ABOUT_CONFIG: AboutConfig = {
 }
 
 /**
- * Contact-page-specific config. NOTE: phone/email/address fields here are
- * intentionally seeded from BRAND_DEFAULTS so they stay aligned with the
- * canonical branding source. The contact page should still prefer
- * branding.contactEmail / branding.contactPhone at render time \u2014 these
- * fields exist in ContactConfig only as the legacy schema.
+ * Contact-page-specific config. Phone/email moved to canonical
+ * `branding.contactPhone` / `branding.contactEmail` (Storefront \u2192 Branding
+ * tab) \u2014 single source of truth. The remaining fields here are
+ * contact-page-specific concepts not duplicated elsewhere.
  */
 const DEFAULT_CONTACT_CONFIG: ContactConfig = {
-  phone: BRAND_DEFAULTS.contactPhone,
-  email: BRAND_DEFAULTS.contactEmail,
   whatsapp: BRAND_DEFAULTS.whatsapp,
   wholesaleEmail: "wholesale@vastucart.com",
   address: `${BRAND_DEFAULTS.streetAddress}, ${BRAND_DEFAULTS.addressLocality}, ${BRAND_DEFAULTS.addressRegion} ${BRAND_DEFAULTS.postalCode}, India`,
@@ -373,6 +371,11 @@ export function useAdminStorefront() {
     await writeConfig(id, { ...config, footerConfig }, rawMetadata)
   }
 
+  async function updateClusterSites(clusterSites: ClusterSite[]): Promise<void> {
+    const { id, config, rawMetadata } = await readStore()
+    await writeConfig(id, { ...config, clusterSites }, rawMetadata)
+  }
+
   // ── Hero Slides ────────────────────────────────────────────────────────────
 
   async function fetchHeroSlides(): Promise<HeroSlide[]> {
@@ -479,6 +482,7 @@ export function useAdminStorefront() {
     editPage,
     togglePagePublish,
     updateFooter,
+    updateClusterSites,
     fetchHeroSlides,
     createHeroSlide,
     updateHeroSlide,

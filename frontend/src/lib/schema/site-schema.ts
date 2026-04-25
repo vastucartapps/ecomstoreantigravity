@@ -37,7 +37,7 @@ export interface SiteSocialLinks {
   amazon?: string
 }
 
-import { SIBLING_URLS } from "@/lib/cluster-sites"
+import { SIBLING_URLS as DEFAULT_SIBLING_URLS } from "@/lib/cluster-sites"
 import { BRAND_DEFAULTS } from "@/lib/brand-defaults"
 
 /**
@@ -66,9 +66,13 @@ export interface SiteSchemaInput {
   socials?: SiteSocialLinks
   contact?: SiteContactInfo
   foundingDate?: string
+  /** Sibling cluster URLs to include in Organization `sameAs`. When
+   *  omitted, falls back to the default seed from `lib/cluster-sites.ts`.
+   *  Pass admin-overridden cluster sites here for true SSoT. */
+  siblingUrls?: readonly string[]
 }
 
-const DEFAULTS: Required<Omit<SiteSchemaInput, "socials" | "contact">> = {
+const DEFAULTS: Required<Omit<SiteSchemaInput, "socials" | "contact" | "siblingUrls">> = {
   name: "VastuCart",
   legalName: "VastuCart",
   description:
@@ -92,7 +96,7 @@ export function buildSiteGraph(input: SiteSchemaInput = {}) {
   // entries override defaults when set. Deduplicated at the end.
   const sameAsRaw = [
     BRAND_URL !== SITE_URL ? SITE_URL : null,
-    ...SIBLING_URLS,
+    ...(input.siblingUrls ?? DEFAULT_SIBLING_URLS),
     socials.facebook ?? BRAND_PRESENCE.facebook,
     socials.instagram ?? BRAND_PRESENCE.instagram,
     socials.twitter ?? BRAND_PRESENCE.twitter,

@@ -11,15 +11,11 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localh
 const PK = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
 /**
- * Defaults for the contact page configuration. The phone/email/address
- * fields here are seeded from BRAND_DEFAULTS so the contact-page admin and
- * the global branding admin start aligned. At render time the page reads
- * branding.contactEmail / branding.contactPhone (canonical SSoT) and only
- * falls back to ContactConfig fields if branding has not loaded yet.
+ * Defaults for the contact page configuration. Phone/email are canonical
+ * in `branding.contactPhone` / `branding.contactEmail` (Storefront →
+ * Branding) — read from there directly, not duplicated here.
  */
 const DEFAULT_CONTACT_CONFIG: ContactConfig = {
-  phone: BRAND_DEFAULTS.contactPhone,
-  email: BRAND_DEFAULTS.contactEmail,
   whatsapp: BRAND_DEFAULTS.whatsapp,
   wholesaleEmail: "wholesale@vastucart.com",
   address: `${BRAND_DEFAULTS.streetAddress}, ${BRAND_DEFAULTS.addressLocality}, ${BRAND_DEFAULTS.addressRegion} ${BRAND_DEFAULTS.postalCode}, India`,
@@ -168,8 +164,8 @@ export function ContactPage({ config: propConfig }: Props) {
   // ContactConfig.phone/email fields are deprecated duplicates; we read
   // from branding here so a single edit in admin propagates everywhere.
   const branding = useBranding()
-  const phoneSSoT = branding.contactPhone || config.phone
-  const emailSSoT = branding.contactEmail || config.email
+  const phoneSSoT = branding.contactPhone || BRAND_DEFAULTS.contactPhone
+  const emailSSoT = branding.contactEmail || BRAND_DEFAULTS.contactEmail
 
   // Form state
   const [name, setName] = useState("")

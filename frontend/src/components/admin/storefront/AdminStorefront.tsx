@@ -20,6 +20,7 @@ import {
   X,
   SlidersHorizontal,
   UserCircle,
+  Globe,
 } from "lucide-react"
 import {
   primary,
@@ -45,11 +46,13 @@ import type {
   ContactConfig,
   ConsultationConfig,
   FaqItem,
+  ClusterSite,
 } from "@/types/admin-storefront"
 import { normalizeImageUrl } from "@/lib/image-url"
 import { POLICY_VARIABLE_HELP } from "@/lib/policy-template"
+import { CLUSTER_SITES as DEFAULT_CLUSTER_SITES } from "@/lib/cluster-sites"
 
-type ActiveTab = "announcement" | "branding" | "homepage" | "content" | "footer" | "hero" | "login-slides" | "about-contact" | "consultations"
+type ActiveTab = "announcement" | "branding" | "homepage" | "content" | "footer" | "hero" | "login-slides" | "about-contact" | "consultations" | "cluster"
 
 const cardStyle: React.CSSProperties = {
   background: `linear-gradient(#ffffff, #ffffff) padding-box, linear-gradient(90deg, ${primary[500]}, #2a7a72, ${secondary[500]}) border-box`,
@@ -379,6 +382,7 @@ export function AdminStorefront({
   homepageSections: initialSections,
   contentPages,
   footerConfig: initialFooter,
+  clusterSites: initialClusterSites,
   heroSlides: initialHeroSlides,
   marketingSlides: initialMarketingSlides,
   aboutConfig: initialAboutConfig,
@@ -390,6 +394,7 @@ export function AdminStorefront({
   onEditPage,
   onTogglePagePublish,
   onUpdateFooter,
+  onUpdateClusterSites,
   onCreateHeroSlide,
   onUpdateHeroSlide,
   onDeleteHeroSlide,
@@ -408,6 +413,13 @@ export function AdminStorefront({
   const [branding, setBranding] = useState<Branding>(initialBranding)
   const [sections, setSections] = useState<HomepageSection[]>(initialSections)
   const [footer, setFooter] = useState<FooterConfig>(initialFooter)
+  // Cluster sites — admin override (or pre-populated default seed)
+  const [clusterSites, setClusterSites] = useState<ClusterSite[]>(
+    initialClusterSites && initialClusterSites.length > 0
+      ? initialClusterSites
+      : [...DEFAULT_CLUSTER_SITES]
+  )
+  const [savingClusterSites, setSavingClusterSites] = useState(false)
 
   // Slides state
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(initialHeroSlides)
@@ -430,6 +442,11 @@ export function AdminStorefront({
   useEffect(() => { setBranding(initialBranding) }, [initialBranding])
   useEffect(() => { setSections(initialSections) }, [initialSections])
   useEffect(() => { setFooter(initialFooter) }, [initialFooter])
+  useEffect(() => {
+    if (initialClusterSites && initialClusterSites.length > 0) {
+      setClusterSites(initialClusterSites)
+    }
+  }, [initialClusterSites])
   useEffect(() => { setHeroSlides(initialHeroSlides) }, [initialHeroSlides])
   useEffect(() => { setMarketingSlides(initialMarketingSlides) }, [initialMarketingSlides])
 
@@ -491,6 +508,7 @@ export function AdminStorefront({
     { key: "homepage", label: "Homepage Sections", Icon: Layout },
     { key: "content", label: "Content Pages", Icon: FileText },
     { key: "footer", label: "Footer", Icon: Info },
+    { key: "cluster", label: "Cluster Sites", Icon: Globe },
     { key: "about-contact", label: "About & Contact", Icon: Info },
     { key: "consultations", label: "Consultations", Icon: Calendar },
   ]
@@ -2289,6 +2307,253 @@ export function AdminStorefront({
         </div>
       )}
 
+      {/* ── Cluster Sites Panel ──────────────────────────────────────────── */}
+      {activeTab === "cluster" && (
+        <div style={cardStyle}>
+          <h2 style={{ fontFamily: fonts.heading, fontSize: "20px", fontWeight: 600, color: earth[700], margin: "0 0 8px 0" }}>
+            Brand Cluster Sites
+          </h2>
+          <p style={{ fontSize: "12px", color: primary[400], margin: "0 0 20px 0", background: "rgba(1,63,71,0.06)", padding: "10px 14px", borderRadius: "6px" }}>
+            📍 The cards saved here drive: <strong>footer ecosystem section</strong> · <strong>JSON-LD Organization sameAs</strong> (Google knowledge graph) · <strong>robots.txt sitemap discovery</strong> · <strong>{`<link rel="dns-prefetch">`}</strong> on every storefront page. Add a 10th sister site here and it propagates everywhere — no deploy required.
+          </p>
+
+          <div style={{ display: "grid", gap: "16px", marginBottom: "16px" }}>
+            {clusterSites.map((site, idx) => (
+              <div
+                key={`${site.slug}-${idx}`}
+                style={{
+                  padding: "16px",
+                  background: bg.subtle,
+                  borderRadius: "10px",
+                  border: `1px solid ${earth[200]}`,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+                  <div
+                    style={{
+                      width: 40, height: 40, borderRadius: 8,
+                      background: site.iconBg, color: site.iconFg || "#fff",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 18, flexShrink: 0,
+                    }}
+                  >
+                    {site.glyph}
+                  </div>
+                  <strong style={{ flex: 1, color: earth[700], fontFamily: fonts.heading }}>
+                    {site.name || "(unnamed)"}
+                    {site.isCurrent && (
+                      <span style={{ marginLeft: 8, fontSize: 11, color: primary[400], fontWeight: 500 }}>
+                        (current site)
+                      </span>
+                    )}
+                  </strong>
+                  <button
+                    onClick={() =>
+                      setClusterSites(clusterSites.filter((_, i) => i !== idx))
+                    }
+                    style={{
+                      background: "none", border: "none", cursor: "pointer",
+                      color: semantic.error, padding: 6,
+                    }}
+                    title="Remove this site"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+                  <div>
+                    <label style={{ ...labelStyle, fontSize: 11 }}>Slug (stable id)</label>
+                    <input
+                      type="text"
+                      value={site.slug}
+                      onChange={(e) =>
+                        setClusterSites(
+                          clusterSites.map((s, i) => (i === idx ? { ...s, slug: e.target.value } : s))
+                        )
+                      }
+                      style={{ ...inputStyle, fontFamily: fonts.mono, fontSize: 12 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ ...labelStyle, fontSize: 11 }}>Display Name</label>
+                    <input
+                      type="text"
+                      value={site.name}
+                      onChange={(e) =>
+                        setClusterSites(
+                          clusterSites.map((s, i) => (i === idx ? { ...s, name: e.target.value } : s))
+                        )
+                      }
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ ...labelStyle, fontSize: 11 }}>URL (must be https://)</label>
+                  <input
+                    type="url"
+                    value={site.url}
+                    onChange={(e) =>
+                      setClusterSites(
+                        clusterSites.map((s, i) => (i === idx ? { ...s, url: e.target.value } : s))
+                      )
+                    }
+                    style={{ ...inputStyle, fontFamily: fonts.mono, fontSize: 12 }}
+                  />
+                </div>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ ...labelStyle, fontSize: 11 }}>Description (footer card blurb)</label>
+                  <input
+                    type="text"
+                    value={site.description}
+                    onChange={(e) =>
+                      setClusterSites(
+                        clusterSites.map((s, i) => (i === idx ? { ...s, description: e.target.value } : s))
+                      )
+                    }
+                    style={inputStyle}
+                  />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "100px 100px 1fr 100px 80px", gap: "10px", alignItems: "end" }}>
+                  <div>
+                    <label style={{ ...labelStyle, fontSize: 11 }}>Icon BG</label>
+                    <input
+                      type="color"
+                      value={site.iconBg}
+                      onChange={(e) =>
+                        setClusterSites(
+                          clusterSites.map((s, i) => (i === idx ? { ...s, iconBg: e.target.value } : s))
+                        )
+                      }
+                      style={{ ...inputStyle, padding: 4, height: 40 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ ...labelStyle, fontSize: 11 }}>Icon FG</label>
+                    <input
+                      type="color"
+                      value={site.iconFg || "#ffffff"}
+                      onChange={(e) =>
+                        setClusterSites(
+                          clusterSites.map((s, i) => (i === idx ? { ...s, iconFg: e.target.value } : s))
+                        )
+                      }
+                      style={{ ...inputStyle, padding: 4, height: 40 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ ...labelStyle, fontSize: 11 }}>Glyph (1 char)</label>
+                    <input
+                      type="text"
+                      value={site.glyph}
+                      maxLength={2}
+                      onChange={(e) =>
+                        setClusterSites(
+                          clusterSites.map((s, i) => (i === idx ? { ...s, glyph: e.target.value } : s))
+                        )
+                      }
+                      style={{ ...inputStyle, fontSize: 18, textAlign: "center" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ ...labelStyle, fontSize: 11 }}>Badge (optional)</label>
+                    <input
+                      type="text"
+                      value={site.badge || ""}
+                      onChange={(e) =>
+                        setClusterSites(
+                          clusterSites.map((s, i) =>
+                            i === idx ? { ...s, badge: e.target.value || undefined } : s
+                          )
+                        )
+                      }
+                      placeholder="PREMIUM"
+                      style={{ ...inputStyle, fontSize: 11, textTransform: "uppercase" }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ ...labelStyle, fontSize: 11 }}>Current</label>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, height: 40 }}>
+                      <input
+                        type="checkbox"
+                        checked={!!site.isCurrent}
+                        onChange={(e) =>
+                          setClusterSites(
+                            clusterSites.map((s, i) =>
+                              i === idx ? { ...s, isCurrent: e.target.checked || undefined } : s
+                            )
+                          )
+                        }
+                      />
+                      <span style={{ fontSize: 11, color: earth[400] }}>This site</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
+            <button
+              onClick={() =>
+                setClusterSites([
+                  ...clusterSites,
+                  {
+                    slug: `site-${Date.now()}`,
+                    name: "",
+                    url: "https://",
+                    description: "",
+                    iconBg: "#0d7a89",
+                    iconFg: "#ffffff",
+                    glyph: "✦",
+                  },
+                ])
+              }
+              style={{
+                ...saveBtnStyle,
+                background: bg.subtle,
+                color: earth[700],
+                border: `1px solid ${earth[300]}`,
+              }}
+            >
+              <Plus size={16} /> Add Cluster Site
+            </button>
+            <button
+              onClick={() => setClusterSites([...DEFAULT_CLUSTER_SITES])}
+              style={{
+                background: "transparent",
+                color: earth[500],
+                padding: "10px 16px",
+                fontSize: "13px",
+                border: `1px solid ${earth[300]}`,
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontFamily: fonts.body,
+              }}
+              title="Discard changes and reset to the seed defaults"
+            >
+              Reset to defaults
+            </button>
+          </div>
+
+          <button
+            onClick={async () => {
+              setSavingClusterSites(true)
+              try {
+                await onUpdateClusterSites(clusterSites)
+              } finally {
+                setSavingClusterSites(false)
+              }
+            }}
+            disabled={savingClusterSites}
+            style={{ ...saveBtnStyle, opacity: savingClusterSites ? 0.7 : 1 }}
+          >
+            {savingClusterSites ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            Save Cluster Sites
+          </button>
+        </div>
+      )}
+
       {/* ── About & Contact Panel ─────────────────────────────────────────── */}
       {activeTab === "about-contact" && (
         <div style={cardStyle}>
@@ -2606,16 +2871,19 @@ export function AdminStorefront({
           {aboutSubTab === "contact" && (
             <div style={{ display: "grid", gap: "24px" }}>
 
-              {/* Contact details */}
+              {/* Contact details — Phone + Support Email moved to
+                  Branding tab (canonical SSoT). Only contact-page-
+                  specific fields remain here. */}
               <div>
-                <h3 style={{ fontFamily: fonts.heading, fontSize: "1rem", fontWeight: 700, color: earth[700], margin: "0 0 16px" }}>
+                <h3 style={{ fontFamily: fonts.heading, fontSize: "1rem", fontWeight: 700, color: earth[700], margin: "0 0 8px" }}>
                   Contact Details
                 </h3>
+                <p style={{ fontSize: "12px", color: primary[400], margin: "0 0 16px 0", background: "rgba(1,63,71,0.06)", padding: "8px 12px", borderRadius: "6px", display: "inline-block" }}>
+                  📍 Edit primary phone + email in <strong>Branding tab</strong> (single source of truth — propagates to footer, legal pages, invoice). Only WhatsApp + wholesale-specific contact below.
+                </p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
                   {(
                     [
-                      { key: "phone", label: "Phone" },
-                      { key: "email", label: "Support Email" },
                       { key: "whatsapp", label: "WhatsApp Number" },
                       { key: "wholesaleEmail", label: "Wholesale Email" },
                     ] as const

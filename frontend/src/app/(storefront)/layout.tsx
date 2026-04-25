@@ -3,7 +3,8 @@ import { TrackingScripts } from "@/components/storefront/TrackingScripts"
 import { JsonLd } from "@/components/JsonLd"
 import { buildSiteGraph } from "@/lib/schema/site-schema"
 import { normalizeImageUrl } from "@/lib/image-url"
-import { SIBLING_URLS, BRAND_URL } from "@/lib/cluster-sites"
+import { BRAND_URL } from "@/lib/cluster-sites"
+import { fetchClusterSites, siblingUrlsFrom } from "@/lib/cluster-sites-ssr"
 
 const BACKEND_URL =
   process.env.MEDUSA_INTERNAL_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -17,6 +18,11 @@ export default async function StorefrontLayout({
     "x-publishable-api-key":
       process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
   }
+
+  // Resolve cluster sites (admin override or default seed) for DNS prefetch
+  // and JSON-LD sameAs. Same fetch is shared with site-schema below.
+  const clusterSites = await fetchClusterSites()
+  const siblingUrls = siblingUrlsFrom(clusterSites)
 
   // Fetch categories, tracking config, and storefront branding in parallel
   const [categoriesRes, trackingRes, storefrontRes] = await Promise.allSettled([
@@ -78,9 +84,10 @@ export default async function StorefrontLayout({
         postalCode: branding?.postalCode,
         addressCountry: branding?.addressCountry,
       },
+      siblingUrls,
     })
   } else {
-    siteGraph = buildSiteGraph()
+    siteGraph = buildSiteGraph({ siblingUrls })
   }
 
   return (
@@ -91,7 +98,7 @@ export default async function StorefrontLayout({
       */}
       <link rel="preconnect" href={BRAND_URL} crossOrigin="anonymous" />
       <link rel="dns-prefetch" href={BRAND_URL} />
-      {SIBLING_URLS.map((url) => (
+      {siblingUrls.map((url) => (
         <link key={url} rel="dns-prefetch" href={url} />
       ))}
       <JsonLd data={siteGraph} id="site-schema" />

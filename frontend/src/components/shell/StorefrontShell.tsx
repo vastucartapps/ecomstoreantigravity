@@ -7,9 +7,8 @@ import { Search, Heart, ShoppingBag, User, Menu, X, Bell, ExternalLink, Truck, R
 import { useAuth } from "@/providers/auth-provider"
 import { useCart } from "@/providers/cart-provider"
 import { useWishlist } from "@/providers/wishlist-provider"
-import { useAnnouncement, useBranding, useStorefrontFooter, useConsultationsEnabled, useOperationalPolicies, useStorefrontRegion } from "@/providers/announcement-provider"
+import { useAnnouncement, useBranding, useStorefrontFooter, useConsultationsEnabled, useOperationalPolicies, useStorefrontRegion, useClusterSites } from "@/providers/announcement-provider"
 import { CartDrawer } from "@/components/storefront/cart/CartDrawer"
-import { CLUSTER_SITES } from "@/lib/cluster-sites"
 import { primary, secondary, earth, bg, gradients, fonts } from "./theme"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -121,6 +120,7 @@ export default function StorefrontShell({ children, categories = [] }: Storefron
   const consultationsEnabled = useConsultationsEnabled()
   const ops = useOperationalPolicies()
   const region = useStorefrontRegion()
+  const CLUSTER_SITES = useClusterSites()
   // Region-aware free-shipping threshold — USD visitors see "$50" instead
   // of "₹999" (which they can never trigger because they pay in USD).
   const freeShippingDisplay =

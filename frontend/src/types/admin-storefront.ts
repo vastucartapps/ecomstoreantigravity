@@ -107,6 +107,33 @@ export interface MarketingSlide {
   display_order: number
 }
 
+/**
+ * One sister site in the brand cluster — admin-editable so a new sub-
+ * domain can be added without a deploy. Source of defaults remains
+ * `frontend/src/lib/cluster-sites.ts`; admin overrides replace the array
+ * wholesale when saved (admin saw the defaults pre-populated in the form).
+ */
+export interface ClusterSite {
+  /** Stable slug — used as React key. E.g. "kundali". */
+  slug: string
+  /** Display name on the footer card and JSON-LD `sameAs`. */
+  name: string
+  /** Absolute URL — must be `https://`. */
+  url: string
+  /** Short blurb under the card name. */
+  description: string
+  /** Background hex for the card icon tile. */
+  iconBg: string
+  /** Optional foreground hex for the icon glyph (defaults to white). */
+  iconFg?: string
+  /** Single-character glyph rendered inside the icon tile. */
+  glyph: string
+  /** Optional badge label (e.g. "PREMIUM") next to the name. */
+  badge?: string
+  /** True for the current site — card opens "/" instead of opening a new tab. */
+  isCurrent?: boolean
+}
+
 export interface StorefrontConfig {
   announcement: Announcement
   branding: Branding
@@ -114,6 +141,9 @@ export interface StorefrontConfig {
   contentPages: ContentPage[]
   footerConfig: FooterConfig
   consultationConfig: ConsultationConfig
+  /** Admin override for the brand cluster cards. Empty/missing = use the
+   *  hardcoded defaults from `lib/cluster-sites.ts`. */
+  clusterSites?: ClusterSite[]
 }
 
 export interface AdminStorefrontProps {
@@ -122,6 +152,7 @@ export interface AdminStorefrontProps {
   homepageSections: HomepageSection[]
   contentPages: ContentPage[]
   footerConfig: FooterConfig
+  clusterSites?: ClusterSite[]
   heroSlides: HeroSlide[]
   marketingSlides: MarketingSlide[]
   onUpdateAnnouncement: (a: Announcement) => Promise<void>
@@ -131,6 +162,7 @@ export interface AdminStorefrontProps {
   onEditPage: (id: string, content: string) => Promise<void>
   onTogglePagePublish: (id: string, published: boolean) => Promise<void>
   onUpdateFooter: (f: FooterConfig) => Promise<void>
+  onUpdateClusterSites: (sites: ClusterSite[]) => Promise<void>
   onCreateHeroSlide: (data: Omit<HeroSlide, "id">) => Promise<void>
   onUpdateHeroSlide: (id: string, data: Partial<HeroSlide>) => Promise<HeroSlide>
   onDeleteHeroSlide: (id: string) => Promise<void>
@@ -215,9 +247,15 @@ export interface GrievanceOfficer {
   address: string
 }
 
+/**
+ * Contact-page-specific config. Phone/email previously lived here too but
+ * were duplicates of `branding.contactPhone` / `branding.contactEmail`.
+ * Removed to enforce single source of truth — edit canonical contact info
+ * in Storefront → Branding instead. WhatsApp, wholesale, address, hours,
+ * FAQs, and grievance officer remain here because they're contact-page-
+ * specific concepts not duplicated elsewhere.
+ */
 export interface ContactConfig {
-  phone: string
-  email: string
   whatsapp: string
   wholesaleEmail: string
   address: string

@@ -130,6 +130,7 @@ export default function StorefrontPage() {
         homepageSections={config.homepageSections}
         contentPages={config.contentPages}
         footerConfig={config.footerConfig}
+        clusterSites={config.clusterSites}
         heroSlides={heroSlides}
         marketingSlides={marketingSlides}
         aboutConfig={aboutConfig}
@@ -219,6 +220,15 @@ export default function StorefrontPage() {
             showToast("Footer saved")
           } catch {
             showToast("Failed to save footer", "error")
+          }
+        }}
+        onUpdateClusterSites={async (sites) => {
+          try {
+            await hook.updateClusterSites(sites)
+            setConfig((prev) => prev ? { ...prev, clusterSites: sites } : prev)
+            showToast("Cluster sites saved")
+          } catch {
+            showToast("Failed to save cluster sites", "error")
           }
         }}
         onCreateHeroSlide={async (data) => {

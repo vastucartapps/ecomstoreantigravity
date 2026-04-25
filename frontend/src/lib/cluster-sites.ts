@@ -1,21 +1,19 @@
 /**
- * Single source of truth for the VastuCart cluster — the 9 sister sites
- * that share brand/SEO authority. Source: /Presence links.txt at repo root.
+ * Default cluster sites — the 9 sister sites that share brand/SEO authority.
+ * These are SEEDS only. Admin can override the entire list via Storefront
+ * → Cluster Sites tab; saved overrides flow through `cluster-sites-ssr.ts`
+ * to all four consumers (SEO schema, robots, DNS prefetch, footer cards).
  *
- * This module is consumed by:
+ * Consumers (all read via the SSR helper or client hook, not by importing
+ * these constants directly anymore):
  *  - lib/schema/site-schema.ts        → Organization JSON-LD `sameAs`
  *  - app/robots.ts                    → cross-domain Sitemap discovery
  *  - app/(storefront)/layout.tsx      → <link rel="dns-prefetch" />
  *  - components/shell/StorefrontShell.tsx → footer Ecosystem cards
  *
- * Adding a new sister site? Edit this file ONLY — every consumer updates
- * automatically: SEO graph, sitemap discovery, DNS prefetch, footer cards.
- *
- * NOTE: This is intentionally code-resident (not admin-editable) for now.
- * The cluster definition rarely changes and lives at the brand-architecture
- * level, not the per-store-config level. If/when admin needs to launch new
- * sister sites without a deploy, lift this into store.metadata as part of
- * the operational-policies admin work (Chunk 2/3).
+ * Source-of-truth precedence:
+ *  1. store.metadata.storefront_config.clusterSites (admin override)
+ *  2. CLUSTER_SITES below (default seed)
  */
 
 export interface ClusterSite {

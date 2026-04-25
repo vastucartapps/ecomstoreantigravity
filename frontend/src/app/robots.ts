@@ -1,35 +1,37 @@
 import type { MetadataRoute } from "next"
-import { CLUSTER_SITEMAPS as CLUSTER_SITEMAPS_FROM_LIB } from "@/lib/cluster-sites"
+import { fetchClusterSites, clusterSitemapsFrom } from "@/lib/cluster-sites-ssr"
+import { BRAND_URL } from "@/lib/cluster-sites"
 
 const BACKEND_URL =
   process.env.MEDUSA_INTERNAL_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY =
   process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
-/**
- * Cross-domain sitemap discovery for the VastuCart cluster. Sourced from
- * the single cluster-sites manifest so adding a new sister subdomain
- * propagates here automatically. Materialised as a mutable array because
- * Next.js' MetadataRoute.Robots `sitemap` field expects `string | string[]`.
- */
-const CLUSTER_SITEMAPS: string[] = [...CLUSTER_SITEMAPS_FROM_LIB]
-
-const DEFAULT_RULES: MetadataRoute.Robots = {
-  rules: [
-    {
-      userAgent: "*",
-      allow: "/",
-      disallow: ["/admin/", "/cart/", "/checkout/", "/api/"],
-    },
-  ],
-  sitemap: CLUSTER_SITEMAPS,
+async function defaultRules(): Promise<MetadataRoute.Robots> {
+  // Cluster sitemaps fetched dynamically — admin can add a 10th sister
+  // site and robots.txt will list it on the next revalidate (5 min).
+  const sites = await fetchClusterSites()
+  return {
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: ["/admin/", "/cart/", "/checkout/", "/api/"],
+      },
+    ],
+    sitemap: clusterSitemapsFrom(sites, BRAND_URL),
+  }
 }
 
 /**
  * Parse a raw robots.txt string into Next.js MetadataRoute.Robots format.
  * Handles: User-agent, Allow, Disallow, Sitemap directives.
+ *
+ * Async because cluster sitemaps are now resolved from admin (the
+ * /store/storefront-config response) — admin can edit the cluster
+ * without a deploy.
  */
-function parseRobotsTxt(raw: string): MetadataRoute.Robots {
+async function parseRobotsTxt(raw: string): Promise<MetadataRoute.Robots> {
   const rules: Array<{
     userAgent: string
     allow: string[]
@@ -63,11 +65,14 @@ function parseRobotsTxt(raw: string): MetadataRoute.Robots {
 
   if (current) rules.push(current)
 
-  if (rules.length === 0) return DEFAULT_RULES
+  if (rules.length === 0) return defaultRules()
 
   // Always merge cluster sitemaps with any admin-defined ones so the whole
   // ecosystem is discoverable regardless of admin config. Dedupe on URL.
-  const sitemap = Array.from(new Set([...adminSitemaps, ...CLUSTER_SITEMAPS]))
+  const sites = await fetchClusterSites()
+  const sitemap = Array.from(
+    new Set([...adminSitemaps, ...clusterSitemapsFrom(sites, BRAND_URL)])
+  )
 
   return {
     rules: rules.map((r) => ({
@@ -92,12 +97,12 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     if (res.ok) {
       const data = await res.json()
       if (data.seoDefaults?.robotsTxt) {
-        return parseRobotsTxt(data.seoDefaults.robotsTxt)
+        return await parseRobotsTxt(data.seoDefaults.robotsTxt)
       }
     }
   } catch {
     // Fall through to defaults
   }
 
-  return DEFAULT_RULES
+  return defaultRules()
 }

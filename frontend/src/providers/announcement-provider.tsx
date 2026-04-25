@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react"
 import { BRAND_DEFAULTS } from "@/lib/brand-defaults"
+import { CLUSTER_SITES, type ClusterSite } from "@/lib/cluster-sites"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
@@ -96,6 +97,8 @@ interface StorefrontContextValue {
   operationalPolicies: OperationalPolicies
   // Region (drives currency formatting in operational values)
   region: StorefrontRegion
+  // Cluster sites — admin override or default seed
+  clusterSites: readonly ClusterSite[]
 }
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
@@ -193,6 +196,10 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
   // Region defaults to IN (we ship from India); flips to INTERNATIONAL on
   // mount once we read the vc-region cookie set by middleware.
   const [region, setRegion] = useState<StorefrontRegion>("IN")
+  // Cluster sites default to the static seed; admin override (if saved)
+  // replaces it on first storefront-config fetch.
+  const [clusterSites, setClusterSites] =
+    useState<readonly ClusterSite[]>(CLUSTER_SITES)
 
   useEffect(() => {
     if (typeof window !== "undefined" && sessionStorage.getItem(DISMISSED_KEY)) {
@@ -259,6 +266,11 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
             newsletterTitle: config.footerConfig.newsletterTitle || DEFAULT_FOOTER.newsletterTitle,
             newsletterSubtitle: config.footerConfig.newsletterSubtitle || DEFAULT_FOOTER.newsletterSubtitle,
           })
+        }
+
+        // Cluster sites — admin override replaces default seed if saved
+        if (Array.isArray(config.clusterSites) && config.clusterSites.length > 0) {
+          setClusterSites(config.clusterSites)
         }
 
         // Consultation feature flag
@@ -342,6 +354,7 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
         consultationsRouteEnabled,
         operationalPolicies,
         region,
+        clusterSites,
       }}
     >
       {children}
@@ -396,4 +409,15 @@ export function useStorefrontRegion(): StorefrontRegion {
   const ctx = useContext(StorefrontContext)
   if (!ctx) throw new Error("useStorefrontRegion must be used within AnnouncementProvider")
   return ctx.region
+}
+
+/**
+ * Brand cluster sites — admin override (if saved) or the default seed.
+ * Consumed by the footer ecosystem cards. Server-side consumers (sitemap,
+ * DNS prefetch, JSON-LD) use `lib/cluster-sites-ssr.ts` instead.
+ */
+export function useClusterSites(): readonly ClusterSite[] {
+  const ctx = useContext(StorefrontContext)
+  if (!ctx) throw new Error("useClusterSites must be used within AnnouncementProvider")
+  return ctx.clusterSites
 }
