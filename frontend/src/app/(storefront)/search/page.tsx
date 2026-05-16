@@ -6,6 +6,7 @@ import { CategoryListing } from "@/components/storefront/CategoryListing"
 import { useWishlist } from "@/providers/wishlist-provider"
 import { useCart } from "@/providers/cart-provider"
 import { useAuth } from "@/providers/auth-provider"
+import { useBranding } from "@/providers/announcement-provider"
 import type {
   StorefrontProduct,
   CategoryHero,
@@ -90,6 +91,7 @@ function SearchContent() {
   const query = searchParams.get("q") || ""
 
   const { user } = useAuth()
+  const branding = useBranding()
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
   const { addItem } = useCart()
 
@@ -140,7 +142,7 @@ function SearchContent() {
             item_name: p.name,
             price: p.price,
             quantity: 1,
-            item_brand: "VastuCart",
+            item_brand: branding.storeName,
           })),
         })
       })
@@ -149,7 +151,7 @@ function SearchContent() {
     } finally {
       setIsLoading(false)
     }
-  }, [query, currentPage, currentSort])
+  }, [query, currentPage, currentSort, branding.storeName])
 
   useEffect(() => {
     searchProducts()

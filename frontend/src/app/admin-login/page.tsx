@@ -49,11 +49,7 @@ function AdminLoginContent() {
     fetchSlides()
   }, [])
 
-  const handleAdminLogin = async (
-    email: string,
-    password: string,
-    _rememberMe: boolean
-  ) => {
+  const handleAdminLogin = async (email: string, password: string) => {
     try {
       await adminLogin(email, password)
     } catch {

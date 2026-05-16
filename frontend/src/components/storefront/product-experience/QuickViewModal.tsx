@@ -106,7 +106,7 @@ export function QuickViewModal({
                       opacity: idx === activeImageIdx ? 1 : 0.6,
                     }}
                   >
-                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                    <img src={img.url} alt={`${product.name} thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

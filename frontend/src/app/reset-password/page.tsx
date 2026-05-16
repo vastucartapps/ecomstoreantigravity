@@ -21,16 +21,31 @@ function ResetPasswordContent() {
   const { resetPassword } = useAuth()
   const [slides, setSlides] = useState<MarketingSlide[]>([])
   const [serverError, setServerError] = useState<string | null>(null)
-
-  const token = searchParams.get("token")
+  const [token, setToken] = useState<string | null>(null)
+  const [tokenChecked, setTokenChecked] = useState(false)
 
   useEffect(() => {
-    // Remove the token from the URL immediately to prevent it from
-    // being stored in browser history, server logs, or Referer headers.
-    if (token && typeof window !== "undefined") {
+    // Prefer the URL fragment (#token=…) because fragments are never sent to
+    // the server in Referer headers nor recorded in server access logs. Fall
+    // back to the query string for compatibility with already-issued links.
+    let extracted: string | null = null
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.replace(/^#/, "")
+      if (hash) {
+        const hp = new URLSearchParams(hash)
+        extracted = hp.get("token")
+      }
+    }
+    if (!extracted) extracted = searchParams.get("token")
+    setToken(extracted)
+    setTokenChecked(true)
+
+    // Scrub the token from the visible URL so it cannot leak via screen-share,
+    // browser history, or Referer headers on subsequent navigations.
+    if (extracted && typeof window !== "undefined") {
       window.history.replaceState({}, "", "/reset-password")
     }
-  }, [token])
+  }, [searchParams])
 
   useEffect(() => {
     const fetchSlides = async () => {
@@ -43,6 +58,9 @@ function ResetPasswordContent() {
     }
     fetchSlides()
   }, [])
+
+  // Wait until we've checked both hash + query before deciding the link is bad
+  if (!tokenChecked) return null
 
   // If no token, show error
   if (!token) {
@@ -90,8 +108,10 @@ function ResetPasswordContent() {
   const handleResetPassword = async (newPassword: string) => {
     setServerError(null)
     try {
+      // resetPassword() now also performs a server-side logout so any device
+      // that was still holding a JWT for this account is forced to re-auth.
       await resetPassword(token, newPassword)
-      router.push("/login?reset=success")
+      router.replace("/login?reset=success")
     } catch {
       throw new Error(
         "Failed to reset password. The link may have expired."

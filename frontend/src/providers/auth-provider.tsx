@@ -287,6 +287,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: { password: newPassword },
       headers: { Authorization: `Bearer ${token}` },
     })
+    // Force a clean re-login so any other devices/tabs that still hold a stale
+    // JWT cannot continue acting on the account with the now-rotated password.
+    await logout()
   }
 
   const logout = async () => {
@@ -294,6 +297,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await medusa.auth.logout()
     } catch {
       // ignore — may already be logged out
+    }
+    // Clear every client-side auth/session artifact so a subsequent visitor on
+    // the same browser cannot inherit the previous user's identity, cart-side
+    // promo state, or admin token.
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("vastucart_admin_token")
+        localStorage.removeItem("medusa_auth_token")
+        localStorage.removeItem("oauth_return_to")
+        localStorage.removeItem("oauth_state")
+        localStorage.removeItem("vastucart_gc_applied")
+      } catch {
+        // localStorage may be unavailable (private mode / quota)
+      }
     }
     setUser(null)
   }

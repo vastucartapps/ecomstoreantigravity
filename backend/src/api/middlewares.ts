@@ -1,6 +1,8 @@
 import { defineMiddlewares, validateAndTransformBody, authenticate } from "@medusajs/framework/http"
 import { SearchSchema } from "./store/products/search/route"
 import rateLimit from "express-rate-limit"
+import { ACTIVE_SESSIONS_MODULE } from "../modules/active-sessions"
+import { captureWarning } from "../lib/error-reporter"
 
 // ─── Rate limiters for public write endpoints ─────────────────────────────────
 // These protect high-abuse surfaces: newsletter, reviews, promo validation,
@@ -72,6 +74,52 @@ function googleOAuthRedirect(
   next()
 }
 
+// ─── Password reset: invalidate all active sessions on success ────────────────
+// When a customer or admin completes a password reset, we wipe every recorded
+// active session so the user's account dashboard reflects that any prior
+// device/browser is now logged out. Medusa JWTs are stateless and cannot be
+// truly revoked server-side, but clearing session rows makes the security
+// posture visible — and the front-end always logs the user out after reset, so
+// no token-holding device can silently continue under the old password.
+function invalidateSessionsOnPasswordUpdate(
+  req: import("express").Request,
+  res: import("express").Response,
+  next: import("express").NextFunction
+) {
+  const originalJson = res.json.bind(res)
+  ;(res as any).json = function (data: any) {
+    if (res.statusCode === 200 && data && !data?.errors) {
+      const authIdentityId = (req as any).auth_context?.auth_identity_id
+      if (authIdentityId) {
+        const container = (req as any).scope
+        try {
+          const activeSessionsService = container?.resolve(ACTIVE_SESSIONS_MODULE)
+          if (activeSessionsService) {
+            // Run the wipe asynchronously — never delay the auth response on it.
+            activeSessionsService
+              .listAndCountActiveSessions({ auth_identity_id: authIdentityId })
+              .then(([sessions]: [any[]]) => {
+                for (const s of sessions) {
+                  activeSessionsService.deleteActiveSessions(s.id).catch(() => undefined)
+                }
+              })
+              .catch((err: any) => {
+                captureWarning("session-invalidate-on-password-reset failed", {
+                  source: "middlewares/invalidateSessionsOnPasswordUpdate",
+                  error: err?.message,
+                })
+              })
+          }
+        } catch {
+          // active-sessions module not available — skip silently
+        }
+      }
+    }
+    return originalJson(data)
+  }
+  next()
+}
+
 export default defineMiddlewares({
   routes: [
     // ─── API version header on all routes ────────────────────────────────────
@@ -84,6 +132,18 @@ export default defineMiddlewares({
     {
       matcher: "/auth/customer/google/callback",
       middlewares: [googleOAuthRedirect],
+    },
+
+    // ─── Password reset: wipe all recorded sessions on success ───────────────
+    {
+      matcher: "/auth/customer/emailpass/update",
+      method: ["POST"],
+      middlewares: [invalidateSessionsOnPasswordUpdate],
+    },
+    {
+      matcher: "/auth/user/emailpass/update",
+      method: ["POST"],
+      middlewares: [invalidateSessionsOnPasswordUpdate],
     },
 
     // ─── Admin authentication guard ──────────────────────────────────────────

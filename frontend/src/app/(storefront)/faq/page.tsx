@@ -1,69 +1,11 @@
-"use client"
-import { bg, primary, earth, fonts, shadows } from "@/lib/theme"
-import { useBranding } from "@/providers/announcement-provider"
+import { redirect } from "next/navigation"
 
-export default function Page() {
-  const branding = useBranding()
-  return (
-    <div
-      style={{
-        minHeight: "70vh",
-        backgroundColor: bg.primary,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "2rem",
-      }}
-    >
-      <div
-        className="gradient-border-top"
-        style={{
-          backgroundColor: bg.card,
-          borderRadius: "0.75rem",
-          padding: "3rem 2.5rem",
-          maxWidth: "480px",
-          width: "100%",
-          textAlign: "center",
-          boxShadow: shadows.card,
-        }}
-      >
-        <h1
-          style={{
-            fontFamily: fonts.heading,
-            fontSize: "1.875rem",
-            fontWeight: 700,
-            color: primary[500],
-            marginBottom: "0.75rem",
-          }}
-        >
-          FAQ
-        </h1>
-        <p
-          style={{
-            fontFamily: fonts.body,
-            fontSize: "0.9375rem",
-            color: earth[400],
-            marginBottom: "1.5rem",
-          }}
-        >
-          Frequently asked questions about {branding.storeName}.
-        </p>
-        <span
-          style={{
-            display: "inline-block",
-            padding: "0.5rem 1.25rem",
-            borderRadius: "0.5rem",
-            border: `1.5px solid ${primary[200]}`,
-            backgroundColor: primary[50],
-            fontFamily: fonts.body,
-            fontSize: "0.8125rem",
-            fontWeight: 600,
-            color: primary[500],
-          }}
-        >
-          Coming in Section 08
-        </span>
-      </div>
-    </div>
-  )
+// The dedicated FAQ surface was an unbuilt placeholder ("Coming in Section 08")
+// that ranked nothing and answered no one. Until a real Q&A page exists, send
+// any incoming /faq traffic to /contact, which already lists support hours,
+// channels, and the canonical answers to shipping/returns/payments questions.
+// Using next/redirect issues a 307 — keep this until a real FAQ ships, then
+// delete the file entirely.
+export default function FaqRedirect() {
+  redirect("/contact")
 }

@@ -106,6 +106,12 @@ export default function RegisterPage() {
   const handleGoogleLogin = async () => {
     // After Google OAuth from register page, land on the account dashboard
     localStorage.setItem("oauth_return_to", "/account")
+    // Per-attempt nonce — see /login/page.tsx for the rationale.
+    const nonce =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2) + Date.now().toString(36)
+    localStorage.setItem("oauth_state", nonce)
     const backendUrl =
       process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
     try {

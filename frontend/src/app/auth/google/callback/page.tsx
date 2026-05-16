@@ -23,10 +23,30 @@ function GoogleCallbackContent() {
     ranRef.current = true
 
     const token = searchParams.get("token")
+
+    // Scrub the token from the visible URL *before* doing anything else so it
+    // is never preserved in browser history, Referer headers on subsequent
+    // navigation, or shoulder-surfed off the address bar.
+    if (typeof window !== "undefined") {
+      window.history.replaceState({}, "", "/auth/google/callback")
+    }
+
     if (!token) {
       window.location.href = "/login?error=oauth_failed"
       return
     }
+
+    // Refuse to honor a token that arrived in a browser that did not initiate
+    // the OAuth flow. Without this, an attacker could deliver a victim a link
+    // like /auth/google/callback?token=ATTACKER_TOKEN and trick the victim's
+    // browser into authenticating as the attacker (session fixation).
+    const expectedState =
+      typeof window !== "undefined" ? localStorage.getItem("oauth_state") : null
+    if (!expectedState) {
+      window.location.href = "/login?error=oauth_state_missing"
+      return
+    }
+    localStorage.removeItem("oauth_state")
 
     // Store token where the Medusa JS SDK reads it on every API call
     localStorage.setItem("medusa_auth_token", token)

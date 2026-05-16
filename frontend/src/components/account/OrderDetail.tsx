@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, Package, MapPin, Download, Loader2, CheckCircle2, Circle, Truck, Clock } from "lucide-react"
 import { useDashboardData } from "@/hooks/useDashboardData"
+import { useAuth } from "@/providers/auth-provider"
 import { primary, earth, bg, fonts } from "@/lib/theme"
 import { normalizeImageUrl } from "@/lib/image-url"
 import type { Order } from "@/types/dashboard"
@@ -36,6 +37,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export function OrderDetail({ orderId }: OrderDetailProps) {
   const { fetchOrders } = useDashboardData()
+  const { user } = useAuth()
   const [order, setOrder] = useState<Order | null>(null)
   const [rawOrder, setRawOrder] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -51,6 +53,22 @@ export function OrderDetail({ orderId }: OrderDetailProps) {
       const { medusa } = await import("@/lib/medusa")
       const result = await medusa.store.order.retrieve(orderId)
       const raw = (result as any).order || result
+
+      // Defensive ownership check: Medusa already scopes /store/orders/:id to
+      // the authenticated customer, but we double-check on the client so that
+      // any future regression in backend access control fails closed rather
+      // than leaking another customer's order detail.
+      if (user?.id && raw?.customer_id && raw.customer_id !== user.id) {
+        setOrder(null)
+        setRawOrder(null)
+        return
+      }
+      if (user?.email && raw?.email && raw.email.toLowerCase() !== user.email.toLowerCase()) {
+        setOrder(null)
+        setRawOrder(null)
+        return
+      }
+
       setRawOrder(raw)
       // Convert to dashboard Order type
       const orders = await fetchOrders(100)

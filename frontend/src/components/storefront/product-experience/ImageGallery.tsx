@@ -175,7 +175,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                   opacity: idx === activeIdx ? 1 : 0.5,
                 }}
               >
-                <Image src={img.url} alt="" width={56} height={56} className="w-full h-full object-cover" />
+                <Image src={img.url} alt={img.alt || `Product thumbnail ${idx + 1}`} width={56} height={56} className="w-full h-full object-cover" />
               </button>
             ))}
           </div>

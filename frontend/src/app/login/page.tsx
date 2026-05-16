@@ -91,11 +91,7 @@ function LoginContent() {
     fetchSlides()
   }, [])
 
-  const handleLogin = async (
-    email: string,
-    password: string,
-    _rememberMe: boolean
-  ) => {
+  const handleLogin = async (email: string, password: string) => {
     setServerError(null)
     try {
       await login(email, password)
@@ -108,6 +104,15 @@ function LoginContent() {
   const handleGoogleLogin = async () => {
     // Preserve returnTo so the callback page can redirect the user back after sign-in
     localStorage.setItem("oauth_return_to", returnTo || "/account")
+    // Generate a per-attempt nonce so the callback can refuse to honor a token
+    // that arrived in a browser that never initiated the OAuth flow — defends
+    // against a session-fixation drive-by where an attacker delivers their own
+    // valid token via a crafted /auth/google/callback?token=… link.
+    const nonce =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2) + Date.now().toString(36)
+    localStorage.setItem("oauth_state", nonce)
     const backendUrl =
       process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
     try {

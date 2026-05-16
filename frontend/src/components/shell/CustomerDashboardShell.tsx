@@ -15,6 +15,7 @@ import {
   Bell,
   MessageCircle,
   Shield,
+  User,
   LogOut,
   Menu,
   X,
@@ -42,6 +43,7 @@ const navItems: NavItem[] = [
   { label: "My Bookings", href: "/account/bookings", icon: Calendar },
   { label: "Gift Cards", href: "/account/gift-cards", icon: Gift },
   { label: "Notifications", href: "/account/notifications", icon: Bell },
+  { label: "Profile", href: "/account/profile", icon: User },
   { label: "Security", href: "/account/security", icon: Shield },
   { label: "Support", href: "/account/support", icon: MessageCircle },
 ]

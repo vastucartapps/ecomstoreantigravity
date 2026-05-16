@@ -22,7 +22,7 @@ interface AuthScreenProps {
   marketingSlides: MarketingSlide[]
   passwordRequirements: PasswordRequirement[]
   guestConversion?: GuestConversion
-  onLogin?: (email: string, password: string, rememberMe: boolean) => Promise<void>
+  onLogin?: (email: string, password: string) => Promise<void>
   onRegister?: (name: string, email: string, password: string) => Promise<void>
   onForgotPassword?: (email: string) => Promise<void>
   onResetPassword?: (newPassword: string) => Promise<void>
@@ -172,7 +172,6 @@ export function AuthScreen({
   )
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [rememberMe, setRememberMe] = useState(false)
   const [agreeTerms, setAgreeTerms] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -187,7 +186,7 @@ export function AuthScreen({
         if (!email) newErrors.email = "Email is required"
         if (!password) newErrors.password = "Password is required"
         if (Object.keys(newErrors).length === 0) {
-          await onLogin?.(email, password, rememberMe)
+          await onLogin?.(email, password)
         }
       } else if (view === "register") {
         if (!name) newErrors.name = "Name is required"
@@ -519,46 +518,9 @@ export function AuthScreen({
                   </div>
                 )}
 
-                {/* Remember me + Forgot password */}
+                {/* Forgot password */}
                 {view === "login" && (
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <div
-                        className="w-4 h-4 rounded flex items-center justify-center transition-all"
-                        style={{
-                          background: rememberMe
-                            ? colors.primary500
-                            : "transparent",
-                          border: `1.5px solid ${rememberMe ? colors.primary500 : "#d1c9c0"}`,
-                        }}
-                        onClick={() => setRememberMe(!rememberMe)}
-                      >
-                        {rememberMe && (
-                          <svg
-                            className="w-2.5 h-2.5 text-white"
-                            viewBox="0 0 12 12"
-                            fill="none"
-                          >
-                            <path
-                              d="M2 6L5 9L10 3"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        )}
-                      </div>
-                      <span
-                        className="text-sm"
-                        style={{
-                          color: colors.earth400,
-                          fontFamily: "'Open Sans', sans-serif",
-                        }}
-                      >
-                        Remember me
-                      </span>
-                    </label>
+                  <div className="flex items-center justify-end">
                     <button
                       type="button"
                       onClick={() => onNavigate?.("forgot-password")}

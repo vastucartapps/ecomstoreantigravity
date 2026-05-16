@@ -896,7 +896,7 @@ export function PaymentStep() {
           {items.slice(0, 3).map((item: any) => (
             <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: "1px solid #f5f0ea" }}>
               {item.thumbnail
-                ? <img src={normalizeImageUrl(item.thumbnail)} alt="" style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid #f0ebe4" }} />
+                ? <img src={normalizeImageUrl(item.thumbnail)} alt={item.product_title || item.title || "Product image"} style={{ width: 44, height: 44, borderRadius: 8, objectFit: "cover", flexShrink: 0, border: "1px solid #f0ebe4" }} />
                 : <div style={{ width: 44, height: 44, borderRadius: 8, background: "#f0ebe4", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}><Package size={18} style={{ color: earth[300] }} /></div>
               }
               <div style={{ flex: 1, minWidth: 0 }}>

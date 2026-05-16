@@ -150,7 +150,6 @@ const DEFAULT_FOOTER: FooterConfig = {
         { label: "Contact Us", url: "/contact" },
         { label: "Shipping Policy", url: "/shipping-policy" },
         { label: "Refund & Returns", url: "/refund-policy" },
-        { label: "FAQs", url: "/faq" },
       ],
     },
     {

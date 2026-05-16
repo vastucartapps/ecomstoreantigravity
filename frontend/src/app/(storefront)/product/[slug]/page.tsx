@@ -118,13 +118,20 @@ function buildSchemaInput(
     optIdToTitle[opt.id] = opt.title
   }
 
-  // Canonical schema currency = INR (primary region per CLAUDE.md geo rules)
-  const preferredCurrency: "INR" | "USD" = "INR"
+  // Canonical schema currency follows CLAUDE.md: India is the primary region,
+  // so prefer INR — but if an international-only product has no INR price,
+  // emit USD instead so the schema doesn't lie about pricing.
+  const hasAnyInr = (p.variants || []).some((v) =>
+    v.prices?.some((pr) => pr.currency_code?.toLowerCase() === "inr")
+  )
+  const preferredCurrency: "INR" | "USD" = hasAnyInr ? "INR" : "USD"
 
   const variants: SchemaVariant[] = (p.variants || []).map((v) => {
-    const inrPrice = v.prices?.find((pr) => pr.currency_code?.toLowerCase() === "inr")
+    const preferredPrice = v.prices?.find(
+      (pr) => pr.currency_code?.toLowerCase() === preferredCurrency.toLowerCase()
+    )
     const fallbackPrice = v.prices?.[0]
-    const priceMinor = inrPrice?.amount ?? fallbackPrice?.amount ?? 0
+    const priceMinor = preferredPrice?.amount ?? fallbackPrice?.amount ?? 0
     const priceMajor = priceMinor / 100
 
     const options: Record<string, string> = {}
@@ -235,12 +242,17 @@ export async function generateMetadata({
   const pageUrl = `${SITE_URL}/product/${slug}`
   const keywords = p.tags?.length ? p.tags.map((t) => t.value).join(", ") : undefined
 
-  // Meta product tags for Facebook/Instagram Dynamic Ads + Catalogue match
+  // Meta product tags for Facebook/Instagram Dynamic Ads + Catalogue match.
+  // Pick INR when the product is sold in India; otherwise emit the actual
+  // currency of the first available price so feeds don't claim a price in a
+  // currency the product isn't sold in.
   const firstVariant = p.variants?.[0]
   const inrPrice = firstVariant?.prices?.find(
     (pr) => pr.currency_code?.toLowerCase() === "inr"
   )
-  const priceMajor = ((inrPrice?.amount ?? firstVariant?.prices?.[0]?.amount ?? 0) / 100).toFixed(2)
+  const ogPrice = inrPrice ?? firstVariant?.prices?.[0]
+  const ogCurrency = (ogPrice?.currency_code || "INR").toUpperCase()
+  const priceMajor = ((ogPrice?.amount ?? 0) / 100).toFixed(2)
   const inStock =
     firstVariant?.manage_inventory === false ||
     (firstVariant?.inventory_quantity ?? 1) > 0
@@ -269,7 +281,7 @@ export async function generateMetadata({
     },
     other: {
       "product:price:amount": priceMajor,
-      "product:price:currency": "INR",
+      "product:price:currency": ogCurrency,
       "product:availability": inStock ? "in stock" : "out of stock",
       "product:condition": "new",
       "product:retailer_item_id": retailerItemId,

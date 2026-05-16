@@ -197,7 +197,7 @@ export default function GiftCardsPage() {
         amount: intentData.amount_paise,
         currency: "INR",
         order_id: intentData.order_id,
-        name: "VastuCart",
+        name: branding.storeName,
         description: `Gift Card — ${fmt(denomination, "INR")}`,
         handler: async (response: any) => {
           try {
@@ -213,7 +213,7 @@ export default function GiftCardsPage() {
       })
       rzp.open()
     })
-  }, [denomination])
+  }, [denomination, branding.storeName])
 
   const setupStripe = async (intentData: any) => {
     // Fetch Stripe publishable key from config
