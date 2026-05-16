@@ -14,13 +14,13 @@ export async function generateMetadata(): Promise<Metadata> {
       `Get in touch with ${b.storeName}. Reach out for product inquiries, order support, or any questions. Our team responds within 24 hours.`,
     url: `${b.siteUrl}/contact`,
     type: "website",
-    images: [{ url: "/og-default.png", width: 500, height: 500, alt: `Contact ${b.storeName}` }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: `Contact ${b.storeName}` }],
   },
   twitter: {
     card: "summary_large_image",
     title: `Contact ${b.storeName}`,
     description: "Reach out for product inquiries, order support, or any questions. We respond within 24 hours.",
-    images: ["/og-default.png"],
+    images: ["/opengraph-image"],
   },
 }
 }

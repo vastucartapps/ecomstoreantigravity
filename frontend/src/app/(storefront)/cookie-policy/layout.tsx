@@ -14,13 +14,13 @@ export async function generateMetadata(): Promise<Metadata> {
       `How ${b.storeName} uses cookies and similar technologies to enhance your browsing experience.`,
     url: `${b.siteUrl}/cookie-policy`,
     type: "website",
-    images: [{ url: "/og-default.png", width: 500, height: 500, alt: `${b.storeName} Cookie Policy` }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: `${b.storeName} Cookie Policy` }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Cookie Policy",
     description: `How ${b.storeName} uses cookies to enhance your browsing experience.`,
-    images: ["/og-default.png"],
+    images: ["/opengraph-image"],
   },
 }
 }

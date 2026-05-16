@@ -300,6 +300,16 @@ export function useAdminCategories() {
   )
 
   const uploadFile = useCallback(async (file: File): Promise<string> => {
+    const MAX_BYTES = 10 * 1024 * 1024
+    if (file.size > MAX_BYTES) {
+      throw new Error(
+        `File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 10 MB.`
+      )
+    }
+    if (!file.type.startsWith("image/")) {
+      throw new Error(`Unsupported file type: ${file.type || "unknown"}. Use JPG, PNG, or WebP.`)
+    }
+
     const formData = new FormData()
     formData.append("files", file)
 
@@ -313,7 +323,11 @@ export function useAdminCategories() {
       credentials: "include",
       body: formData,
     })
-    if (!res.ok) throw new Error("Upload failed")
+    if (!res.ok) {
+      let msg = `Upload failed (HTTP ${res.status})`
+      try { const b = await res.json(); if (b?.message) msg = b.message } catch { /* not JSON */ }
+      throw new Error(msg)
+    }
     const data = await res.json()
     return data.files?.[0]?.url || ""
   }, [])

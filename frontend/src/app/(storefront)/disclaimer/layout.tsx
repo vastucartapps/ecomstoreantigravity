@@ -14,13 +14,13 @@ export async function generateMetadata(): Promise<Metadata> {
       `${b.storeName} product disclaimer — our spiritual products are intended for positive energy and cultural purposes.`,
     url: `${b.siteUrl}/disclaimer`,
     type: "website",
-    images: [{ url: "/og-default.png", width: 500, height: 500, alt: `${b.storeName} Disclaimer` }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: `${b.storeName} Disclaimer` }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Disclaimer",
     description: "Our spiritual products are intended for positive energy and cultural purposes.",
-    images: ["/og-default.png"],
+    images: ["/opengraph-image"],
   },
 }
 }

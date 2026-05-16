@@ -36,23 +36,20 @@ export default function StorefrontPage() {
   async function load() {
     setIsLoading(true)
     setError(null)
+    // Resolve each section independently so the page renders the first
+    // available piece (usually `config`) within milliseconds and progressively
+    // fills in slower sections (consultation, contact). One slow endpoint no
+    // longer holds the entire admin page hostage behind a single spinner.
+    const tasks: Array<Promise<unknown>> = [
+      hook.fetchConfig().then(setConfig).catch(() => undefined),
+      hook.fetchHeroSlides().then(setHeroSlides).catch(() => undefined),
+      hook.fetchMarketingSlides().then(setMarketingSlides).catch(() => undefined),
+      hook.fetchAboutConfig().then(setAboutConfig).catch(() => undefined),
+      hook.fetchContactConfig().then(setContactConfig).catch(() => undefined),
+      hook.fetchConsultationConfig().then(setConsultationConfig).catch(() => undefined),
+    ]
     try {
-      const [c, hs, ms, ac, cc, conc] = await Promise.all([
-        hook.fetchConfig(),
-        hook.fetchHeroSlides(),
-        hook.fetchMarketingSlides(),
-        hook.fetchAboutConfig(),
-        hook.fetchContactConfig(),
-        hook.fetchConsultationConfig(),
-      ])
-      setConfig(c)
-      setHeroSlides(hs)
-      setMarketingSlides(ms)
-      setAboutConfig(ac)
-      setContactConfig(cc)
-      setConsultationConfig(conc)
-    } catch (e: any) {
-      setError(e.message || "Failed to load storefront settings")
+      await Promise.allSettled(tasks)
     } finally {
       setIsLoading(false)
     }
@@ -243,7 +240,12 @@ export default function StorefrontPage() {
         onUpdateHeroSlide={async (id, data) => {
           try {
             const slide = await hook.updateHeroSlide(id, data)
-            setHeroSlides((prev) => prev.map((s) => s.id === id ? slide : s))
+            // Re-sort by display_order — admins reorder slides by editing the
+            // order field, and without a sort the list keeps its old position
+            // until a full reload happens.
+            setHeroSlides((prev) =>
+              prev.map((s) => (s.id === id ? slide : s)).sort((a, b) => a.display_order - b.display_order)
+            )
             showToast("Hero slide saved")
             return slide
           } catch {
@@ -272,7 +274,9 @@ export default function StorefrontPage() {
         onUpdateMarketingSlide={async (id, data) => {
           try {
             const slide = await hook.updateMarketingSlide(id, data)
-            setMarketingSlides((prev) => prev.map((s) => s.id === id ? slide : s))
+            setMarketingSlides((prev) =>
+              prev.map((s) => (s.id === id ? slide : s)).sort((a, b) => a.display_order - b.display_order)
+            )
             showToast("Login slide saved")
             return slide
           } catch {

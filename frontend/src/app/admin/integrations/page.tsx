@@ -247,8 +247,14 @@ export default function IntegrationsSEOPage() {
       )
       // Refresh status after 3s to see initial progress
       setTimeout(refreshGmcStatus, 3000)
-    } catch {
-      showToast("Failed to trigger GMC sync — check configuration")
+    } catch (err: any) {
+      // Surface the actual reason so admins can distinguish "missing token"
+      // from "feed too large" from "Google API rate-limit" instead of all
+      // failures looking the same.
+      console.error("GMC sync failed:", err)
+      showToast(
+        `GMC sync failed: ${err?.message || "check configuration"}`
+      )
     }
   }
 
@@ -275,8 +281,9 @@ export default function IntegrationsSEOPage() {
       )
       // Refresh status after 3s to see initial progress
       setTimeout(refreshMetaStatus, 3000)
-    } catch {
-      showToast("Failed to trigger Meta sync — check configuration")
+    } catch (err: any) {
+      console.error("Meta sync failed:", err)
+      showToast(`Meta sync failed: ${err?.message || "check configuration"}`)
     }
   }
 

@@ -175,10 +175,18 @@ export default function ProductManagementPage() {
     async (data: Partial<ProductDetail>) => {
       const payload: Partial<ProductDetail> = { ...data, status: "draft" }
       let ok: Product | null
-      if (editingProduct?.id) {
-        ok = await updateProduct(editingProduct.id, payload)
-      } else {
-        ok = await createProduct(payload)
+      try {
+        if (editingProduct?.id) {
+          ok = await updateProduct(editingProduct.id, payload)
+        } else {
+          ok = await createProduct(payload)
+        }
+      } catch (err: any) {
+        // Surface the real backend message (e.g. "handle already taken",
+        // "invalid SKU", "missing required field") instead of a generic
+        // toast — the admin needs to know which field to fix.
+        showToast(err?.message || "Failed to save draft")
+        throw err
       }
       if (ok) {
         setEditingProduct(null)
@@ -196,10 +204,15 @@ export default function ProductManagementPage() {
     async (data: Partial<ProductDetail>) => {
       const payload: Partial<ProductDetail> = { ...data, status: "active" }
       let ok: Product | null
-      if (editingProduct?.id) {
-        ok = await updateProduct(editingProduct.id, payload)
-      } else {
-        ok = await createProduct(payload)
+      try {
+        if (editingProduct?.id) {
+          ok = await updateProduct(editingProduct.id, payload)
+        } else {
+          ok = await createProduct(payload)
+        }
+      } catch (err: any) {
+        showToast(err?.message || "Failed to publish product")
+        throw err
       }
       if (ok) {
         setEditingProduct(null)

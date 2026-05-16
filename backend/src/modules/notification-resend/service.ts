@@ -1,6 +1,7 @@
 import { AbstractNotificationProviderService, MedusaError } from "@medusajs/framework/utils"
 import type { ProviderSendNotificationDTO, ProviderSendNotificationResultsDTO } from "@medusajs/framework/types"
 import { captureException, captureWarning } from "../../lib/error-reporter"
+import { retry } from "../../lib/retry"
 
 /**
  * VastuCart Resend Notification Provider
@@ -75,20 +76,37 @@ class ResendNotificationService extends AbstractNotificationProviderService {
     )
 
     try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.config_.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: this.config_.from,
-          to: [notification.to],
-          subject: rendered.subject,
-          html: rendered.html,
-          text: rendered.text,
-        }),
-      })
+      // Retry transient failures (network blips, 5xx, 429 rate-limits). Resend
+      // rarely fails, but when it does the failure is usually a 60-second blip
+      // — a permanent failure (auth, invalid recipient) still throws after the
+      // configured attempts so the caller can fall back / alert.
+      const res = await retry(
+        () =>
+          fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${this.config_.apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              from: this.config_.from,
+              to: [notification.to],
+              subject: rendered.subject,
+              html: rendered.html,
+              text: rendered.text,
+            }),
+          }),
+        {
+          attempts: 3,
+          baseDelayMs: 600,
+          shouldRetry: (err: any) => {
+            // Network errors → retry. HTTP status comes back as a successful
+            // fetch — we throw inside the body check below to escalate, so
+            // here we only see transport-level failures.
+            return !err?.status || err.status >= 500 || err.status === 429
+          },
+        }
+      )
 
       if (!res.ok) {
         const body = await res.text()

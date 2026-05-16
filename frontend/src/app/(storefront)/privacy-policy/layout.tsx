@@ -14,13 +14,13 @@ export async function generateMetadata(): Promise<Metadata> {
       `${b.storeName}'s privacy policy — how we collect, use, and protect your personal information when you shop with us.`,
     url: `${b.siteUrl}/privacy-policy`,
     type: "website",
-    images: [{ url: "/og-default.png", width: 500, height: 500, alt: `${b.storeName} Privacy Policy` }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: `${b.storeName} Privacy Policy` }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Privacy Policy",
     description: `How ${b.storeName} collects, uses, and protects your personal information.`,
-    images: ["/og-default.png"],
+    images: ["/opengraph-image"],
   },
 }
 }

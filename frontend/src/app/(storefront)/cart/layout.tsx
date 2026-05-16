@@ -10,9 +10,9 @@ export async function generateMetadata(): Promise<Metadata> {
   openGraph: {
     title: "Shopping Cart",
     description: "Review your items and proceed to checkout.",
-    images: [{ url: "/og-default.png", width: 500, height: 500, alt: `${b.storeName}` }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: `${b.storeName}` }],
   },
-  twitter: { card: "summary_large_image", images: ["/og-default.png"] },
+  twitter: { card: "summary_large_image", images: ["/opengraph-image"] },
 }
 }
 

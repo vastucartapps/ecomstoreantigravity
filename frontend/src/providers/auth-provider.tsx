@@ -157,6 +157,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser().finally(() => setIsLoading(false))
   }, [refreshUser])
 
+  // Multi-tab sync — when the user logs in or out in one tab, every other
+  // open tab should reflect that immediately instead of showing stale UI
+  // (e.g. an "account" link that 401s, or a logged-out header above a still-
+  // logged-in cart). storage events fire only on OTHER tabs of the same
+  // origin when localStorage keys we care about change.
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const onStorage = (e: StorageEvent) => {
+      if (
+        e.key === "medusa_auth_token" ||
+        e.key === "vastucart_admin_token"
+      ) {
+        refreshUser()
+      }
+    }
+    window.addEventListener("storage", onStorage)
+    return () => window.removeEventListener("storage", onStorage)
+  }, [refreshUser])
+
   const login = async (email: string, password: string) => {
     let authedAsCustomer = false
 

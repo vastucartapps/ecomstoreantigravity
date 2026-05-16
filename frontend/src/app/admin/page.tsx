@@ -27,8 +27,12 @@ export default function AdminDashboardPage() {
         body: { metadata: { display_status: status } },
       })
       refetch()
-    } catch {
-      // Status update failed — silently fail in dashboard; full workflow in Section 10
+    } catch (err: any) {
+      // Surface the real reason — admins changing status from the dashboard
+      // had no feedback when the call failed (auth, validation, network),
+      // so the row kept its old status and they assumed it worked.
+      console.error("Order status update failed:", err)
+      window.alert(`Failed to update order status: ${err?.message || "please try again"}`)
     }
   }
 

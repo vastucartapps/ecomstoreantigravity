@@ -13,13 +13,13 @@ export async function generateMetadata(): Promise<Metadata> {
     description: `${b.storeName}'s policy on protecting our content, trademarks, product imagery, and brand assets.`,
     url: `${b.siteUrl}/intellectual-property`,
     type: "website",
-    images: [{ url: "/og-default.png", width: 500, height: 500, alt: `${b.storeName} IP Policy` }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: `${b.storeName} IP Policy` }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Intellectual Property Policy",
     description: `Protecting ${b.storeName} content, trademarks, and brand assets.`,
-    images: ["/og-default.png"],
+    images: ["/opengraph-image"],
   },
 }
 }

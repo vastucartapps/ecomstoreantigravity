@@ -25,7 +25,7 @@ export async function generateMetadata({
     const data = await res.json()
     const category = data.product_categories?.[0]
 
-    if (!category) return { title: "Category", openGraph: { images: [{ url: "/og-default.png" }] } }
+    if (!category) return { title: "Category", openGraph: { images: [{ url: "/opengraph-image", width: 1200, height: 630 }] } }
 
     const name = category.name
     const title = `${name} — Authentic Spiritual Products`
@@ -47,17 +47,17 @@ export async function generateMetadata({
         type: "website",
         images: heroImage
           ? [{ url: heroImage, width: 1200, height: 630, alt: name }]
-          : [{ url: "/og-default.png", width: 500, height: 500, alt: name }],
+          : [{ url: "/opengraph-image", width: 1200, height: 630, alt: name }],
       },
       twitter: {
         card: "summary_large_image",
         title,
         description: description.slice(0, 160),
-        images: heroImage ? [heroImage] : ["/og-default.png"],
+        images: heroImage ? [heroImage] : ["/opengraph-image"],
       },
     }
   } catch {
-    return { title: "Category", openGraph: { images: [{ url: "/og-default.png" }] } }
+    return { title: "Category", openGraph: { images: [{ url: "/opengraph-image", width: 1200, height: 630 }] } }
   }
 }
 

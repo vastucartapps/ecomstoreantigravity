@@ -26,6 +26,9 @@ import { getRegionId } from "@/lib/region"
 import { FALLBACK_HERO } from "@/lib/image-constants"
 import { normalizeImageUrl } from "@/lib/image-url"
 import { trackViewItemList, onceInSession } from "@/lib/analytics/events"
+import { JsonLd } from "@/components/JsonLd"
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
 
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -405,8 +408,32 @@ function CategoryContent() {
 
   if (isLoading) return <CategorySkeleton />
 
+  const breadcrumbSchema = categoryHero.name
+    ? {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: SITE_URL,
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: categoryHero.name,
+            item: `${SITE_URL}/category/${slug}`,
+          },
+        ],
+      }
+    : null
+
   return (
     <>
+    {breadcrumbSchema && (
+      <JsonLd data={breadcrumbSchema} id={`category-${slug}-breadcrumb`} />
+    )}
     <CategoryListing
       categoryHero={categoryHero}
       breadcrumbs={breadcrumbs}

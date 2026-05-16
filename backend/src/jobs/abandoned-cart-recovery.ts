@@ -160,6 +160,11 @@ export default async function abandonedCartRecoveryJob(container: MedusaContaine
     for (const cart of carts as any[]) {
       if (!cart.email || !cart.items?.length) continue
 
+      // Skip recipients who clicked unsubscribe in any prior recovery email.
+      // hasOptedOut returns true even if the prior opt-out belonged to a
+      // different cart, so honoring the request is permanent.
+      if (await recoveryService.hasOptedOut(cart.email)) continue
+
       const latest = await recoveryService.latestForCart(cart.id)
       const stage = pickStage(
         latest?.sent_at ? new Date(latest.sent_at) : null,
@@ -209,6 +214,14 @@ export default async function abandonedCartRecoveryJob(container: MedusaContaine
       }
 
       const recoverUrl = `${storeUrl()}/cart/recover/${record.recovery_token}`
+      // Pass an opt-out link so recipients can stop the 3-stage drip from any
+      // stage without contacting support. Token is the same recovery token —
+      // the backend renders a small confirmation HTML page directly so we
+      // don't depend on a separate storefront unsubscribe page being deployed.
+      const apiBase = process.env.BACKEND_URL || process.env.MEDUSA_INTERNAL_URL || ""
+      const unsubscribeUrl = apiBase
+        ? `${apiBase}/store/unsubscribe?token=${record.recovery_token}`
+        : `${storeUrl()}/store/unsubscribe?token=${record.recovery_token}`
       const { count, summary } = firstItemSummary(cart.items || [])
       const name = (cart.shipping_address?.first_name as string) ||
         (cart.customer?.first_name as string) || "there"
@@ -227,6 +240,7 @@ export default async function abandonedCartRecoveryJob(container: MedusaContaine
           data: {
             customer_name: name,
             recover_url: recoverUrl,
+            unsubscribe_url: unsubscribeUrl,
             items_count: count,
             items_summary: summary,
             cart_total: cartTotal,

@@ -24,6 +24,10 @@ const AbandonedCartRecovery = model.define("abandoned_cart_recovery", {
   recovered_at: model.dateTime().nullable(),
   recovered_order_id: model.text().nullable(),
   recovered_amount: model.number().default(0), // minor units — set on recovery
+  // Set when the recipient clicks the unsubscribe link in any stage's email.
+  // The recovery job filters on this and skips subsequent stages — opt-out
+  // is one-click, immediate, and there's no need to manually re-enable.
+  opted_out_at: model.dateTime().nullable(),
 })
 
 export default AbandonedCartRecovery

@@ -242,19 +242,45 @@ export default function AdminSupportPage() {
       setTickets(result.tickets)
       setCount(result.count)
       setLastRefreshed(new Date())
+      // Reset backoff on success so the next poll resumes the base 30s cadence.
+      pollBackoffRef.current = 0
+      return true
     } catch {
-      // fail silently on polling
+      // fail silently on polling — exponential backoff handled below
+      return false
     } finally {
       setLoading(false)
     }
   }, [fetchTickets, statusFilter])
 
-  // Initial load + 30-second real-time polling
+  const pollBackoffRef = useRef(0)
+  // Adaptive polling — 30s on success, doubling on failure up to ~10min,
+  // so a transient backend outage doesn't pin a tab to constant retry traffic
+  // (which used to hammer error-reporting + clog the admin's network panel).
   useEffect(() => {
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const tick = async () => {
+      if (cancelled) return
+      const ok = await load()
+      if (cancelled) return
+      const baseMs = 30_000
+      const maxMs = 10 * 60 * 1000
+      if (ok) {
+        pollBackoffRef.current = 0
+        timer = setTimeout(tick, baseMs)
+      } else {
+        const nextDelay = Math.min(maxMs, baseMs * Math.pow(2, pollBackoffRef.current))
+        pollBackoffRef.current += 1
+        timer = setTimeout(tick, nextDelay)
+      }
+    }
     setLoading(true)
-    load()
-    const interval = setInterval(load, 30_000)
-    return () => clearInterval(interval)
+    tick()
+    return () => {
+      cancelled = true
+      if (timer) clearTimeout(timer)
+    }
   }, [load])
 
   const handleReply = async (id: string, reply: string) => {

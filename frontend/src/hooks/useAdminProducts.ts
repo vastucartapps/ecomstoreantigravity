@@ -503,8 +503,10 @@ export function useAdminProducts() {
         if (!res.product) return null
         return mapMedusaProduct(res.product)
       } catch (err) {
+        // Re-throw so callers (ProductWizard saveDraft / publish) can show
+        // the real validation message instead of a generic "save failed".
         console.error("createProduct error:", err)
-        return null
+        throw err
       }
     },
     [adminFetch, resolveTags]
@@ -527,7 +529,7 @@ export function useAdminProducts() {
         return mapMedusaProduct(res.product)
       } catch (err) {
         console.error("updateProduct error:", err)
-        return null
+        throw err
       }
     },
     [adminFetch, resolveTags]
@@ -546,6 +548,20 @@ export function useAdminProducts() {
   )
 
   const uploadFile = useCallback(async (file: File): Promise<string> => {
+    // 10 MB ceiling matches what MinIO + Coolify's nginx will actually accept
+    // — pushing larger files into the upload pipeline produces opaque 413s
+    // that look like a backend bug. Fail loudly with a clear admin-visible
+    // message before the network call instead.
+    const MAX_BYTES = 10 * 1024 * 1024
+    if (file.size > MAX_BYTES) {
+      throw new Error(
+        `File is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max 10 MB.`
+      )
+    }
+    if (!file.type.startsWith("image/")) {
+      throw new Error(`Unsupported file type: ${file.type || "unknown"}. Use JPG, PNG, or WebP.`)
+    }
+
     const formData = new FormData()
     formData.append("files", file)
 
@@ -560,7 +576,16 @@ export function useAdminProducts() {
       credentials: "include",
       body: formData,
     })
-    if (!res.ok) throw new Error("Upload failed")
+    if (!res.ok) {
+      let msg = `Upload failed (HTTP ${res.status})`
+      try {
+        const body = await res.json()
+        if (body?.message) msg = body.message
+      } catch {
+        // body wasn't JSON — keep the HTTP-status message
+      }
+      throw new Error(msg)
+    }
     const data = await res.json()
     return data.files?.[0]?.url || ""
   }, [])

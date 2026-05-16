@@ -11,13 +11,13 @@ export async function generateMetadata(): Promise<Metadata> {
   openGraph: {
     title: "Track Your Order",
     description: `Track your ${b.storeName} order in real-time. Enter your order ID to see delivery status.`,
-    images: [{ url: "/og-default.png", width: 500, height: 500, alt: "Track Order" }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Track Order" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Track Your Order",
     description: `Track your ${b.storeName} order in real-time.`,
-    images: ["/og-default.png"],
+    images: ["/opengraph-image"],
   },
 }
 }

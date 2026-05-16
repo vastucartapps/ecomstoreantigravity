@@ -13,13 +13,13 @@ export async function generateMetadata(): Promise<Metadata> {
     description: `Guidelines for using ${b.storeName}'s platform and services responsibly and lawfully.`,
     url: `${b.siteUrl}/acceptable-use`,
     type: "website",
-    images: [{ url: "/og-default.png", width: 500, height: 500, alt: `${b.storeName} Acceptable Use Policy` }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: `${b.storeName} Acceptable Use Policy` }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Acceptable Use Policy",
     description: `Guidelines for using ${b.storeName} responsibly.`,
-    images: ["/og-default.png"],
+    images: ["/opengraph-image"],
   },
 }
 }

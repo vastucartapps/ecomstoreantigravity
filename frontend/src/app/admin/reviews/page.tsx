@@ -66,18 +66,25 @@ export default function ReviewsModerationPage() {
 
   const handleApproveReview = useCallback(
     async (reviewId: string, response?: string) => {
+      // True optimistic update: flip the UI instantly, then roll back the
+      // exact prior row if the request fails. Snapshotting the single row
+      // avoids stomping concurrent edits to other rows during the request.
+      let snapshot: typeof reviews[number] | undefined
+      setReviews(prev => {
+        snapshot = prev.find(r => r.id === reviewId)
+        return prev.map(r =>
+          r.id === reviewId
+            ? { ...r, status: "approved" as ReviewStatus, adminResponse: response || null }
+            : r
+        )
+      })
       const ok = await approveReview(reviewId, response)
       if (ok) {
-        // Optimistically update local state
-        setReviews(prev =>
-          prev.map(r =>
-            r.id === reviewId
-              ? { ...r, status: "approved" as ReviewStatus, adminResponse: response || null }
-              : r
-          )
-        )
         showToast("Review approved")
       } else {
+        if (snapshot) {
+          setReviews(prev => prev.map(r => (r.id === reviewId ? snapshot! : r)))
+        }
         showToast("Failed to approve review")
         throw new Error("Approve failed")
       }
@@ -87,17 +94,22 @@ export default function ReviewsModerationPage() {
 
   const handleRejectReview = useCallback(
     async (reviewId: string, reason?: string) => {
+      let snapshot: typeof reviews[number] | undefined
+      setReviews(prev => {
+        snapshot = prev.find(r => r.id === reviewId)
+        return prev.map(r =>
+          r.id === reviewId
+            ? { ...r, status: "rejected" as ReviewStatus, adminResponse: reason || null }
+            : r
+        )
+      })
       const ok = await rejectReview(reviewId, reason)
       if (ok) {
-        setReviews(prev =>
-          prev.map(r =>
-            r.id === reviewId
-              ? { ...r, status: "rejected" as ReviewStatus, adminResponse: reason || null }
-              : r
-          )
-        )
         showToast("Review rejected")
       } else {
+        if (snapshot) {
+          setReviews(prev => prev.map(r => (r.id === reviewId ? snapshot! : r)))
+        }
         showToast("Failed to reject review")
         throw new Error("Reject failed")
       }

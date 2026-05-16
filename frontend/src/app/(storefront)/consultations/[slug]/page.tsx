@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { normalizeImageUrl } from "@/lib/image-url"
 import ConsultationDetailClient from "./ConsultationDetailClient"
 import { fetchBrandingForMetadata } from "@/lib/branding-ssr"
+import { JsonLd } from "@/components/JsonLd"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://sapi.vastucart.in"
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
@@ -139,5 +140,54 @@ export default async function ConsultationDetailPage({
   const serviceType = await fetchBySlug(slug)
   if (!serviceType) notFound()
 
-  return <ConsultationDetailClient serviceType={serviceType} />
+  const brand = await fetchBrandingForMetadata()
+  const pageUrl = `${SITE_URL}/consultations/${slug}`
+  const ogImage = toOgImageUrl(serviceType.image_1)
+
+  // Schema.org Service + Offer — lets Google surface consultations as a
+  // discrete service (with price, currency, provider) instead of treating
+  // the page as a generic article. Provider points back to the VastuCart
+  // organization defined in the root site schema.
+  const serviceSchema = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "@id": `${pageUrl}#service`,
+    name: serviceType.title,
+    serviceType: serviceType.title,
+    description: serviceType.description?.slice(0, 500) || `${serviceType.title} consultation by ${brand.storeName}.`,
+    url: pageUrl,
+    ...(ogImage ? { image: ogImage } : {}),
+    provider: {
+      "@type": "Organization",
+      name: brand.storeName,
+      url: brand.siteUrl,
+    },
+    areaServed: serviceType.mode === "offline" ? "IN" : { "@type": "Country", name: "Worldwide" },
+    availableChannel: {
+      "@type": "ServiceChannel",
+      ...(serviceType.mode === "offline"
+        ? { availableLanguage: ["en", "hi"] }
+        : {
+            availableLanguage: ["en", "hi"],
+            serviceUrl: pageUrl,
+            serviceLocation: { "@type": "VirtualLocation", url: pageUrl },
+          }),
+    },
+    offers: {
+      "@type": "Offer",
+      url: pageUrl,
+      price: serviceType.price,
+      priceCurrency: (serviceType.currency || "INR").toUpperCase(),
+      availability: "https://schema.org/InStock",
+      validFrom: new Date().toISOString().slice(0, 10),
+      seller: { "@type": "Organization", name: brand.storeName },
+    },
+  }
+
+  return (
+    <>
+      <JsonLd data={serviceSchema} id={`consultation-${slug}-schema`} />
+      <ConsultationDetailClient serviceType={serviceType} />
+    </>
+  )
 }

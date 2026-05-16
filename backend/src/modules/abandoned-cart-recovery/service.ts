@@ -81,6 +81,38 @@ class AbandonedCartRecoveryModuleService extends MedusaService({ AbandonedCartRe
   }
 
   /**
+   * One-click opt-out from the drip. Marks every row for the recipient's
+   * email (matched off the row that owns the token) so unsubscribing from
+   * one stage of one cart shuts off ALL subsequent stages for that address,
+   * including future carts.
+   */
+  async optOutByToken(token: string): Promise<{ ok: boolean; email?: string }> {
+    const target = await this.findByToken(token)
+    if (!target) return { ok: false }
+    const now = new Date()
+    const [rows] = await (this as any).listAndCountAbandonedCartRecoveries(
+      { email: target.email },
+      { take: 1000 }
+    )
+    for (const r of (rows || []) as RecoveryRecord[]) {
+      await (this as any).updateAbandonedCartRecoveries({
+        id: r.id,
+        opted_out_at: now,
+      })
+    }
+    return { ok: true, email: target.email }
+  }
+
+  /** Returns true if the email address has previously opted out of recovery. */
+  async hasOptedOut(email: string): Promise<boolean> {
+    const [rows] = await (this as any).listAndCountAbandonedCartRecoveries(
+      { email, opted_out_at: { $ne: null } },
+      { take: 1 }
+    )
+    return Boolean(rows?.length)
+  }
+
+  /**
    * Mark every unrecovered recovery row for this cart as recovered, pinning
    * the order id + captured amount. One cart may have 1..3 rows (one per
    * stage); all are flagged so the admin dashboard credits the conversion

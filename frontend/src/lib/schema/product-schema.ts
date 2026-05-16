@@ -351,7 +351,7 @@ function buildProduct(input: SchemaProductInput, breadcrumbId: string) {
     name: title,
     description: cleanText(description) ||
       `Buy ${title} at ${BRAND_DEFAULTS.storeName} — authentic spiritual products delivered across India.`,
-    image: images.length ? images : [`${SITE_URL}/og-default.png`],
+    image: images.length ? images : [`${SITE_URL}/opengraph-image`],
     url: `${SITE_URL}/product/${slug}`,
     sku: primarySku,
     productID: id,

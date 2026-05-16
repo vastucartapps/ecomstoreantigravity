@@ -199,6 +199,13 @@ export default function AdminBookingsPage() {
 
   const handleBlockDate = useCallback(
     async (date: string, reason: string) => {
+      // Blocking a date hides every slot on it from new bookings — the admin
+      // should confirm before doing that to a date they might be planning to
+      // open later (mass cancel risk).
+      const ok = window.confirm(
+        `Block ${date}? New bookings on this date will be refused until you unblock it.`
+      )
+      if (!ok) return
       const newBlocked = await blockDate(date, reason)
       if (newBlocked) {
         setBlockedDates((prev) => [...prev, newBlocked])
@@ -212,15 +219,20 @@ export default function AdminBookingsPage() {
 
   const handleUnblockDate = useCallback(
     async (id: string) => {
-      const ok = await unblockDate(id)
-      if (ok) {
+      const target = blockedDates.find((bd) => bd.id === id)
+      const ok = window.confirm(
+        `Unblock ${target?.date || "this date"}? Customers will be able to book it again immediately.`
+      )
+      if (!ok) return
+      const result = await unblockDate(id)
+      if (result) {
         setBlockedDates((prev) => prev.filter((bd) => bd.id !== id))
         showToast("Date unblocked")
       } else {
         showToast("Failed to unblock date")
       }
     },
-    [unblockDate, showToast]
+    [unblockDate, blockedDates, showToast]
   )
 
   // ---------------------------------------------------------------------------

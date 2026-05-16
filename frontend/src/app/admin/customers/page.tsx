@@ -63,8 +63,16 @@ export default function CustomerManagementPage() {
     (partial: Partial<CustomerFilters>) => {
       setFilters(prev => {
         const next = { ...prev, ...partial }
-        // Only reload from server when search changes
-        if ("search" in partial) {
+        // Reload from server when any server-side filter changes. We can't
+        // accurately filter by segment client-side when the segment in
+        // question only matches customers we haven't yet paged into — a
+        // user filtering to "high_value" only sees high-value among the
+        // 50 most-recently-created customers unless we re-query.
+        if (
+          "search" in partial ||
+          "segment" in partial ||
+          "sortBy" in partial
+        ) {
           loadCustomers(next)
         }
         return next

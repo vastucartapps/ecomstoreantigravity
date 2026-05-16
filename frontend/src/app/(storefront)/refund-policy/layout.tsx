@@ -22,13 +22,13 @@ export async function generateMetadata(): Promise<Metadata> {
       description: `Hassle-free returns within ${b.returnWindowDays} days of delivery. Know your rights and how to initiate a return at ${b.storeName}.`,
       url: `${b.siteUrl}/refund-policy`,
       type: "website",
-      images: [{ url: "/og-default.png", width: 500, height: 500, alt: `${b.storeName} Refund Policy` }],
+      images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: `${b.storeName} Refund Policy` }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description: shortDesc,
-      images: ["/og-default.png"],
+      images: ["/opengraph-image"],
     },
   }
 }

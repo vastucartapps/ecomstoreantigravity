@@ -23,13 +23,13 @@ export async function generateMetadata(): Promise<Metadata> {
       description: ogDesc,
       url: `${b.siteUrl}/shipping-policy`,
       type: "website",
-      images: [{ url: "/og-default.png", width: 500, height: 500, alt: `${b.storeName} Shipping Policy` }],
+      images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: `${b.storeName} Shipping Policy` }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description: shortDesc,
-      images: ["/og-default.png"],
+      images: ["/opengraph-image"],
     },
   }
 }

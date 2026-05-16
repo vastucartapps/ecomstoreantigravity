@@ -204,14 +204,17 @@ export function ReturnDetailPage({
 
   const handleProcessRefund = async () => {
     if (!onProcessRefund) return
+    const amount = parseFloat(refundAmount) || returnRequest.product.price
+    // Force a confirm because refunds touch real money — an accidental click
+    // on the "Process refund" button can't be undone, and Razorpay/Stripe
+    // refunds become customer-visible immediately.
+    const confirmed = window.confirm(
+      `Refund ₹${amount.toLocaleString("en-IN")} via ${refundMethod}? This cannot be undone.`
+    )
+    if (!confirmed) return
     setIsProcessingRefund(true)
     try {
-      await onProcessRefund(
-        returnRequest.id,
-        refundType,
-        parseFloat(refundAmount) || returnRequest.product.price,
-        refundMethod
-      )
+      await onProcessRefund(returnRequest.id, refundType, amount, refundMethod)
     } finally {
       setIsProcessingRefund(false)
     }

@@ -4,6 +4,7 @@ import { ProductDTO, ProductVariantDTO, ProductOptionDTO } from "@medusajs/frame
 import { EntryProps } from "contentful-management"
 import { MedusaError } from "@medusajs/framework/utils"
 import { CanonicalRequest, verifyRequest } from "@contentful/node-apps-toolkit"
+import { captureWarning } from "../../lib/error-reporter"
 
 type InjectedDependencies = {
   contentfulManagementClient?: PlainClientAPI
@@ -187,7 +188,11 @@ export default class ContentfulModuleService {
         await mc.entry.unpublish({ environmentId: this.options.environment, entryId: productId })
       } catch (_e) {
         // Entry may already be unpublished — safe to proceed with deletion
-        console.warn("[Contentful] Unpublish skipped for product", productId, "—", _e instanceof Error ? _e.message : _e)
+        captureWarning("contentful: unpublish skipped for product", {
+          source: "modules/contentful/service.deleteProduct",
+          product_id: productId,
+          error: _e instanceof Error ? _e.message : String(_e),
+        })
       }
       await mc.entry.delete({ environmentId: this.options.environment, entryId: productId })
 
@@ -195,7 +200,11 @@ export default class ContentfulModuleService {
         try {
           await mc.entry.unpublish({ environmentId: this.options.environment, entryId: variant.sys.id })
         } catch (_e) {
-          console.warn("[Contentful] Unpublish skipped for variant", variant.sys.id, "—", _e instanceof Error ? _e.message : _e)
+          captureWarning("contentful: unpublish skipped for variant", {
+            source: "modules/contentful/service.deleteProduct",
+            variant_id: variant.sys.id,
+            error: _e instanceof Error ? _e.message : String(_e),
+          })
         }
         await mc.entry.delete({ environmentId: this.options.environment, entryId: variant.sys.id })
       }
@@ -204,7 +213,11 @@ export default class ContentfulModuleService {
         try {
           await mc.entry.unpublish({ environmentId: this.options.environment, entryId: option.sys.id })
         } catch (_e) {
-          console.warn("[Contentful] Unpublish skipped for option", option.sys.id, "—", _e instanceof Error ? _e.message : _e)
+          captureWarning("contentful: unpublish skipped for option", {
+            source: "modules/contentful/service.deleteProduct",
+            option_id: option.sys.id,
+            error: _e instanceof Error ? _e.message : String(_e),
+          })
         }
         await mc.entry.delete({ environmentId: this.options.environment, entryId: option.sys.id })
       }

@@ -15,6 +15,31 @@ interface StoreSettings {
   timezone: string
 }
 
+// Single source of truth for the currency / timezone dropdowns. Extracting
+// these so every admin form that wants the same options can import the same
+// list instead of repeating the inline literal — and adding "Eurozone" or
+// "Asia/Singapore" later is a one-line change here, not a hunt across screens.
+const CURRENCY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "INR", label: "INR — Indian Rupee" },
+  { value: "USD", label: "USD — US Dollar" },
+  { value: "EUR", label: "EUR — Euro" },
+  { value: "GBP", label: "GBP — British Pound" },
+  { value: "AED", label: "AED — UAE Dirham" },
+  { value: "SGD", label: "SGD — Singapore Dollar" },
+]
+
+const TIMEZONE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "Asia/Kolkata", label: "Asia/Kolkata (IST, UTC+5:30)" },
+  { value: "UTC", label: "UTC" },
+  { value: "America/New_York", label: "America/New_York (EST)" },
+  { value: "America/Los_Angeles", label: "America/Los_Angeles (PST)" },
+  { value: "Europe/London", label: "Europe/London (GMT)" },
+  { value: "Europe/Berlin", label: "Europe/Berlin (CET)" },
+  { value: "Asia/Dubai", label: "Asia/Dubai (GST, UTC+4)" },
+  { value: "Asia/Singapore", label: "Asia/Singapore (SGT, UTC+8)" },
+  { value: "Australia/Sydney", label: "Australia/Sydney (AEDT)" },
+]
+
 // Pull initial values from the canonical seed so a fresh admin doesn't see
 // a placeholder phone number that conflicts with the actual brand contact.
 const DEFAULT_SETTINGS: StoreSettings = {
@@ -302,24 +327,14 @@ export default function AdminSettingsPage() {
             <ThemeSelect
               value={settings.defaultCurrency}
               onChange={(v) => setSettings((s) => ({ ...s, defaultCurrency: v }))}
-              options={[
-                { value: "INR", label: "INR — Indian Rupee" },
-                { value: "USD", label: "USD — US Dollar" },
-                { value: "EUR", label: "EUR — Euro" },
-                { value: "GBP", label: "GBP — British Pound" },
-              ]}
+              options={CURRENCY_OPTIONS}
             />
           </Field>
           <Field label="Timezone">
             <ThemeSelect
               value={settings.timezone}
               onChange={(v) => setSettings((s) => ({ ...s, timezone: v }))}
-              options={[
-                { value: "Asia/Kolkata", label: "Asia/Kolkata (IST, UTC+5:30)" },
-                { value: "UTC", label: "UTC" },
-                { value: "America/New_York", label: "America/New_York (EST)" },
-                { value: "Europe/London", label: "Europe/London (GMT)" },
-              ]}
+              options={TIMEZONE_OPTIONS}
             />
           </Field>
         </div>
