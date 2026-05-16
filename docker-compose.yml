@@ -254,13 +254,13 @@ services:
       ecomstore-internal: {}  # reaches ecomstore-backend/ecomstore-minio
       coolify: {}             # Traefik proxies HTTPS to this
     depends_on:
-      # service_started instead of service_healthy — frontend will queue
-      # API calls behind a brief Medusa boot delay (handled by Next.js
-      # rewrites + client retries), and this prevents the entire deploy
-      # from failing when the backend healthcheck is slow / mis-probing.
-      # Once we can read live container logs we can re-enable strict gating.
+      # service_healthy — frontend must wait for backend's TCP healthcheck
+      # on port 9000 to pass before starting. This guarantees the storefront
+      # never serves traffic against a backend that hasn't bound its port yet
+      # (otherwise the first wave of SSR requests would hit Traefik's
+      # "no available server" 503 until Medusa finishes booting).
       backend:
-        condition: service_started
+        condition: service_healthy
     labels:
       # Traefik routing — Coolify's shared proxy needs explicit rule/entrypoints/tls
       # to terminate HTTPS for the storefront. Mirrors backend labels (lines 211-218).

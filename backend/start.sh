@@ -1,17 +1,23 @@
 #!/bin/sh
-# Diagnostic boot — keeps the container alive on any failure so the actual
-# error survives in `docker logs` / Coolify's logs viewer. Without this, a
-# crash on medusa boot kills the container immediately, Coolify cleans it
-# up, and the only feedback is the deploy log saying "unhealthy" with no
-# stderr ever surfacing.
+# Production boot for the VastuCart Medusa backend.
+#
+# POSIX-only — runs under Alpine's busybox ash, NOT bash. Do not introduce
+# bash-only constructs (process substitution, [[ ]], $'...' ANSI quoting,
+# `local`, arrays, etc.). Validate with `sh -n start.sh` and `dash -n
+# start.sh` before pushing. Past regression: an `exec > >(tee …) 2>&1`
+# line crashed ash with "Syntax error: redirection unexpected" on line 9,
+# so start.sh never ran at all — the container Errored in ~14s with no
+# stderr surfacing. See memory: project_deployment_failures.md.
+#
+# Failure behaviour: on any boot error, exec exits with the underlying
+# non-zero status. Docker captures stdout/stderr to the container log
+# driver (retained for exited containers), Coolify's "Logs" tab on the
+# stopped container shows the last run, and the `restart: always` policy
+# in docker-compose.yml will spin a fresh container. No sleep-after-error
+# hacks — those mask real crashes behind a 10-minute alive window and
+# delay alerting.
 
-# Note: previous version used `exec > >(tee -a "$LOGFILE") 2>&1` here.
-# That is bash-only process substitution syntax and crashes Alpine's ash
-# with "Syntax error: redirection unexpected", which was the actual cause
-# of the entire week of "backend unhealthy" deploy failures — start.sh
-# never parsed past line 9. Stick to plain stdout/stderr; docker keeps
-# the buffer in the container log driver, which Coolify's logs viewer
-# (and `docker logs <container>`) can read fine.
+set -e
 
 echo "===================================================================="
 echo "[start.sh] VastuCart backend bootstrap — $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
@@ -24,7 +30,9 @@ echo "[start.sh] Free memory:"
 free -m 2>/dev/null || echo "  (free unavailable)"
 echo "===================================================================="
 
-# Wait for postgres TCP. Try service-name first, then alias.
+# Wait for postgres TCP. depends_on: service_healthy in docker-compose.yml
+# already guarantees this, but we double-check defensively — the alias may
+# resolve differently across networks during a Coolify network rebuild.
 PG_HOST=""
 for host in postgres ecomstore-postgres; do
   if node -e "const s=require('net').createConnection(5432,'$host');s.on('connect',()=>{s.destroy();process.exit(0)});s.on('error',()=>process.exit(1));setTimeout(()=>process.exit(2),3000);" 2>/dev/null; then
@@ -35,27 +43,14 @@ for host in postgres ecomstore-postgres; do
 done
 if [ -z "$PG_HOST" ]; then
   echo "[start.sh] FATAL: PostgreSQL not reachable at postgres OR ecomstore-postgres"
-  echo "[start.sh] Keeping container alive (sleep 600) so logs survive…"
-  sleep 600
   exit 1
 fi
 
 echo "===================================================================="
 echo "[start.sh] Running medusa db:migrate…"
-if ! ./node_modules/.bin/medusa db:migrate; then
-  rc=$?
-  echo "[start.sh] FATAL: medusa db:migrate exited with $rc"
-  echo "[start.sh] Keeping container alive (sleep 600) so logs survive…"
-  sleep 600
-  exit $rc
-fi
+./node_modules/.bin/medusa db:migrate
 echo "[start.sh] migrations OK"
 
 echo "===================================================================="
 echo "[start.sh] Starting medusa server…"
-./node_modules/.bin/medusa start
-rc=$?
-echo "[start.sh] FATAL: medusa start exited with $rc"
-echo "[start.sh] Keeping container alive (sleep 600) so logs survive…"
-sleep 600
-exit $rc
+exec ./node_modules/.bin/medusa start
