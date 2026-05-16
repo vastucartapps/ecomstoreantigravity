@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1
+# cache-bust: 2026-05-16-diagnostic-startup
 FROM node:20-alpine AS base
 WORKDIR /app
 
