@@ -213,11 +213,47 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     setAppliedGiftCard(applied)
     if (typeof window !== "undefined") localStorage.setItem(GC_APPLIED_KEY, JSON.stringify(applied))
+
+    // Persist to cart.metadata immediately. Previously the gift card lived
+    // only in localStorage + React state and was stamped on the cart at
+    // cart.complete() time. If the visitor navigated away (browser back,
+    // tab switch, payment redirect) the applied gift card was lost. Writing
+    // to cart.metadata now means the order subscriber can credit the GC
+    // even if the customer doesn't complete checkout in the same session.
+    if (cart?.id) {
+      try {
+        await medusa.store.cart.update(cart.id, {
+          metadata: {
+            ...(cart.metadata || {}),
+            gift_card_code: applied.code,
+            gift_card_id: applied.id,
+            gift_card_deduct_amount: deductAmount,
+          },
+        })
+        await refreshCart()
+      } catch {
+        // metadata write failure isn't worth blocking the apply flow —
+        // localStorage + checkout-provider both still write at complete.
+      }
+    }
   }
 
   const removeGiftCard = () => {
     setAppliedGiftCard(null)
     if (typeof window !== "undefined") localStorage.removeItem(GC_APPLIED_KEY)
+    // Clear from cart.metadata too so the order subscriber doesn't apply
+    // a deduction the customer explicitly removed.
+    if (cart?.id) {
+      try {
+        const md = { ...(cart.metadata || {}) }
+        delete (md as any).gift_card_code
+        delete (md as any).gift_card_id
+        delete (md as any).gift_card_deduct_amount
+        medusa.store.cart.update(cart.id, { metadata: md }).then(() => refreshCart()).catch(() => {})
+      } catch {
+        // ignore
+      }
+    }
   }
 
   const applyPromoCode = async (code: string) => {

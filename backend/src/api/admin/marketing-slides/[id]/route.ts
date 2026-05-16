@@ -7,7 +7,11 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const { id } = req.params
 
   const slide = await marketingSlidesService.retrieveMarketingSlide(id)
-
+  // Return 404 instead of `{ marketing_slide: null }` so the admin UI can
+  // distinguish "not found" from "API responded 200 with nothing".
+  if (!slide) {
+    return res.status(404).json({ message: "Marketing slide not found" })
+  }
   res.json({ marketing_slide: slide })
 }
 

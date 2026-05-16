@@ -29,7 +29,15 @@ function CheckoutContent() {
   const router = useRouter()
   const branding = useBranding()
   const { cart, isLoading } = useCart()
-  const { step, goToStep, completedOrderId, appliedGiftCard, giftCardDiscount } = useCheckout()
+  const {
+    step,
+    goToStep,
+    completedOrderId,
+    appliedGiftCard,
+    giftCardDiscount,
+    paymentMethod,
+    codConfig,
+  } = useCheckout()
 
   const items = cart?.items || []
   const hasItems = items.length > 0
@@ -152,6 +160,8 @@ function CheckoutContent() {
                 itemCount={itemCount}
                 giftCardDiscount={giftCardDiscount / 100}
                 giftCardCode={appliedGiftCard?.code}
+                codFee={codConfig?.fee || 0}
+                codSelected={paymentMethod === "cod"}
                 showCheckoutButton={false}
                 showTrustBadges={false}
               />

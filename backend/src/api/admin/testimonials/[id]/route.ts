@@ -5,6 +5,11 @@ import { stripUndefined } from "../../../../lib/strip-undefined"
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const testimonialService = req.scope.resolve(TESTIMONIALS_MODULE) as any
   const testimonial = await testimonialService.retrieveTestimonial(req.params.id)
+  // Return 404 instead of `{ testimonial: null }` so the admin UI can
+  // distinguish "not found" from "API responded 200 with nothing".
+  if (!testimonial) {
+    return res.status(404).json({ message: "Testimonial not found" })
+  }
   res.json({ testimonial })
 }
 

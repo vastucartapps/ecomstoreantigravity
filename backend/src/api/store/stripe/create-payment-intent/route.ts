@@ -1,6 +1,7 @@
 import type { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { Modules } from "@medusajs/framework/utils"
 import Stripe from "stripe"
+import { captureException } from "../../../../lib/error-reporter"
 
 /**
  * POST /store/stripe/create-payment-intent
@@ -61,7 +62,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       payment_intent_id: paymentIntent.id,
     })
   } catch (err: any) {
-    console.error("[stripe/create-payment-intent] Error:", err?.message)
+    captureException(err, { source: "api/store/stripe/create-payment-intent" })
     res.status(500).json({ error: err?.message || "Failed to create payment intent" })
   }
 }

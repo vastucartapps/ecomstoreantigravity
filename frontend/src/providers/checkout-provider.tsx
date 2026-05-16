@@ -99,13 +99,26 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     if (targetIdx < currentIdx) setStepState(s)
   }
 
-  const submitContact = useCallback(async (email: string, phone: string, _countryCode: string) => {
+  const submitContact = useCallback(async (email: string, phone: string, countryCode: string) => {
     setIsProcessing(true)
     setError(null)
     try {
       const id = cart?.id || cartId
       if (!id) throw new Error("No cart found")
-      await medusa.store.cart.update(id, { email })
+      // Persist phone + country code to cart.metadata so the Razorpay modal
+      // pre-fills correctly on refresh, and so WhatsApp/SMS notifications
+      // get the right number. Previously phone lived only in React state
+      // and was lost on any page reload.
+      const trimmedPhone = phone.trim()
+      const updatePayload: { email: string; metadata?: Record<string, unknown> } = { email }
+      if (trimmedPhone) {
+        updatePayload.metadata = {
+          ...(cart?.metadata || {}),
+          contact_phone: trimmedPhone,
+          contact_country_code: countryCode,
+        }
+      }
+      await medusa.store.cart.update(id, updatePayload)
       setContactEmail(email)
       setContactPhone(phone)
       // GA4 begin_checkout — fires at first commitment point (email captured)
@@ -152,6 +165,27 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
     try {
       const id = cart?.id || cartId
       if (!id) throw new Error("No cart found")
+
+      // Region-vs-address sanity check. Per CLAUDE.md, INR carts ship only
+      // to India and USD carts ship only to non-IN destinations — region is
+      // locked at cart creation from the visitor's geo cookie. A mismatch
+      // here means either the geo detection misfired or the customer is
+      // shipping a gift across regions; either way Medusa's tax + shipping
+      // calculation will silently produce the wrong amounts. Surface the
+      // problem instead of letting the order proceed with bad totals.
+      const cartCurrency = ((cart as any)?.currency_code || "").toLowerCase()
+      const country = (shipping.country_code || "").toLowerCase()
+      if (cartCurrency === "inr" && country && country !== "in") {
+        throw new Error(
+          "This cart is configured for India (INR). Please choose an Indian address, or empty the cart and re-add items from an international location."
+        )
+      }
+      if (cartCurrency && cartCurrency !== "inr" && country === "in") {
+        throw new Error(
+          "This cart is configured for international shipping. Please choose a non-Indian address, or empty the cart and re-add items from India."
+        )
+      }
+
       await medusa.store.cart.update(id, {
         shipping_address: shipping,
         billing_address: billing || shipping,
@@ -310,8 +344,14 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
         setStripePublishableKey(stripeKey)
       }
 
-      // COD is strictly India-only; never shown or fetched for international carts
-      if (!isInternational) {
+      // COD is strictly India-only. Apply the admin-configured COD rules
+      // to INR carts; force-disable for any international cart.
+      //
+      // Bug history: this branch used to be inverted — INR carts had COD
+      // disabled and international carts (which shouldn't have COD at all)
+      // were the only ones consulting the shipping config. End result was
+      // that no Indian customer ever saw COD at the payment step.
+      if (isInternational) {
         setCodEnabled(false)
         setCodConfig(null)
       } else if (shippingRes && shippingRes.status === "fulfilled" && shippingRes.value.ok) {
@@ -324,6 +364,9 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
             minOrder: cod.minOrder ?? 0,
             maxOrder: cod.maxOrder ?? Infinity,
           })
+        } else {
+          setCodEnabled(false)
+          setCodConfig(null)
         }
       }
     } catch {}
@@ -358,14 +401,16 @@ export function CheckoutProvider({ children }: { children: ReactNode }) {
 
       let providerId: string
       if (isInternational) {
-        // International: prefer Stripe (admin-driven), fall back to PayPal, then system default
+        // International: prefer Stripe (admin-driven). PayPal is registered as a
+        // payment provider when PAYPAL_CLIENT_ID is set, but there is no frontend
+        // handler yet — selecting it would leave the customer on a Payment step
+        // with no usable button. Until the PayPal Smart-Buttons integration
+        // lands, we skip past PayPal and fall through to system default so
+        // PaymentStep can render the "no payment method" message clearly.
         const stripeProvider = providers.find((p: any) => p.id?.includes("stripe"))
-        const paypalProvider = providers.find((p: any) => p.id?.includes("paypal"))
         const systemProvider = providers.find((p: any) => p.id === "pp_system_default")
         if (stripeKey && stripeProvider) {
           providerId = stripeProvider.id
-        } else if (paypalProvider) {
-          providerId = paypalProvider.id
         } else if (systemProvider) {
           providerId = systemProvider.id
         } else {

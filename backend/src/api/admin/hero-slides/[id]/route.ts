@@ -5,6 +5,11 @@ import { stripUndefined } from "../../../../lib/strip-undefined"
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const heroSlidesService = req.scope.resolve(HERO_SLIDES_MODULE) as any
   const heroSlide = await heroSlidesService.retrieveHeroSlide(req.params.id)
+  // Return 404 instead of `{ hero_slide: null }` so the admin UI can
+  // distinguish "not found" from "API responded 200 with nothing".
+  if (!heroSlide) {
+    return res.status(404).json({ message: "Hero slide not found" })
+  }
   res.json({ hero_slide: heroSlide })
 }
 

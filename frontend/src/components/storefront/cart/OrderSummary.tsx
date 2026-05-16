@@ -15,6 +15,15 @@ interface OrderSummaryProps {
   promoCode?: string | null
   giftCardDiscount?: number
   giftCardCode?: string | null
+  /**
+   * Cash-on-Delivery handling fee, in MAJOR units (rupees), added to the
+   * displayed "You Pay" total when the customer has picked COD at the
+   * shipping step. INR carts only — kept here (not in shippingFee) so we
+   * can render a distinct line item the customer can recognise.
+   */
+  codFee?: number
+  /** True when the customer has picked COD as the payment method. */
+  codSelected?: boolean
   onProceedToCheckout?: () => void
   showCheckoutButton?: boolean
   showTrustBadges?: boolean
@@ -39,13 +48,16 @@ export function OrderSummary({
   promoCode,
   giftCardDiscount = 0,
   giftCardCode,
+  codFee = 0,
+  codSelected = false,
   onProceedToCheckout,
   showCheckoutButton = true,
   showTrustBadges = true,
   isProcessing = false,
 }: OrderSummaryProps) {
   const totalSavings = (mrpTotal || subtotal) - subtotal + discountTotal + giftCardDiscount
-  const payTotal = Math.max(0, grandTotal - giftCardDiscount)
+  const effectiveCodFee = codSelected && codFee > 0 ? codFee : 0
+  const payTotal = Math.max(0, grandTotal - giftCardDiscount + effectiveCodFee)
 
   return (
     <div
@@ -112,6 +124,14 @@ export function OrderSummary({
             <div className="flex justify-between text-sm">
               <span style={{ color: earth[400] }}>Tax (GST)</span>
               <span className="font-medium" style={{ color: earth[700] }}>{fmt(taxAmount, currency)}</span>
+            </div>
+          )}
+
+          {/* COD handling fee */}
+          {effectiveCodFee > 0 && (
+            <div className="flex justify-between text-sm">
+              <span style={{ color: earth[400] }}>COD handling fee</span>
+              <span className="font-medium" style={{ color: earth[700] }}>{fmt(effectiveCodFee, currency)}</span>
             </div>
           )}
         </div>

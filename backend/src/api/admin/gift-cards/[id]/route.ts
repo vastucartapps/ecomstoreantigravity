@@ -26,6 +26,12 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const service = req.scope.resolve(GIFT_CARDS_MODULE) as any
     const { id } = req.params
     const gc = await service.retrieveGiftCard(id)
+    // Explicit null guard so serializeGc never receives `undefined` and the
+    // 404 we return reflects the actual cause rather than a stack trace
+    // swallowed by the outer catch.
+    if (!gc) {
+      return res.status(404).json({ message: "Gift card not found" })
+    }
     res.json({ gift_card: serializeGc(gc) })
   } catch (err: any) {
     res.status(404).json({ message: "Gift card not found" })

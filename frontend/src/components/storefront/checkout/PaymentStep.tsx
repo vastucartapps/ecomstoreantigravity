@@ -50,6 +50,33 @@ function loadStripeScript(): Promise<boolean> {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+/**
+ * Confirm a Razorpay payment is genuine before VastuCart marks the cart
+ * complete. The backend verifies HMAC signature (when supplied by the
+ * standard checkout flow) AND fetches the payment from Razorpay's API to
+ * confirm status + order match. Without this, a forged `payment.success`
+ * event from DevTools would complete a cart without any money moving.
+ */
+async function verifyRazorpayPayment(opts: {
+  orderId: string
+  paymentId: string
+  signature?: string
+}): Promise<void> {
+  const res = await fetch(`${BACKEND_URL}/store/razorpay/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-publishable-api-key": PUB_KEY },
+    body: JSON.stringify({
+      order_id: opts.orderId,
+      payment_id: opts.paymentId,
+      ...(opts.signature ? { signature: opts.signature } : {}),
+    }),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok || !data?.verified) {
+    throw new Error(data?.error || "Payment verification failed. Please contact support before retrying.")
+  }
+}
+
 function formatPrice(amount: number, currency: string) {
   if (currency === "usd") return `$${amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}`
   return `₹${amount.toLocaleString("en-IN")}`
@@ -547,8 +574,13 @@ export function PaymentStep() {
 
       return new Promise<void>((resolve, reject) => {
         const rzp = new (window as any).Razorpay({ key: key_id || RZP_KEY })
+        // Custom-checkout payment.success doesn't carry the signature, so
+        // verify uses the server-side payments.fetch path with the order_id
+        // we created above + the rzp instance payment_id.
         rzp.on("payment.success", async () => {
           try {
+            const paymentId = (rzp as any).payment_id || ""
+            await verifyRazorpayPayment({ orderId: order_id, paymentId })
             const { orderId } = await completeCheckout()
             router.push(`/order-confirmation/${orderId}?clear=1`)
             resolve()
@@ -579,7 +611,18 @@ export function PaymentStep() {
             prefill: { name: cardName.trim(), email: contactEmail, contact: shippingAddr?.phone || "", method: "card" },
             config: { display: { blocks: { c: { name: "Card", instruments: [{ method: "card" }] } }, sequence: ["block.c"], preferences: { show_default_blocks: false } } },
             theme: { color: primary[500] },
-            handler: async () => { try { const { orderId } = await completeCheckout(); router.push(`/order-confirmation/${orderId}?clear=1`); resolve() } catch (e: any) { reject(e) } },
+            handler: async (response: { razorpay_order_id?: string; razorpay_payment_id?: string; razorpay_signature?: string }) => {
+              try {
+                await verifyRazorpayPayment({
+                  orderId: response?.razorpay_order_id || order_id,
+                  paymentId: response?.razorpay_payment_id || "",
+                  signature: response?.razorpay_signature,
+                })
+                const { orderId } = await completeCheckout()
+                router.push(`/order-confirmation/${orderId}?clear=1`)
+                resolve()
+              } catch (e: any) { reject(e) }
+            },
             modal: { ondismiss: () => {
               logPaymentLifecycle({ cartId, stage: "dismissed", provider: "razorpay", currency: "INR", amount: amtMinor, email: contactEmail })
               reject(new Error("Payment cancelled."))
@@ -642,9 +685,17 @@ export function PaymentStep() {
             },
           },
           theme: { color: primary[500] },
-          handler: async () => {
-            try { const { orderId } = await completeCheckout(); router.push(`/order-confirmation/${orderId}?clear=1`); resolve() }
-            catch (e: any) { reject(e) }
+          handler: async (response: { razorpay_order_id?: string; razorpay_payment_id?: string; razorpay_signature?: string }) => {
+            try {
+              await verifyRazorpayPayment({
+                orderId: response?.razorpay_order_id || order_id,
+                paymentId: response?.razorpay_payment_id || "",
+                signature: response?.razorpay_signature,
+              })
+              const { orderId } = await completeCheckout()
+              router.push(`/order-confirmation/${orderId}?clear=1`)
+              resolve()
+            } catch (e: any) { reject(e) }
           },
           modal: { ondismiss: () => {
             logPaymentLifecycle({ cartId, stage: "dismissed", provider: "razorpay", currency: "INR", amount: amtMinor, email: contactEmail })
@@ -680,13 +731,29 @@ export function PaymentStep() {
       })
       const d = await res.json()
       if (!res.ok || !d.client_secret) throw new Error(d.error || "Failed to initialize payment.")
+      const piId = (d.payment_intent_id || "") as string
       logPaymentLifecycle({ cartId, stage: "initiated", provider: "stripe", currency: "USD", amount: amtMinor, email: contactEmail })
+      // Pass full billing details (incl. address) so Stripe's risk + 3DS
+      // checks evaluate the same address the order ships to. Without this
+      // the AVS/CVV signals fire on a phantom billing record and high-risk
+      // declines spike.
       const { error: sErr } = await stripeRef.current.confirmCardPayment(d.client_secret, {
         payment_method: {
           card: cardElRef.current,
           billing_details: {
             name: [shippingAddr?.first_name, shippingAddr?.last_name].filter(Boolean).join(" "),
             email: contactEmail,
+            phone: shippingAddr?.phone || undefined,
+            address: shippingAddr
+              ? {
+                  line1: shippingAddr.address_1 || undefined,
+                  line2: shippingAddr.address_2 || undefined,
+                  city: shippingAddr.city || undefined,
+                  state: shippingAddr.province || undefined,
+                  postal_code: shippingAddr.postal_code || undefined,
+                  country: (shippingAddr.country_code || "US").toUpperCase(),
+                }
+              : undefined,
           },
         },
       })
@@ -694,6 +761,20 @@ export function PaymentStep() {
         logPaymentLifecycle({ cartId, stage: "failed", provider: "stripe", currency: "USD", amount: amtMinor, errorCode: sErr.code, errorMessage: sErr.message, email: contactEmail })
         trackPaymentFailed({ paymentType: "stripe", value: paymentAmount, currency: "USD", errorCode: sErr.code, errorMessage: sErr.message })
         throw new Error(sErr.message || "Payment failed.")
+      }
+      // Authoritative server-side verification before we commit the cart.
+      // Without this, a forged Stripe.confirmCardPayment resolution from
+      // DevTools could complete the order without any money moving.
+      if (piId) {
+        const v = await fetch(`${BACKEND_URL}/store/stripe/verify`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-publishable-api-key": PUB_KEY },
+          body: JSON.stringify({ payment_intent_id: piId }),
+        })
+        const vData = await v.json().catch(() => ({}))
+        if (!v.ok || !vData?.verified) {
+          throw new Error(vData?.error || "Payment verification failed. Please contact support before retrying.")
+        }
       }
       const { orderId } = await completeCheckout()
       router.push(`/order-confirmation/${orderId}?clear=1`)
@@ -746,6 +827,28 @@ export function PaymentStep() {
         }
       }
       try {
+        // Stamp the COD fee + selection on cart.metadata BEFORE complete so it
+        // inherits onto the order. The order-confirmation page, invoice, and
+        // any future COD reconciliation script read this to know how much
+        // cash the courier should collect (grand total + cod_fee).
+        try {
+          const cartId = (cart as { id?: string } | null)?.id || ""
+          if (cartId) {
+            const feeMinor = Math.round(((codConfig?.fee || 0) * 100))
+            const { medusa } = await import("@/lib/medusa")
+            await medusa.store.cart.update(cartId, {
+              metadata: {
+                ...((cart as { metadata?: Record<string, unknown> } | null)?.metadata || {}),
+                cod_selected: true,
+                cod_fee_minor: feeMinor,
+                cod_currency: "INR",
+              },
+            })
+          }
+        } catch {
+          // metadata write failure isn't worth blocking the order — courier
+          // can reconcile from the OrderSummary screenshot the customer sees.
+        }
         const { orderId } = await completeCheckout()
         router.push(`/order-confirmation/${orderId}?clear=1`)
       } catch (e: any) { setLocalErr(e?.message || "Failed to place order.") }
