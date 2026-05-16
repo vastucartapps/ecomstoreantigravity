@@ -5,6 +5,8 @@ import {
   renderTemplate,
 } from "../lib/notification-utils"
 import { fetchBrandFromStore } from "../lib/brand-from-store"
+import { toE164 } from "../lib/phone"
+import { captureException } from "../lib/error-reporter"
 
 const EVENT_TRIGGER_MAP: Record<string, string> = {
   "order.placed": "order.placed",
@@ -41,11 +43,19 @@ export default async function whatsappNotificationsHandler({
       relations: ["billing_address"],
     })
 
-    const phone = order?.billing_address?.phone || order?.shipping_address?.phone
-    if (!phone) return
+    const billingAddr = order?.billing_address
+    const shippingAddr = order?.shipping_address
+    const rawPhone = billingAddr?.phone || shippingAddr?.phone
+    const country = billingAddr?.country_code || shippingAddr?.country_code || null
+    if (!rawPhone) return
 
-    // WhatsApp requires E.164 format
-    const e164 = phone.startsWith("+") ? phone : `+${phone}`
+    // Meta WhatsApp Cloud API rejects anything that isn't strict E.164.
+    // Indian customers typically enter just the 10-digit subscriber number
+    // ("9876543210"); previously the code prepended "+" giving "+9876543210"
+    // which was silently dropped. toE164 reads the address country_code so
+    // the right dial code lands in front.
+    const e164 = toE164(rawPhone, country)
+    if (!e164) return
 
     const customerName = order.billing_address?.first_name || "Customer"
     const displayId = order.display_id || orderId.slice(-6).toUpperCase()
@@ -79,14 +89,23 @@ export default async function whatsappNotificationsHandler({
     })
 
     if (!response.ok) {
-      const err = await response.text()
-      logger.warn(`WhatsApp API error for ${triggerEvent}: ${err}`)
+      const errBody = await response.text()
+      captureException(new Error(`WhatsApp API ${response.status}: ${errBody}`), {
+        source: "subscribers/whatsapp-notifications",
+        order_id: orderId,
+        trigger: triggerEvent,
+        to: e164,
+      })
       return
     }
 
     logger.info(`WhatsApp message sent to ${e164} for ${triggerEvent}`)
-  } catch (err: any) {
-    logger.warn(`WhatsApp notification error for ${triggerEvent}: ${err.message}`)
+  } catch (err) {
+    captureException(err, {
+      source: "subscribers/whatsapp-notifications",
+      order_id: orderId,
+      trigger: triggerEvent,
+    })
   }
 }
 

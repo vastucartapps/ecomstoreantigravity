@@ -34,8 +34,8 @@ const trackingLimit = rateLimit({
 })
 
 // ─── X-API-Version header middleware ─────────────────────────────────────────
-// Documents the Medusa API version this backend targets. Used by API clients
-// to detect version mismatches without parsing /health endpoints.
+// Documents the VastuCart API version this backend targets. Used by API
+// clients to detect version mismatches without parsing /health endpoints.
 function setApiVersion(
   _req: import("express").Request,
   res: import("express").Response,
@@ -117,6 +117,13 @@ export default defineMiddlewares({
     },
     {
       matcher: "/store/promotions/validate",
+      method: ["POST"],
+      middlewares: [strictLimit as any],
+    },
+    {
+      // Contact form is a public, unauthenticated write surface — without a
+      // limit it can be spammed to fill the admin notifications table.
+      matcher: "/store/contact",
       method: ["POST"],
       middlewares: [strictLimit as any],
     },

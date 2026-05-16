@@ -16,7 +16,25 @@ async function defaultRules(): Promise<MetadataRoute.Robots> {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin/", "/cart/", "/checkout/", "/api/"],
+        // Private + transactional + auth surfaces — bot crawl wastes the
+        // crawl budget and risks leaking PII or token-bearing URLs into
+        // the search index. Layouts also send noindex meta but Disallow
+        // here keeps the URLs out of "site:" listings entirely.
+        disallow: [
+          "/admin/",
+          "/admin-login",
+          "/account/",
+          "/cart/",
+          "/cart/recover/",
+          "/checkout/",
+          "/order-confirmation/",
+          "/login",
+          "/register",
+          "/forgot-password",
+          "/reset-password",
+          "/auth/",
+          "/api/",
+        ],
       },
     ],
     sitemap: clusterSitemapsFrom(sites, BRAND_URL),

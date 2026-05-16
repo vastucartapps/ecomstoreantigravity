@@ -19,10 +19,14 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const syncStatus = (meta.gmc_sync_status as Record<string, unknown>) || null
   const errorReport = (meta.gmc_error_report as Record<string, unknown>) || null
 
+  // BACKEND_URL is enforced by env-validation in production; in dev it falls
+  // back to the local listener so the admin UI still renders something useful.
+  const backendUrl = process.env.BACKEND_URL || "http://localhost:9000"
+
   res.json({
     isConfigured: !!config,
     merchantId: config?.merchantId || null,
-    feedUrl: `${process.env.BACKEND_URL || "https://sapi.vastucart.in"}/store/gmc-feed`,
+    feedUrl: `${backendUrl}/store/gmc-feed`,
     syncStatus,
     errorReport,
   })

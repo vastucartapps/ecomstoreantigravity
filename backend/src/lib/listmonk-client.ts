@@ -151,3 +151,25 @@ export async function addNewsletterSubscriber(email: string, name?: string): Pro
     confirmed: true,
   })
 }
+
+/**
+ * Validate that all requested template names exist in Listmonk WITHOUT
+ * sending anything. Returns { ok, missing } so callers can decide whether
+ * to disable a job or surface a setup error.
+ */
+export async function validateTemplates(names: string[]): Promise<{ ok: boolean; missing: string[] }> {
+  if (!isListmonkConfigured()) return { ok: false, missing: names }
+  try {
+    const data = await lkFetch<{ data: any }>("/api/templates")
+    const list: any[] = Array.isArray(data?.data) ? data.data : data?.data?.results || []
+    const present = new Set(list.map((t: any) => t.name))
+    const missing = names.filter((n) => !present.has(n))
+    // Warm the cache so first send is a single API call.
+    for (const t of list) {
+      if (names.includes(t.name)) templateIdCache[t.name] = t.id
+    }
+    return { ok: missing.length === 0, missing }
+  } catch {
+    return { ok: false, missing: names }
+  }
+}

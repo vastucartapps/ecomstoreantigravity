@@ -1,8 +1,13 @@
 import { MedusaContainer } from "@medusajs/framework/types"
 import { Modules } from "@medusajs/framework/utils"
 import { ABANDONED_CART_RECOVERY_MODULE } from "../modules/abandoned-cart-recovery"
-import { sendTransactional, isListmonkConfigured } from "../lib/listmonk-client"
+import {
+  sendTransactional,
+  isListmonkConfigured,
+  validateTemplates,
+} from "../lib/listmonk-client"
 import { readMetaConfig } from "../lib/store-metadata"
+import { captureException, captureWarning } from "../lib/error-reporter"
 
 /**
  * Abandoned Cart Recovery — runs every 15 minutes.
@@ -106,6 +111,21 @@ export default async function abandonedCartRecoveryJob(container: MedusaContaine
   const adminConfig = await getConfig(container)
   if (adminConfig.enabled === false) {
     logger.debug("[abandoned-cart] Disabled in admin config – skipping")
+    return
+  }
+
+  // Preflight: confirm every template the job needs exists in Listmonk
+  // before walking the cart table. Without this check, send failures show
+  // up one-per-cart with no context — and admins miss that a setup script
+  // never ran. A single tick-level warning is much more debuggable.
+  const requiredTemplates = Object.values(TEMPLATES)
+  const tplCheck = await validateTemplates(requiredTemplates)
+  if (!tplCheck.ok) {
+    captureWarning("[abandoned-cart] Listmonk templates missing – job disabled this tick", {
+      source: "jobs/abandoned-cart-recovery",
+      missing: tplCheck.missing,
+      hint: "Run backend/src/scripts/setup-listmonk.ts to install templates",
+    })
     return
   }
 
@@ -220,14 +240,19 @@ export default async function abandonedCartRecoveryJob(container: MedusaContaine
           },
         })
         sent += 1
-      } catch (err: any) {
-        logger.warn(`[abandoned-cart] Email send failed for ${cart.email} (stage ${stage}): ${err.message}`)
+      } catch (err) {
+        captureException(err, {
+          source: "jobs/abandoned-cart-recovery",
+          cart_id: cart.id,
+          stage,
+          email: cart.email,
+        })
       }
     }
 
     logger.info(`[abandoned-cart] Sent ${sent} recovery email(s) this tick`)
-  } catch (err: any) {
-    logger.warn(`[abandoned-cart] Job error: ${err.message}`)
+  } catch (err) {
+    captureException(err, { source: "jobs/abandoned-cart-recovery", phase: "tick" })
   }
 }
 

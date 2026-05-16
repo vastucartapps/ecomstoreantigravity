@@ -1,6 +1,9 @@
 node_modules
 .env
 .env.*
+# .env.example is documentation — tracked so new deploys / teammates
+# know which env vars are required without having to read source code.
+!.env.example
 .DS_Store
 *.log
 

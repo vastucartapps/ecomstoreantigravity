@@ -164,8 +164,10 @@ services:
       - JWT_SECRET=${JWT_SECRET:-supersecret-change-in-production}
       - COOKIE_SECRET=${COOKIE_SECRET:-supersecret-change-in-production}
       - NODE_ENV=production
-      # Node.js memory tuning
-      - NODE_OPTIONS=--max-old-space-size=1024
+      # Node.js memory tuning — 2048MB headroom for nightly GMC/Meta full-syncs
+      # (each iterates the full product catalog in 500-item batches) and burst
+      # admin imports. Was 1024MB; OOM-killed during peak sync windows.
+      - NODE_OPTIONS=--max-old-space-size=2048
       # CORS
       - STORE_CORS=${STORE_CORS:-https://store.vastucart.in,http://localhost:3000}
       - ADMIN_CORS=${ADMIN_CORS:-https://store.vastucart.in,http://localhost:3000,http://localhost:9000}
@@ -203,9 +205,17 @@ services:
       # Email (disabled until Listmonk is re-enabled)
       - EMAIL_FROM=${EMAIL_FROM:-VastuCart <orders@vastucart.in>}
       - RESEND_API_KEY=${RESEND_API_KEY:-}
-      # Store
+      # Store / public URLs — BACKEND_URL is REQUIRED in production
+      # (env-validation refuses to start without it). Used by GMC/Meta status
+      # routes to build feed URLs and by the support-ticket emailer for the
+      # admin deep link. Defaulted here so Coolify-managed deploys work
+      # out-of-the-box; override via Coolify env vars for staging.
+      - BACKEND_URL=${BACKEND_URL:-https://sapi.vastucart.in}
       - STORE_URL=${STORE_URL:-https://store.vastucart.in}
       - SUPPORT_EMAIL=${SUPPORT_EMAIL:-support@vastucart.in}
+      # Error monitoring (optional — no-ops when DSN missing)
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - SENTRY_TRACES_SAMPLE_RATE=${SENTRY_TRACES_SAMPLE_RATE:-0.1}
     ports:
       - "9000:9000"
     labels:
@@ -243,6 +253,14 @@ services:
       backend:
         condition: service_healthy
     labels:
+      # Traefik routing — Coolify's shared proxy needs explicit rule/entrypoints/tls
+      # to terminate HTTPS for the storefront. Mirrors backend labels (lines 211-218).
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${FRONTEND_DOMAIN:-store.vastucart.in}`)"
+      - "traefik.http.routers.frontend.entrypoints=https"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
       - "traefik.docker.network=coolify"
     environment:
       - HOSTNAME=0.0.0.0

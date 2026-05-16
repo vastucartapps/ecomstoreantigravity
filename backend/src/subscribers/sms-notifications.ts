@@ -5,6 +5,8 @@ import {
   renderTemplate,
 } from "../lib/notification-utils"
 import { fetchBrandFromStore } from "../lib/brand-from-store"
+import { toE164 } from "../lib/phone"
+import { captureException } from "../lib/error-reporter"
 
 const EVENT_TRIGGER_MAP: Record<string, string> = {
   "order.placed": "order.placed",
@@ -43,7 +45,16 @@ export default async function smsNotificationsHandler({
       relations: ["billing_address"],
     })
 
-    const phone = order?.billing_address?.phone || order?.shipping_address?.phone
+    const billingAddr = order?.billing_address
+    const shippingAddr = order?.shipping_address
+    const rawPhone = billingAddr?.phone || shippingAddr?.phone
+    const country = billingAddr?.country_code || shippingAddr?.country_code || null
+    if (!rawPhone) return
+
+    // Twilio requires strict E.164; non-conforming numbers are rejected with
+    // a generic 400. toE164 reads the address country_code so a 10-digit IN
+    // mobile gets the +91 prefix it needs.
+    const phone = toE164(rawPhone, country)
     if (!phone) return
 
     const customerName = order.billing_address?.first_name || "Customer"
@@ -68,8 +79,12 @@ export default async function smsNotificationsHandler({
     })
 
     logger.info(`SMS sent to ${phone} for ${triggerEvent}`)
-  } catch (err: any) {
-    logger.warn(`SMS notification error for ${triggerEvent}: ${err.message}`)
+  } catch (err) {
+    captureException(err, {
+      source: "subscribers/sms-notifications",
+      order_id: orderId,
+      trigger: triggerEvent,
+    })
   }
 }
 

@@ -1,5 +1,7 @@
 import { StorefrontShellWrapper } from "./shell-wrapper"
 import { TrackingScripts } from "@/components/storefront/TrackingScripts"
+import { CookieConsentBanner } from "@/components/storefront/CookieConsentBanner"
+import { CookieConsentProvider } from "@/providers/cookie-consent-provider"
 import { JsonLd } from "@/components/JsonLd"
 import { buildSiteGraph } from "@/lib/schema/site-schema"
 import { normalizeImageUrl } from "@/lib/image-url"
@@ -102,10 +104,19 @@ export default async function StorefrontLayout({
         <link key={url} rel="dns-prefetch" href={url} />
       ))}
       <JsonLd data={siteGraph} id="site-schema" />
-      <StorefrontShellWrapper categories={categories}>
-        {children}
-      </StorefrontShellWrapper>
-      <TrackingScripts config={trackingConfig} />
+      <CookieConsentProvider>
+        <StorefrontShellWrapper categories={categories}>
+          {children}
+        </StorefrontShellWrapper>
+        {/*
+          TrackingScripts is gated on consent (GDPR / UK PECR). GA4 fires
+          only with analytics consent; Meta Pixel + all marketing tags
+          require marketing consent. Functional widgets (Chatwoot, WhatsApp)
+          stay available regardless because the visitor must engage them.
+        */}
+        <TrackingScripts config={trackingConfig} />
+        <CookieConsentBanner />
+      </CookieConsentProvider>
     </>
   )
 }

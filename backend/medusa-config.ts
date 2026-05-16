@@ -148,17 +148,35 @@ const modules: any[] = [
     },
   },
 
-  // Notification (Local for dev)
+  // Notification — Resend handles real email delivery when RESEND_API_KEY is
+  // set; otherwise notification-local logs to stdout so dev still works.
+  // notification-local is kept registered as a safety net for the in-app
+  // channel and any non-email notifications.
   {
     resolve: "@medusajs/medusa/notification",
     options: {
-      providers: [
-        {
-          resolve: "@medusajs/medusa/notification-local",
-          id: "local",
-          options: { channels: ["email"] },
-        },
-      ],
+      providers: (() => {
+        const providers: any[] = [
+          {
+            resolve: "@medusajs/medusa/notification-local",
+            id: "local",
+            options: { channels: ["email"] },
+          },
+        ]
+        if (process.env.RESEND_API_KEY) {
+          providers.push({
+            resolve: "./src/modules/notification-resend",
+            id: "resend",
+            options: {
+              channels: ["email"],
+              apiKey: process.env.RESEND_API_KEY,
+              from: process.env.EMAIL_FROM || "VastuCart <orders@vastucart.in>",
+              storeUrl: process.env.STORE_URL,
+            },
+          })
+        }
+        return providers
+      })(),
     },
   },
 

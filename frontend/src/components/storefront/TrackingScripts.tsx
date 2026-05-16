@@ -1,16 +1,27 @@
+"use client"
+
 /**
  * Injects third-party tracking scripts and widgets when their respective
- * integrations are connected and configured.
+ * integrations are connected AND the visitor has granted the matching
+ * consent category (GDPR / UK PECR compliance).
+ *
+ * Categories:
+ *   - analytics: GA4 (page_view, funnel events)
+ *   - marketing: Meta Pixel, TikTok/Pinterest/Snapchat/Twitter/LinkedIn,
+ *                Google Ads retargeting
+ *   - essential / functional: Chatwoot, WhatsApp button — customer-initiated
+ *                contact widgets that don't track until engaged. Treated as
+ *                essential so they remain available regardless of consent.
  *
  * Uses next/script with strategy="afterInteractive" so scripts load after
  * the page is interactive — no blocking of the critical rendering path.
  *
- * Renders a floating WhatsApp button when WhatsApp Business is connected.
- *
- * This component receives only PUBLIC-SAFE config fields (no API keys or secrets).
+ * This component receives only PUBLIC-SAFE config fields (no API keys or
+ * secrets).
  */
 
 import Script from "next/script"
+import { useConsent } from "@/providers/cookie-consent-provider"
 
 interface MarketingTagConfig {
   id: string
@@ -54,6 +65,7 @@ function marketingTagScript(tag: MarketingTagConfig): string | null {
 }
 
 export function TrackingScripts({ config }: { config: TrackingConfig }) {
+  const { consent, ready } = useConsent()
   const { ga4, metaPixel, chatwoot, whatsapp, marketingTags = [] } = config
 
   // Sanitise the WhatsApp number: keep digits and leading +
@@ -61,10 +73,16 @@ export function TrackingScripts({ config }: { config: TrackingConfig }) {
     ? whatsapp.phoneNumber.replace(/[^\d+]/g, "")
     : null
 
+  // While the provider hasn't read localStorage yet, render only the
+  // essential/functional widgets so we never fire analytics or marketing
+  // pixels before consent is known.
+  const allowAnalytics = ready && consent.analytics
+  const allowMarketing = ready && consent.marketing
+
   return (
     <>
-      {/* ── Google Analytics 4 ── */}
-      {ga4?.isConnected && ga4.measurementId && (
+      {/* ── Google Analytics 4 (analytics consent required) ── */}
+      {allowAnalytics && ga4?.isConnected && ga4.measurementId && (
         <>
           <Script
             src={`https://www.googletagmanager.com/gtag/js?id=${ga4.measurementId}`}
@@ -77,8 +95,8 @@ gtag('js',new Date());gtag('config','${ga4.measurementId}');`}
         </>
       )}
 
-      {/* ── Meta Pixel ── */}
-      {metaPixel?.isConnected && metaPixel.pixelId && (
+      {/* ── Meta Pixel (marketing consent required) ── */}
+      {allowMarketing && metaPixel?.isConnected && metaPixel.pixelId && (
         <Script id="meta-pixel-init" strategy="afterInteractive">
           {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
@@ -89,41 +107,33 @@ fbq('init','${metaPixel.pixelId}');fbq('track','PageView');`}
         </Script>
       )}
 
-      {/* ── Marketing Tags (TikTok, Pinterest, Snapchat, Twitter/X, LinkedIn, Google Ads) ── */}
-      {marketingTags.map((tag) => {
-        const script = marketingTagScript(tag)
-        if (!script) return null
-        // Google Ads also needs the gtag.js loader
-        if (tag.platform.toLowerCase() === "google-ads") {
+      {/* ── Marketing Tags (marketing consent required) ── */}
+      {allowMarketing &&
+        marketingTags.map((tag) => {
+          const script = marketingTagScript(tag)
+          if (!script) return null
+          // Google Ads also needs the gtag.js loader
+          if (tag.platform.toLowerCase() === "google-ads") {
+            return (
+              <span key={tag.id}>
+                <Script
+                  src={`https://www.googletagmanager.com/gtag/js?id=${tag.pixelId}`}
+                  strategy="afterInteractive"
+                />
+                <Script id={`mtag-${tag.id}`} strategy="afterInteractive">
+                  {script}
+                </Script>
+              </span>
+            )
+          }
           return (
-            <>
-              <Script
-                key={`${tag.id}-loader`}
-                src={`https://www.googletagmanager.com/gtag/js?id=${tag.pixelId}`}
-                strategy="afterInteractive"
-              />
-              <Script
-                key={tag.id}
-                id={`mtag-${tag.id}`}
-                strategy="afterInteractive"
-              >
-                {script}
-              </Script>
-            </>
+            <Script key={tag.id} id={`mtag-${tag.id}`} strategy="afterInteractive">
+              {script}
+            </Script>
           )
-        }
-        return (
-          <Script
-            key={tag.id}
-            id={`mtag-${tag.id}`}
-            strategy="afterInteractive"
-          >
-            {script}
-          </Script>
-        )
-      })}
+        })}
 
-      {/* ── Chatwoot Live Chat ── */}
+      {/* ── Chatwoot Live Chat (functional / essential) ── */}
       {chatwoot?.isConnected &&
         chatwoot.websiteToken &&
         chatwoot.baseUrl && (
@@ -137,7 +147,7 @@ g.onload=function(){window.chatwootSDK.run({websiteToken:'${chatwoot.websiteToke
           </Script>
         )}
 
-      {/* ── WhatsApp Floating Button ── */}
+      {/* ── WhatsApp Floating Button (functional / essential) ── */}
       {whatsapp?.isConnected && waNumber && (
         <>
           <style>{`

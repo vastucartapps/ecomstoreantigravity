@@ -5,8 +5,11 @@ import type {
 import { Modules } from "@medusajs/framework/utils"
 import { SUPPORT_TICKETS_MODULE } from "../../../../../modules/support-tickets"
 
-const ADMIN_EMAIL = "vastucartcare@gmail.com"
-const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://sapi.vastucart.in"
+// All three of these are env-driven so a new deploy never leaks production
+// addresses. SUPPORT_EMAIL + STORE_URL are required in production by
+// env-validation; the dev fallback only matters locally.
+const ADMIN_EMAIL = process.env.SUPPORT_EMAIL || "support@vastucart.in"
+const STORE_URL = process.env.STORE_URL || "http://localhost:3000"
 
 /** GET /store/customers/me/support-tickets — list current customer's tickets */
 export async function GET(req: AuthenticatedMedusaRequest, res: MedusaResponse) {
@@ -57,7 +60,7 @@ export async function POST(req: AuthenticatedMedusaRequest, res: MedusaResponse)
         category: ticket.category,
         message: ticket.message,
         created_at: new Date().toISOString().slice(0, 10),
-        admin_url: `${BACKEND_URL.replace("sapi.", "store.")}/admin/support`,
+        admin_url: `${STORE_URL}/admin/support`,
       },
     })
   } catch { /* notification failure must never fail ticket creation */ }
