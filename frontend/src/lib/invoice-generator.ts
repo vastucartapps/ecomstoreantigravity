@@ -14,9 +14,10 @@ import {
   formatINR,
   generateInvoiceNumber,
   DEFAULT_HSN,
-  SELLER_GSTIN,
-  SELLER_STATE,
+  FALLBACK_SELLER_STATE,
+  GSTIN_NOT_CONFIGURED,
 } from "./gst-utils"
+import { BRAND_DEFAULTS, getSiteHost } from "./brand-defaults"
 
 export interface InvoiceItem {
   name: string
@@ -71,17 +72,31 @@ export async function generateGSTInvoicePDF(data: InvoiceData): Promise<void> {
   // Dynamic import to avoid SSR issues
   const { jsPDF } = await import("jspdf")
 
-  // Resolve seller info: admin-supplied wins, hardcoded constants fall
-  // back. This is the SSoT seam — every literal seller value below now
-  // routes through `seller`, so admin edits propagate to invoices.
+  // Resolve seller info: admin-supplied wins, BRAND_DEFAULTS-aligned
+  // fallback comes second. Every literal value below now routes through
+  // `seller`, so admin edits propagate to invoices.
+  // Bug history: the old fallback used a Mumbai address (the brand
+  // operates from Varanasi) and a demo GSTIN ("27AAAAA0000A1Z5") — both
+  // ended up on customer invoices in dev/staging. They have been retired:
+  // the address now mirrors the operational address (BRAND_DEFAULTS), and
+  // the GSTIN falls back to the empty sentinel so the renderer surfaces a
+  // clear "GSTIN not configured" error instead of stamping a fake number.
   const seller: InvoiceSeller = data.seller || {
-    storeName: "VastuCart",
-    legalName: "VastuCart (OPC) Pvt. Ltd.",
-    websiteAndEmail: "vastucart.com  |  support@vastucart.com",
-    gstin: SELLER_GSTIN,
-    state: SELLER_STATE,
-    addressLine1: "123, MG Road, Andheri East",
-    addressLine2: `Mumbai, ${SELLER_STATE} - 400069`,
+    storeName: BRAND_DEFAULTS.storeName,
+    legalName: BRAND_DEFAULTS.legalName,
+    websiteAndEmail: `${getSiteHost()}  |  ${BRAND_DEFAULTS.contactEmail}`,
+    gstin: GSTIN_NOT_CONFIGURED,
+    state: FALLBACK_SELLER_STATE,
+    addressLine1: BRAND_DEFAULTS.streetAddress,
+    addressLine2: `${BRAND_DEFAULTS.addressLocality}, ${BRAND_DEFAULTS.addressRegion} - ${BRAND_DEFAULTS.postalCode}`,
+  }
+
+  // Refuse to generate an invoice without a real GSTIN — better a loud
+  // error than a customer receiving a tax-invalid document.
+  if (!seller.gstin) {
+    throw new Error(
+      "GSTIN not configured. Set it in Admin → Payments & Tax → GST Configuration before generating invoices."
+    )
   }
 
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })

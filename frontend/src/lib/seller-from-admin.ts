@@ -9,11 +9,12 @@
  * accepts. Callers fetch once per invoice and pass.
  *
  * Falls back gracefully if either endpoint is unreachable so an offline
- * admin still gets a valid invoice (with the original constants).
+ * admin still gets a valid invoice — using the BRAND_DEFAULTS seed values
+ * (Varanasi address, no fake GSTIN).
  */
 
-import { BRAND_DEFAULTS } from "@/lib/brand-defaults"
-import { SELLER_GSTIN, SELLER_STATE } from "@/lib/gst-utils"
+import { BRAND_DEFAULTS, getSiteHost } from "@/lib/brand-defaults"
+import { FALLBACK_SELLER_STATE, GSTIN_NOT_CONFIGURED } from "@/lib/gst-utils"
 import type { InvoiceSeller } from "@/lib/invoice-generator"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -21,15 +22,18 @@ const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
 export async function fetchInvoiceSeller(): Promise<InvoiceSeller> {
   const headers = { "x-publishable-api-key": PUB_KEY }
+  const host = getSiteHost()
 
-  // Defaults that match the legacy hardcoded behaviour — used when the
-  // backend is unreachable or admin hasn't filled values yet.
+  // Defaults — used when the backend is unreachable or admin hasn't
+  // filled values. legalName uses BRAND_DEFAULTS (not "X (OPC) Pvt. Ltd.")
+  // because the user's legal entity is a sole proprietorship; the prior
+  // suffix added an incorrect company suffix to every invoice.
   const fallback: InvoiceSeller = {
     storeName: BRAND_DEFAULTS.storeName,
-    legalName: `${BRAND_DEFAULTS.storeName} (OPC) Pvt. Ltd.`,
-    websiteAndEmail: `vastucart.com  |  ${BRAND_DEFAULTS.contactEmail}`,
-    gstin: SELLER_GSTIN,
-    state: SELLER_STATE,
+    legalName: BRAND_DEFAULTS.legalName,
+    websiteAndEmail: `${host}  |  ${BRAND_DEFAULTS.contactEmail}`,
+    gstin: GSTIN_NOT_CONFIGURED,
+    state: FALLBACK_SELLER_STATE,
     addressLine1: BRAND_DEFAULTS.streetAddress,
     addressLine2: `${BRAND_DEFAULTS.addressLocality}, ${BRAND_DEFAULTS.addressRegion} - ${BRAND_DEFAULTS.postalCode}`,
   }
@@ -46,12 +50,16 @@ export async function fetchInvoiceSeller(): Promise<InvoiceSeller> {
       const data = await storefrontRes.json()
       const b = data.config?.branding
       if (b) {
-        if (b.storeName) {
-          out.storeName = b.storeName
-          out.legalName = `${b.storeName} (OPC) Pvt. Ltd.`
+        if (b.storeName) out.storeName = b.storeName
+        if (b.legalName) {
+          out.legalName = b.legalName
+        } else if (b.storeName) {
+          // Don't auto-suffix "(OPC) Pvt. Ltd." — that's a corporate form
+          // assumption that doesn't apply to a sole-proprietor seller.
+          out.legalName = b.storeName
         }
         if (b.contactEmail) {
-          out.websiteAndEmail = `vastucart.com  |  ${b.contactEmail}`
+          out.websiteAndEmail = `${host}  |  ${b.contactEmail}`
         }
         if (b.streetAddress) out.addressLine1 = b.streetAddress
         if (b.addressLocality && b.addressRegion && b.postalCode) {

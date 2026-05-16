@@ -15,8 +15,13 @@ import type {
   ClusterSite,
 } from "@/types/admin-storefront"
 
+// Announcement copy is fully admin-editable via the Storefront →
+// Announcement tab. The default message is intentionally promo-code free
+// so a fresh deploy never shows a coupon that doesn't exist. Admin can
+// add a code at any time; the linkText / linkUrl are pre-populated for
+// the most common "Shop best sellers" CTA pattern.
 const DEFAULT_ANNOUNCEMENT: Announcement = {
-  message: "Free shipping on orders above ₹999! Use code VASTU10 for 10% off.",
+  message: `Free shipping on orders above ₹999. Authentic, blessed, and shipped pan-India.`,
   linkText: "Shop Now",
   linkUrl: "/collections/best-sellers",
   bgColor: "#013f47",
@@ -86,7 +91,9 @@ const DEFAULT_CONTENT_PAGES: ContentPage[] = [
     lastUpdated: new Date().toISOString(),
     isPublished: false,
     excerpt: "Get in touch with our team for support, wholesale inquiries, or feedback.",
-    content: "# Contact Us\n\nWe'd love to hear from you. Our team is available Monday–Saturday, 9am–6pm IST.\n\n## Customer Support\n\n- **Email:** support@vastucart.com\n- **Phone:** +91 98765 43210\n- **WhatsApp:** +91 98765 43210\n\n## Office Address\n\n42 Temple Lane\nVaranasi, Uttar Pradesh 221001\nIndia\n\n## Wholesale Inquiries\n\nFor bulk orders or wholesale partnerships, please write to wholesale@vastucart.com\n\n## Response Time\n\nWe typically respond to all queries within 24 hours on business days.",
+    // Every contact detail below resolves at render time via interpolatePolicy()
+    // so edits in admin → Storefront → Branding + Support Emails propagate.
+    content: "# Contact Us\n\nWe'd love to hear from you. Our team is available Monday–Saturday, 9am–6pm IST.\n\n## Customer Support\n\n- **Email:** {{contactEmail}}\n- **Phone:** {{contactPhone}}\n- **WhatsApp:** {{whatsapp}}\n\n## Office Address\n\n{{fullAddress}}\n\n## Wholesale Inquiries\n\nFor bulk orders or wholesale partnerships, please write to {{wholesaleEmail}}\n\n## Response Time\n\nWe typically respond to all queries within 24 hours on business days.",
   },
   {
     id: "cp-3",
@@ -95,7 +102,7 @@ const DEFAULT_CONTENT_PAGES: ContentPage[] = [
     lastUpdated: new Date().toISOString(),
     isPublished: false,
     excerpt: "How we collect, use, and protect your personal information.",
-    content: "# Privacy Policy\n\n*Last updated: January 2026*\n\nVastuCart is committed to protecting your privacy. This policy explains how we collect, use, and safeguard your personal information.\n\n## Information We Collect\n\n- **Account Information:** Name, email address, phone number\n- **Order Information:** Delivery addresses, order history\n- **Payment Information:** Processed securely via Razorpay/Stripe — we do not store card details\n- **Usage Data:** Pages visited, products viewed (for improving your experience)\n\n## How We Use Your Information\n\n- To process and deliver your orders\n- To send order confirmations and shipping updates\n- To respond to customer support queries\n- To improve our products and services\n\n## Data Security\n\nAll personal data is encrypted in transit (HTTPS) and at rest. We follow industry-standard security practices.\n\n## Your Rights\n\nYou may request deletion of your account and associated data at any time by writing to privacy@vastucart.com.\n\n## Contact\n\nFor privacy concerns, contact: privacy@vastucart.com",
+    content: "# Privacy Policy\n\n*Last updated: January 2026*\n\n{{storeName}} is committed to protecting your privacy. This policy explains how we collect, use, and safeguard your personal information.\n\n## Information We Collect\n\n- **Account Information:** Name, email address, phone number\n- **Order Information:** Delivery addresses, order history\n- **Payment Information:** Processed securely via Razorpay/Stripe — we do not store card details\n- **Usage Data:** Pages visited, products viewed (for improving your experience)\n\n## How We Use Your Information\n\n- To process and deliver your orders\n- To send order confirmations and shipping updates\n- To respond to customer support queries\n- To improve our products and services\n\n## Data Security\n\nAll personal data is encrypted in transit (HTTPS) and at rest. We follow industry-standard security practices.\n\n## Your Rights\n\nYou may request deletion of your account and associated data at any time by writing to {{privacyEmail}}.\n\n## Contact\n\nFor privacy concerns, contact: {{privacyEmail}}",
   },
   {
     id: "cp-4",
@@ -103,8 +110,8 @@ const DEFAULT_CONTENT_PAGES: ContentPage[] = [
     slug: "terms",
     lastUpdated: new Date().toISOString(),
     isPublished: false,
-    excerpt: "Terms governing your use of the VastuCart platform and purchases.",
-    content: "# Terms & Conditions\n\n*Last updated: January 2026*\n\nBy using VastuCart, you agree to these terms. Please read them carefully.\n\n## Acceptance of Terms\n\nAccess to and use of the VastuCart platform constitutes acceptance of these Terms & Conditions.\n\n## Products and Pricing\n\n- All prices are in Indian Rupees (INR) unless otherwise stated\n- Prices are subject to change without notice\n- Product images are for illustrative purposes; actual products may vary slightly\n\n## Orders and Payments\n\n- Orders are confirmed only upon successful payment\n- VastuCart reserves the right to cancel orders due to stock unavailability\n- Accepted payment methods: Razorpay (UPI, cards, net banking), Stripe (international cards)\n\n## Intellectual Property\n\nAll content on VastuCart — including images, text, and branding — is protected by copyright and may not be reproduced without written consent.\n\n## Governing Law\n\nThese terms are governed by the laws of India. Disputes shall be subject to the jurisdiction of courts in Varanasi, Uttar Pradesh.\n\n## Contact\n\nFor queries: legal@vastucart.com",
+    excerpt: "Terms governing your use of the {{storeName}} platform and purchases.",
+    content: "# Terms & Conditions\n\n*Last updated: January 2026*\n\nBy using {{storeName}}, you agree to these terms. Please read them carefully.\n\n## Acceptance of Terms\n\nAccess to and use of the {{storeName}} platform constitutes acceptance of these Terms & Conditions.\n\n## Products and Pricing\n\n- All prices are in Indian Rupees (INR) unless otherwise stated\n- Prices are subject to change without notice\n- Product images are for illustrative purposes; actual products may vary slightly\n\n## Orders and Payments\n\n- Orders are confirmed only upon successful payment\n- {{storeName}} reserves the right to cancel orders due to stock unavailability\n- Accepted payment methods: Razorpay (UPI, cards, net banking), Stripe (international cards)\n\n## Intellectual Property\n\nAll content on {{storeName}} — including images, text, and branding — is protected by copyright and may not be reproduced without written consent.\n\n## Governing Law\n\nThese terms are governed by the laws of India. Disputes shall be subject to the jurisdiction of courts in {{addressLocality}}, {{addressRegion}}.\n\n## Contact\n\nFor queries: {{legalEmail}}",
   },
   {
     id: "cp-5",
@@ -122,7 +129,7 @@ const DEFAULT_CONTENT_PAGES: ContentPage[] = [
     lastUpdated: new Date().toISOString(),
     isPublished: false,
     excerpt: "Our hassle-free return and refund process for damaged or incorrect items.",
-    content: "# Refund & Returns Policy\n\nWe want you to be completely satisfied with your purchase. If you're not happy, we'll make it right.\n\n## Return Eligibility\n\n- Items must be returned within **7 days** of delivery\n- Items must be unused, in original packaging\n- Customised or made-to-order items cannot be returned unless defective\n\n## How to Initiate a Return\n\n1. Email returns@vastucart.com with your order number and reason\n2. Our team will respond within 24 hours with a return label\n3. Pack items securely and ship within 3 days of receiving the label\n4. Once received and inspected, refund is processed within 5–7 business days\n\n## Refund Methods\n\n- Original payment method (card/UPI/net banking)\n- VastuCart store credit (processed faster)\n\n## Damaged or Incorrect Items\n\nIf you received a damaged or wrong item, please share photos within 48 hours of delivery. We will arrange a free replacement or full refund.\n\n## Non-Returnable Items\n\n- Perishable items (flowers, offerings)\n- Digital products\n- Customised puja items\n\n## Contact\n\nreturns@vastucart.com | +91 98765 43210",
+    content: "# Refund & Returns Policy\n\nWe want you to be completely satisfied with your purchase. If you're not happy, we'll make it right.\n\n## Return Eligibility\n\n- Items must be returned within **{{returnWindowDays}} days** of delivery\n- Items must be unused, in original packaging\n- Customised or made-to-order items cannot be returned unless defective\n\n## How to Initiate a Return\n\n1. Email {{returnsEmail}} with your order number and reason\n2. Our team will respond within 24 hours with a return label\n3. Pack items securely and ship within 3 days of receiving the label\n4. Once received and inspected, refund is processed within {{refundDays}} business days\n\n## Refund Methods\n\n- Original payment method (card/UPI/net banking)\n- {{storeName}} store credit (processed faster)\n\n## Damaged or Incorrect Items\n\nIf you received a damaged or wrong item, please share photos within 48 hours of delivery. We will arrange a free replacement or full refund.\n\n## Non-Returnable Items\n\n- Perishable items (flowers, offerings)\n- Digital products\n- Customised puja items\n\n## Contact\n\n{{returnsEmail}} | {{contactPhone}}",
   },
 ]
 
@@ -175,9 +182,10 @@ const DEFAULT_ABOUT_CONFIG: AboutConfig = {
   ],
   storyTitle: "Our Story",
   storyText: "VastuCart was founded with a simple mission: to make authentic spiritual and Vastu products accessible to every home across India. We started when our founder noticed how difficult it was to find genuine, high-quality spiritual products online. Most platforms offered replicas or imported goods lacking the authentic craftsmanship that makes these items truly special.\n\nToday, we source directly from over 200 artisan partners across India — from the brass workshops of Moradabad to the incense makers of Bengaluru. Every product we sell carries the quality and authenticity you deserve.",
-  founderName: "Prashant Vaishnav",
-  founderRole: "Founder & CEO",
-  founderBio: "A Vastu practitioner with over a decade of experience, Prashant started VastuCart to bridge the gap between authentic Indian craftsmanship and modern online commerce.",
+  founderName: BRAND_DEFAULTS.founderName,
+  founderRole: BRAND_DEFAULTS.founderRole,
+  founderBio:
+    "A Vastu practitioner with over a decade of experience, our founder started VastuCart to bridge the gap between authentic Indian craftsmanship and modern online commerce.",
   artisanRegions: ["Moradabad", "Varanasi", "Jaipur", "Bengaluru", "Rajkot", "Pune"],
 }
 
@@ -189,7 +197,7 @@ const DEFAULT_ABOUT_CONFIG: AboutConfig = {
  */
 const DEFAULT_CONTACT_CONFIG: ContactConfig = {
   whatsapp: BRAND_DEFAULTS.whatsapp,
-  wholesaleEmail: "wholesale@vastucart.com",
+  wholesaleEmail: BRAND_DEFAULTS.supportEmails.wholesale,
   address: `${BRAND_DEFAULTS.streetAddress}, ${BRAND_DEFAULTS.addressLocality}, ${BRAND_DEFAULTS.addressRegion} ${BRAND_DEFAULTS.postalCode}, India`,
   workingHours: {
     weekdays: "Mon \u2013 Sat: 9:00 AM \u2013 6:00 PM IST",
@@ -202,8 +210,8 @@ const DEFAULT_CONTACT_CONFIG: ContactConfig = {
     { id: "f4", question: "Do you ship internationally?", answer: "Yes, we ship to 25+ countries. International delivery is 15\u201330 business days." },
   ],
   grievanceOfficer: {
-    name: "Prashant Vaishnav",
-    email: "grievance@vastucart.com",
+    name: BRAND_DEFAULTS.founderName,
+    email: BRAND_DEFAULTS.supportEmails.grievance,
     address: `${BRAND_DEFAULTS.streetAddress}, ${BRAND_DEFAULTS.addressLocality}, ${BRAND_DEFAULTS.addressRegion} ${BRAND_DEFAULTS.postalCode}, India`,
   },
 }

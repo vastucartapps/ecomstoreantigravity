@@ -6,10 +6,14 @@ import { primary, secondary, earth, bg, fonts, gradients, shadows } from "@/lib/
 import type { AboutConfig } from "@/types/admin-storefront"
 import { useBranding } from "@/providers/announcement-provider"
 import { normalizeImageUrl } from "@/lib/image-url"
+import { BRAND_DEFAULTS } from "@/lib/brand-defaults"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
 const PK = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
+// Founder fields read from the BRAND_DEFAULTS seed — the legal name
+// (Prashant Kumar) and role match the legal pages so there's only one
+// authoritative founder record across About + Terms + Privacy + invoice.
 const DEFAULT_ABOUT_CONFIG: AboutConfig = {
   heroTagline: "Bringing Sacred India to Every Home",
   heroSubtext: "Authentic spiritual products, sourced directly from artisans across India",
@@ -22,10 +26,10 @@ const DEFAULT_ABOUT_CONFIG: AboutConfig = {
   storyTitle: "Our Story",
   storyText:
     "VastuCart was founded with a simple mission: to make authentic spiritual and Vastu products accessible to every home across India. We started when our founder noticed how difficult it was to find genuine, high-quality spiritual products online. Most platforms offered replicas or imported goods lacking the authentic craftsmanship that makes these items truly special.\n\nToday, we source directly from over 200 artisan partners across India — from the brass workshops of Moradabad to the incense makers of Bengaluru. Every product we sell carries the quality and authenticity you deserve.",
-  founderName: "Prashant Vaishnav",
-  founderRole: "Founder & CEO",
+  founderName: BRAND_DEFAULTS.founderName,
+  founderRole: BRAND_DEFAULTS.founderRole,
   founderBio:
-    "A Vastu practitioner with over a decade of experience, Prashant started VastuCart to bridge the gap between authentic Indian craftsmanship and modern online commerce.",
+    "A Vastu practitioner with over a decade of experience, our founder started VastuCart to bridge the gap between authentic Indian craftsmanship and modern online commerce.",
   artisanRegions: ["Moradabad", "Varanasi", "Jaipur", "Bengaluru", "Rajkot", "Pune"],
 }
 

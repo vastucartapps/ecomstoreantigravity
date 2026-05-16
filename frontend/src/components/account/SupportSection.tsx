@@ -237,12 +237,12 @@ export function SupportSection() {
           </div>
           <div>
             <p className="text-xs font-semibold" style={{ color: earth[500] }}>Email Us</p>
-            <p className="text-sm font-bold" style={{ color: "#3B82F6" }}>vastucartcare@gmail.com</p>
+            <p className="text-sm font-bold" style={{ color: "#3B82F6" }}>{branding.contactEmail}</p>
           </div>
         </a>
 
         <a
-          href="https://wa.me/919461194356"
+          href={`https://wa.me/${(branding.contactPhone || "").replace(/[^\d+]/g, "").replace(/^\+/, "")}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-3 p-4 rounded-2xl transition-shadow hover:shadow-sm"

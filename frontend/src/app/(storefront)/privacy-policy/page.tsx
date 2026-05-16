@@ -57,10 +57,7 @@ We use your personal data for the following purposes:
 ## 3. Cross-Platform Data Use Within the {{storeName}} Ecosystem
 
 3.1 {{storeName}} operates multiple digital properties under the {{storeName}} brand, including but not limited to:
-- store.vastucart.in
-- vastucart.in
-- kundali.vastucart.in
-- panchang.vastucart.in
+{{clusterDomainsList}}
 - Any future sub-domains or affiliated platforms under the {{storeName}} brand
 
 3.2 Your personal data may be shared, used, and accessed across all properties within the {{storeName}} ecosystem for the purpose of providing you with a seamless, personalised, and integrated user experience. This includes but is not limited to cross-platform login, personalised recommendations, and awareness of relevant services.

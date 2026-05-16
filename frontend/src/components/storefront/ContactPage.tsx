@@ -17,7 +17,7 @@ const PK = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
  */
 const DEFAULT_CONTACT_CONFIG: ContactConfig = {
   whatsapp: BRAND_DEFAULTS.whatsapp,
-  wholesaleEmail: "wholesale@vastucart.com",
+  wholesaleEmail: BRAND_DEFAULTS.supportEmails.wholesale,
   address: `${BRAND_DEFAULTS.streetAddress}, ${BRAND_DEFAULTS.addressLocality}, ${BRAND_DEFAULTS.addressRegion} ${BRAND_DEFAULTS.postalCode}, India`,
   workingHours: {
     weekdays: "Mon – Sat: 9:00 AM – 6:00 PM IST",
@@ -46,8 +46,8 @@ const DEFAULT_CONTACT_CONFIG: ContactConfig = {
     },
   ],
   grievanceOfficer: {
-    name: "Prashant Vaishnav",
-    email: "grievance@vastucart.com",
+    name: BRAND_DEFAULTS.founderName,
+    email: BRAND_DEFAULTS.supportEmails.grievance,
     address: `${BRAND_DEFAULTS.streetAddress}, ${BRAND_DEFAULTS.addressLocality}, ${BRAND_DEFAULTS.addressRegion} ${BRAND_DEFAULTS.postalCode}, India`,
   },
 }

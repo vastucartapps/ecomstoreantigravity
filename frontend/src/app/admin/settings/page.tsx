@@ -5,6 +5,7 @@ import { adminFetch } from "@/lib/medusa"
 import { primary, earth, fonts, semantic } from "@/lib/theme"
 import { Save, Store, Mail, Phone, Globe, Key, RefreshCw } from "lucide-react"
 import { ThemeSelect } from "@/components/ui/ThemeSelect"
+import { BRAND_DEFAULTS } from "@/lib/brand-defaults"
 
 interface StoreSettings {
   name: string
@@ -14,10 +15,12 @@ interface StoreSettings {
   timezone: string
 }
 
+// Pull initial values from the canonical seed so a fresh admin doesn't see
+// a placeholder phone number that conflicts with the actual brand contact.
 const DEFAULT_SETTINGS: StoreSettings = {
-  name: "VastuCart",
-  supportEmail: "support@vastucart.in",
-  supportPhone: "+91 98765 43210",
+  name: BRAND_DEFAULTS.storeName,
+  supportEmail: BRAND_DEFAULTS.contactEmail,
+  supportPhone: BRAND_DEFAULTS.contactPhone,
   defaultCurrency: "INR",
   timezone: "Asia/Kolkata",
 }

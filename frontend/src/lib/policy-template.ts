@@ -31,6 +31,9 @@ export interface PolicyVariables {
   codMinOrderInr: number
   codMaxOrderInr: number
   codFee: number
+  /** Founder display name (about page + grievance officer record). Source:
+   *  admin Storefront → About → Founder. Falls back to BRAND_DEFAULTS. */
+  founderName: string
   /** Legal entity name as registered for GSTIN. Used in policy
    *  boilerplate ("VastuCart is operated by ..."). Source: admin
    *  Payments & Tax → GST Configuration → Legal Entity Name. */
@@ -40,6 +43,19 @@ export interface PolicyVariables {
   /** Registered legal address per GSTIN — distinct from operational
    *  address. Source: admin Payments & Tax → GST → Registered Address. */
   registeredAddress: string
+  /** Per-purpose support email addresses. Source: admin Payments & Tax →
+   *  Support Emails (override) or BRAND_DEFAULTS.supportEmails (seed). */
+  wholesaleEmail: string
+  returnsEmail: string
+  grievanceEmail: string
+  privacyEmail: string
+  legalEmail: string
+  ordersEmail: string
+  /** Markdown-formatted bullet list of cluster sister-site domains.
+   *  Source: admin Storefront → Cluster Sites override OR the
+   *  CLUSTER_SITES seed. Lets privacy-policy / terms reference the full
+   *  ecosystem dynamically as the cluster grows. */
+  clusterDomainsList: string
 }
 
 /** Format a number as INR with the ₹ symbol and Indian thousands grouping. */
@@ -81,9 +97,17 @@ export function interpolatePolicy(
     codMinOrderInr: inr(vars.codMinOrderInr),
     codMaxOrderInr: inr(vars.codMaxOrderInr),
     codFee: vars.codFee > 0 ? inr(vars.codFee) : "no extra charge",
+    founderName: vars.founderName,
     legalName: vars.legalName,
     gstin: vars.gstin,
     registeredAddress: vars.registeredAddress,
+    wholesaleEmail: vars.wholesaleEmail,
+    returnsEmail: vars.returnsEmail,
+    grievanceEmail: vars.grievanceEmail,
+    privacyEmail: vars.privacyEmail,
+    legalEmail: vars.legalEmail,
+    ordersEmail: vars.ordersEmail,
+    clusterDomainsList: vars.clusterDomainsList,
   }
 
   return markdown.replace(/\{\{\s*([a-zA-Z]+)\s*\}\}/g, (match, key) => {
@@ -113,7 +137,15 @@ export const POLICY_VARIABLE_HELP: ReadonlyArray<{ name: string; example: string
   { name: "{{codMinOrderInr}}",           example: "₹500",                      source: "Shipping → COD" },
   { name: "{{codMaxOrderInr}}",           example: "₹25,000",                   source: "Shipping → COD" },
   { name: "{{codFee}}",                   example: "no extra charge",           source: "Shipping → COD" },
-  { name: "{{legalName}}",                example: "Prashant Kumar, Sole Proprietor", source: "Payments & Tax → GST" },
+  { name: "{{founderName}}",              example: "Prashant Kumar",            source: "Storefront → About" },
+  { name: "{{legalName}}",                example: "Prashant Kumar",            source: "Payments & Tax → GST" },
   { name: "{{gstin}}",                    example: "08AWUPV3378A1ZY",           source: "Payments & Tax → GST" },
   { name: "{{registeredAddress}}",        example: "VastuCart Premiere Enc, HN 2…", source: "Payments & Tax → GST" },
+  { name: "{{wholesaleEmail}}",           example: "wholesale@vastucart.com",   source: "Storefront → Support Emails" },
+  { name: "{{returnsEmail}}",             example: "returns@vastucart.com",     source: "Storefront → Support Emails" },
+  { name: "{{grievanceEmail}}",           example: "grievance@vastucart.com",   source: "Storefront → Support Emails" },
+  { name: "{{privacyEmail}}",             example: "privacy@vastucart.com",     source: "Storefront → Support Emails" },
+  { name: "{{legalEmail}}",               example: "legal@vastucart.com",       source: "Storefront → Support Emails" },
+  { name: "{{ordersEmail}}",              example: "orders@vastucart.in",       source: "Storefront → Support Emails" },
+  { name: "{{clusterDomainsList}}",       example: "- store.vastucart.in\\n- vastucart.in\\n- …", source: "Storefront → Cluster Sites" },
 ]

@@ -26,7 +26,9 @@ const DEFAULT_TIERS: LoyaltyTier[] = [
     multiplier: 1.5,
     benefits: [
       "Earn 1.5x points",
-      "Free shipping on orders above ₹499",
+      // Threshold mirrors shipping-config canonical (₹999). Was ₹499 here —
+      // out of sync with announcement banner + actual free-shipping rule.
+      "Free shipping on orders above ₹999",
       "Birthday bonus 100 points",
     ],
     color: "#C0C0C0",

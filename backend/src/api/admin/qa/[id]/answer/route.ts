@@ -1,22 +1,36 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework"
 import { PRODUCT_QA_MODULE } from "../../../../../modules/product-qa"
 import { captureException } from "../../../../../lib/error-reporter"
+import { fetchBrandFromStore } from "../../../../../lib/brand-from-store"
 
-const FALLBACK_TEAM_SIGNATURE = "VastuCart Team"
-
+/**
+ * Resolve the reply signature for an admin-issued QA answer.
+ * Order of preference:
+ *   1. The signed-in admin's first/last name (so customers see a real human)
+ *   2. The admin-configured team signature (brand.teamSignature) so a rename
+ *      from "VastuCart Team" to something else propagates automatically
+ *   3. A hardcoded "VastuCart Team" last resort
+ */
 async function getAdminName(req: MedusaRequest): Promise<string> {
+  let brandSignature = "VastuCart Team"
+  try {
+    const brand = await fetchBrandFromStore(req.scope)
+    brandSignature = brand.teamSignature || brandSignature
+  } catch {
+    // brand fetch failed — fall through to hardcoded
+  }
   try {
     const actorId = (req as any).auth_context?.actor_id
-    if (!actorId) return FALLBACK_TEAM_SIGNATURE
+    if (!actorId) return brandSignature
 
     const userService = req.scope.resolve("userModuleService") as any
     const user = await userService.retrieveUser(actorId)
     if (user?.first_name || user?.last_name) {
       return [user.first_name, user.last_name].filter(Boolean).join(" ")
     }
-    return FALLBACK_TEAM_SIGNATURE
+    return brandSignature
   } catch {
-    return FALLBACK_TEAM_SIGNATURE
+    return brandSignature
   }
 }
 

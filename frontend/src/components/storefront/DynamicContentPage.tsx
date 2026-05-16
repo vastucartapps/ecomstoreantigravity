@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { MarkdownPage } from "@/lib/simple-markdown"
 import { primary, earth, fonts, bg, shadows } from "@/lib/theme"
 import { useBranding } from "@/providers/announcement-provider"
-import { useOperationalPolicies } from "@/providers/announcement-provider"
+import { useOperationalPolicies, useClusterSites } from "@/providers/announcement-provider"
 import { interpolatePolicy, type PolicyVariables } from "@/lib/policy-template"
 import { BRAND_DEFAULTS } from "@/lib/brand-defaults"
 
@@ -41,6 +41,7 @@ export function DynamicContentPage({
   // updates the legal pages immediately.
   const branding = useBranding()
   const ops = useOperationalPolicies()
+  const clusterSites = useClusterSites()
   const [legal, setLegal] = useState<LegalEntityFields>({
     legalName: "",
     gstin: "",
@@ -70,31 +71,59 @@ export function DynamicContentPage({
   }, [])
 
   const policyVars: PolicyVariables = useMemo(
-    () => ({
-      storeName: branding.storeName,
-      contactEmail: branding.contactEmail,
-      contactPhone: branding.contactPhone,
-      streetAddress: (branding as any).streetAddress || BRAND_DEFAULTS.streetAddress,
-      addressLocality: (branding as any).addressLocality || BRAND_DEFAULTS.addressLocality,
-      addressRegion: (branding as any).addressRegion || BRAND_DEFAULTS.addressRegion,
-      postalCode: (branding as any).postalCode || BRAND_DEFAULTS.postalCode,
-      addressCountry: (branding as any).addressCountry || BRAND_DEFAULTS.addressCountry,
-      fullAddress:
-        branding.address ||
-        `${BRAND_DEFAULTS.streetAddress}, ${BRAND_DEFAULTS.addressLocality}, ${BRAND_DEFAULTS.addressRegion} ${BRAND_DEFAULTS.postalCode}`,
-      returnWindowDays: ops.returnWindowDays,
-      inspectionDays: ops.inspectionDays,
-      refundDays: ops.refundDays,
-      freeShippingThresholdInr: ops.freeShippingThresholdInr,
-      freeShippingThresholdUsd: ops.freeShippingThresholdUsd,
-      codMinOrderInr: ops.codMinOrderInr,
-      codMaxOrderInr: ops.codMaxOrderInr,
-      codFee: ops.codFee,
-      legalName: legal.legalName,
-      gstin: legal.gstin,
-      registeredAddress: legal.registeredAddress,
-    }),
-    [branding, ops, legal]
+    () => {
+      // Cluster sister-site domains rendered as a markdown bullet list so
+      // privacy-policy / terms can drop {{clusterDomainsList}} in once and
+      // pick up new domains the admin adds later (no edit required).
+      const clusterDomainsList = clusterSites
+        .map((s) => `- ${(s.url || "").replace(/^https?:\/\//, "").replace(/\/$/, "")}`)
+        .filter((line) => line.length > 2)
+        .join("\n")
+
+      return {
+        storeName: branding.storeName,
+        contactEmail: branding.contactEmail,
+        contactPhone: branding.contactPhone,
+        whatsapp: (branding as any).whatsapp || branding.contactPhone,
+        streetAddress: (branding as any).streetAddress || BRAND_DEFAULTS.streetAddress,
+        addressLocality: (branding as any).addressLocality || BRAND_DEFAULTS.addressLocality,
+        addressRegion: (branding as any).addressRegion || BRAND_DEFAULTS.addressRegion,
+        postalCode: (branding as any).postalCode || BRAND_DEFAULTS.postalCode,
+        addressCountry: (branding as any).addressCountry || BRAND_DEFAULTS.addressCountry,
+        fullAddress:
+          branding.address ||
+          `${BRAND_DEFAULTS.streetAddress}, ${BRAND_DEFAULTS.addressLocality}, ${BRAND_DEFAULTS.addressRegion} ${BRAND_DEFAULTS.postalCode}`,
+        returnWindowDays: ops.returnWindowDays,
+        inspectionDays: ops.inspectionDays,
+        refundDays: ops.refundDays,
+        freeShippingThresholdInr: ops.freeShippingThresholdInr,
+        freeShippingThresholdUsd: ops.freeShippingThresholdUsd,
+        codMinOrderInr: ops.codMinOrderInr,
+        codMaxOrderInr: ops.codMaxOrderInr,
+        codFee: ops.codFee,
+        // founderName + support emails are sourced from the BRAND_DEFAULTS
+        // seed for now. When the admin support-emails section ships, this
+        // will read from branding.supportEmails with the same fallback.
+        founderName: BRAND_DEFAULTS.founderName,
+        legalName: legal.legalName || BRAND_DEFAULTS.legalName,
+        gstin: legal.gstin,
+        registeredAddress: legal.registeredAddress,
+        wholesaleEmail:
+          (branding as any).supportEmails?.wholesale || BRAND_DEFAULTS.supportEmails.wholesale,
+        returnsEmail:
+          (branding as any).supportEmails?.returns || BRAND_DEFAULTS.supportEmails.returns,
+        grievanceEmail:
+          (branding as any).supportEmails?.grievance || BRAND_DEFAULTS.supportEmails.grievance,
+        privacyEmail:
+          (branding as any).supportEmails?.privacy || BRAND_DEFAULTS.supportEmails.privacy,
+        legalEmail:
+          (branding as any).supportEmails?.legal || BRAND_DEFAULTS.supportEmails.legal,
+        ordersEmail:
+          (branding as any).supportEmails?.orders || BRAND_DEFAULTS.supportEmails.orders,
+        clusterDomainsList,
+      }
+    },
+    [branding, ops, legal, clusterSites]
   )
 
   useEffect(() => {

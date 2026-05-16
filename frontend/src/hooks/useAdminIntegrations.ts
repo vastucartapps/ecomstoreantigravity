@@ -1,4 +1,5 @@
 import { adminFetch } from "@/lib/medusa"
+import { getSiteUrl } from "@/lib/brand-defaults"
 import type {
   Integration,
   IntegrationsConfig,
@@ -96,8 +97,10 @@ const DEFAULT_SEO: SEODefaults = {
   siteTitleTemplate: "%s | VastuCart — Vastu-Aligned Home & Living",
   metaDescription:
     "Shop Vastu-aligned home décor, furniture, and wellness products at VastuCart. Handpicked items to bring positive energy and harmony to every room.",
-  robotsTxt:
-    "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /cart/\nDisallow: /checkout/\nDisallow: /api/\n\nSitemap: https://vastucart.com/sitemap.xml",
+  // Sitemap URL is built from the canonical site URL (env-driven via
+  // NEXT_PUBLIC_SITE_URL → BRAND_DEFAULTS.siteUrl) so a different domain
+  // doesn't end up pointing at vastucart.com sitemap by accident.
+  robotsTxt: `User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /cart/\nDisallow: /checkout/\nDisallow: /api/\n\nSitemap: ${getSiteUrl()}/sitemap.xml`,
   sitemapEnabled: true,
   sitemapLastGenerated: new Date().toISOString(),
 }

@@ -5,6 +5,7 @@ import { Truck, Zap, ArrowLeft, ArrowRight, MapPin, Calendar } from "lucide-reac
 import { useAuth } from "@/providers/auth-provider"
 import { useCart } from "@/providers/cart-provider"
 import { useCheckout } from "@/providers/checkout-provider"
+import { useOperationalPolicies } from "@/providers/announcement-provider"
 import { primary, earth, bg, fonts, semantic } from "@/lib/theme"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
@@ -75,12 +76,18 @@ export function ShippingStep() {
     error,
   } = useCheckout()
 
+  // COD limits come from the operational-policies hook (single source of
+  // truth) — same data the trust ribbon, refund-policy, and admin
+  // ShippingConfig consume. The local state is initialised from the hook so
+  // first paint shows the live admin values, not hardcoded 500/25000 that
+  // used to drift after admin edits.
+  const opsPolicies = useOperationalPolicies()
   const [localSelected, setLocalSelected] = useState<string>(selectedShippingId || "")
   const [codConfig, setCodConfig] = useState<CodConfig>({
-    enabled: true,
-    fee: 0,
-    minOrder: 500,
-    maxOrder: 25000,
+    enabled: opsPolicies.codEnabled,
+    fee: opsPolicies.codFee,
+    minOrder: opsPolicies.codMinOrderInr,
+    maxOrder: opsPolicies.codMaxOrderInr,
   })
   const [deliveryEstimates, setDeliveryEstimates] = useState<DeliveryEstimate[]>([])
   const [pincode, setPincode] = useState("")
@@ -90,14 +97,26 @@ export function ShippingStep() {
     loadShippingOptions()
   }, [])
 
-  // Fetch shipping config for dynamic COD limits and delivery estimates
+  // Keep local codConfig synced with hook updates (admin edits propagate
+  // via the 15s revalidation in the announcement provider).
+  useEffect(() => {
+    setCodConfig({
+      enabled: opsPolicies.codEnabled,
+      fee: opsPolicies.codFee,
+      minOrder: opsPolicies.codMinOrderInr,
+      maxOrder: opsPolicies.codMaxOrderInr,
+    })
+  }, [opsPolicies.codEnabled, opsPolicies.codFee, opsPolicies.codMinOrderInr, opsPolicies.codMaxOrderInr])
+
+  // Fetch only what's NOT in the operational-policies hook: delivery
+  // estimates by pincode (those still live in the raw shipping-config
+  // response because they're a heavier data shape than the hook exposes).
   useEffect(() => {
     fetch(`${BACKEND_URL}/store/shipping-config`, {
       headers: { "x-publishable-api-key": PUB_KEY },
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data.config?.cod) setCodConfig(data.config.cod)
         if (data.config?.deliveryEstimates) setDeliveryEstimates(data.config.deliveryEstimates)
       })
       .catch(() => {})
