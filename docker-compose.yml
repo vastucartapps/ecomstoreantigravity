@@ -227,11 +227,15 @@ services:
       - "traefik.http.services.backend.loadbalancer.server.port=9000"
       - "traefik.docker.network=coolify"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:9000/health || exit 1"]
+      # Pure TCP probe — Medusa v2 doesn't expose /health by default, so the
+      # prior `wget /health` check was guaranteed to fail with 404 even after
+      # the server bound to 9000. The TCP check just confirms the port is
+      # accepting connections, which is exactly what depends_on needs to know.
+      test: ["CMD-SHELL", "node -e \"require('net').createConnection(9000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1)); setTimeout(()=>process.exit(2),3000)\""]
       interval: 15s
       timeout: 5s
       retries: 15
-      start_period: 30s
+      start_period: 60s
 
   frontend:
     build:
