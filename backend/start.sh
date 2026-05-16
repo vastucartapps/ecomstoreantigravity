@@ -5,8 +5,13 @@
 # up, and the only feedback is the deploy log saying "unhealthy" with no
 # stderr ever surfacing.
 
-LOGFILE=/tmp/medusa-boot.log
-exec > >(tee -a "$LOGFILE") 2>&1
+# Note: previous version used `exec > >(tee -a "$LOGFILE") 2>&1` here.
+# That is bash-only process substitution syntax and crashes Alpine's ash
+# with "Syntax error: redirection unexpected", which was the actual cause
+# of the entire week of "backend unhealthy" deploy failures — start.sh
+# never parsed past line 9. Stick to plain stdout/stderr; docker keeps
+# the buffer in the container log driver, which Coolify's logs viewer
+# (and `docker logs <container>`) can read fine.
 
 echo "===================================================================="
 echo "[start.sh] VastuCart backend bootstrap — $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
@@ -40,8 +45,6 @@ echo "[start.sh] Running medusa db:migrate…"
 if ! ./node_modules/.bin/medusa db:migrate; then
   rc=$?
   echo "[start.sh] FATAL: medusa db:migrate exited with $rc"
-  echo "[start.sh] Last 80 lines of boot log:"
-  tail -n 80 "$LOGFILE" || true
   echo "[start.sh] Keeping container alive (sleep 600) so logs survive…"
   sleep 600
   exit $rc
@@ -53,8 +56,6 @@ echo "[start.sh] Starting medusa server…"
 ./node_modules/.bin/medusa start
 rc=$?
 echo "[start.sh] FATAL: medusa start exited with $rc"
-echo "[start.sh] Last 120 lines of boot log:"
-tail -n 120 "$LOGFILE" || true
 echo "[start.sh] Keeping container alive (sleep 600) so logs survive…"
 sleep 600
 exit $rc
