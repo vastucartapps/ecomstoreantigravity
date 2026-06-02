@@ -13,6 +13,7 @@ const SENSITIVE_FIELDS = new Set([
   "apiKey",
   "apiSecret",
   "accessToken",
+  "serviceAccountKey",
 ])
 
 function stripSensitive(fields: Record<string, string>): Record<string, string> {
@@ -49,6 +50,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const pixelRaw = findIntegration("meta-pixel")
     const chatwootRaw = findIntegration("chatwoot")
     const whatsappRaw = findIntegration("whatsapp")
+    const gscRaw = findIntegration("gsc")
 
     // Active marketing tags — strip-sensitive (pixelId is always public)
     const marketingTags = (cfg.marketingTags || [])
@@ -91,6 +93,13 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
               isConnected: true,
               phoneNumber: whatsappRaw.configFields.phoneNumber,
             }
+          : null,
+      // Only the public site-verification token is exposed (for the
+      // <meta name="google-site-verification"> tag). The serviceAccountKey is
+      // sensitive and never leaves the backend (also in SENSITIVE_FIELDS).
+      gsc:
+        gscRaw?.configFields?.verificationToken
+          ? { verificationToken: gscRaw.configFields.verificationToken }
           : null,
       marketingTags,
       seoDefaults: cfg.seoDefaults || null,

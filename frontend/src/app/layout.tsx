@@ -71,6 +71,12 @@ export async function generateMetadata(): Promise<Metadata> {
       follow: true,
       googleBot: { index: true, follow: true },
     },
+    // Google Search Console site verification — admin pastes the token in
+    // Integrations → Google Search Console; renders
+    // <meta name="google-site-verification" content="…"> site-wide.
+    ...(b.googleSiteVerification
+      ? { verification: { google: b.googleSiteVerification } }
+      : {}),
     manifest: "/manifest.json",
     other: { "theme-color": "#013f47" },
   }

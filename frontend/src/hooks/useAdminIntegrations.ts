@@ -9,6 +9,9 @@ import type {
   GmcStatusResponse,
   MetaStatusResponse,
   GA4ReportResponse,
+  GscStatusResponse,
+  GscReportResponse,
+  GscInspectResponse,
 } from "@/types/admin-integrations"
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
@@ -63,6 +66,21 @@ const DEFAULT_INTEGRATIONS: Integration[] = [
       serviceAccountKey: "",
       targetCountry: "IN",
       feedLabel: "IN",
+    },
+    lastSynced: null,
+  },
+  {
+    id: "gsc",
+    name: "Google Search Console",
+    icon: "search",
+    description:
+      "Verify ownership, auto-submit your sitemap, inspect index status, and view Search Analytics (clicks, impressions, queries). Service-account based — no env vars.",
+    isConnected: false,
+    status: "inactive",
+    configFields: {
+      siteUrl: "",
+      serviceAccountKey: "",
+      verificationToken: "",
     },
     lastSynced: null,
   },
@@ -144,6 +162,14 @@ function validateIntegration(
     case "gmc":
       // merchantId required; serviceAccountKey optional (needed for Content API push)
       return /^\d{5,}$/.test(fields.merchantId || "")
+    case "gsc":
+      // siteUrl required (URL-prefix "https://…" or domain property "sc-domain:…")
+      // + serviceAccountKey for API access. verificationToken is an optional add-on.
+      return (
+        (/^https?:\/\/.+/.test(fields.siteUrl || "") ||
+          /^sc-domain:.+/.test(fields.siteUrl || "")) &&
+        (fields.serviceAccountKey || "").length > 20
+      )
     case "whatsapp":
       return (
         (fields.phoneNumber || "").replace(/\D/g, "").length >= 10 &&
@@ -431,6 +457,39 @@ export function useAdminIntegrations() {
     return adminFetch<GA4ReportResponse>(`/admin/analytics/ga4?days=${days}`)
   }
 
+  /**
+   * Fetch GSC connection status + registered sitemaps.
+   */
+  async function fetchGscStatus(): Promise<GscStatusResponse> {
+    return adminFetch<GscStatusResponse>("/admin/integrations/gsc/status")
+  }
+
+  /**
+   * Fetch GSC Search Analytics report (top queries, pages, totals, trend).
+   */
+  async function fetchGscReport(days = 28): Promise<GscReportResponse> {
+    return adminFetch<GscReportResponse>(`/admin/analytics/gsc?days=${days}`)
+  }
+
+  /**
+   * Submit (or re-submit) the storefront sitemap to Google Search Console.
+   */
+  async function submitGscSitemap(sitemapUrl?: string): Promise<void> {
+    await adminFetch("/admin/integrations/gsc/submit-sitemap", {
+      method: "POST",
+      body: sitemapUrl ? { sitemapUrl } : {},
+    })
+  }
+
+  /**
+   * Inspect a single URL's Google index status (URL Inspection API).
+   */
+  async function inspectGscUrl(url: string): Promise<GscInspectResponse> {
+    return adminFetch<GscInspectResponse>(
+      `/admin/integrations/gsc/inspect?url=${encodeURIComponent(url)}`
+    )
+  }
+
   return {
     fetchConfig,
     toggleConnection,
@@ -446,5 +505,9 @@ export function useAdminIntegrations() {
     fetchMetaStatus,
     triggerMetaSync,
     fetchGa4Report,
+    fetchGscStatus,
+    fetchGscReport,
+    submitGscSitemap,
+    inspectGscUrl,
   }
 }

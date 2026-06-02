@@ -35,6 +35,8 @@ export interface MetadataBranding {
   freeShippingInr: number
   /** From return_policy.windowDays — used in refund-policy SEO meta. */
   returnWindowDays: number
+  /** Admin-pasted Google Search Console site-verification token (or ""). */
+  googleSiteVerification: string
 }
 
 /**
@@ -56,15 +58,17 @@ export async function fetchBrandingForMetadata(): Promise<MetadataBranding> {
     siteUrl: SITE_URL,
     freeShippingInr: 999,
     returnWindowDays: 7,
+    googleSiteVerification: "",
   }
 
   try {
     const headers = { "x-publishable-api-key": PUB_KEY }
     const next = { revalidate: 300 }
-    const [storefrontRes, shippingRes, returnRes] = await Promise.all([
+    const [storefrontRes, shippingRes, returnRes, integrationsRes] = await Promise.all([
       fetch(`${BACKEND_URL}/store/storefront-config`, { headers, next }),
       fetch(`${BACKEND_URL}/store/shipping-config`, { headers, next }),
       fetch(`${BACKEND_URL}/store/return-policy`, { headers, next }),
+      fetch(`${BACKEND_URL}/store/integrations-config`, { headers, next }),
     ])
 
     const out = { ...fallback }
@@ -90,6 +94,13 @@ export async function fetchBrandingForMetadata(): Promise<MetadataBranding> {
     if (returnRes.ok) {
       const { returnPolicy } = await returnRes.json()
       if (returnPolicy?.windowDays) out.returnWindowDays = returnPolicy.windowDays
+    }
+
+    if (integrationsRes.ok) {
+      const data = await integrationsRes.json()
+      if (data?.gsc?.verificationToken) {
+        out.googleSiteVerification = data.gsc.verificationToken
+      }
     }
 
     return out

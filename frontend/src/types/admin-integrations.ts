@@ -133,6 +133,68 @@ export interface GA4ReportResponse {
   error: string | null
 }
 
+/** A sitemap entry registered in Search Console */
+export interface GscSitemapEntry {
+  path: string
+  lastSubmitted?: string
+  lastDownloaded?: string
+  isPending?: boolean
+  warnings?: string
+  errors?: string
+  contents?: { type: string; submitted: string; indexed?: string }[]
+}
+
+/** GSC status response from /admin/integrations/gsc/status */
+export interface GscStatusResponse {
+  isConfigured: boolean
+  siteUrl: string | null
+  hasVerificationToken?: boolean
+  sitemaps: GscSitemapEntry[]
+  error: string | null
+}
+
+/** A single Search Analytics row (keys depend on requested dimensions) */
+export interface GscAnalyticsRow {
+  keys: string[]
+  clicks: number
+  impressions: number
+  ctr: number
+  position: number
+}
+
+/** GSC Search Analytics report from /admin/analytics/gsc */
+export interface GscReport {
+  days: number
+  totals: { clicks: number; impressions: number; ctr: number; position: number }
+  topQueries: GscAnalyticsRow[]
+  topPages: GscAnalyticsRow[]
+  trend: GscAnalyticsRow[]
+}
+
+export interface GscReportResponse {
+  isConfigured: boolean
+  report: GscReport | null
+  error: string | null
+}
+
+/** URL Inspection result from /admin/integrations/gsc/inspect */
+export interface GscInspectResponse {
+  url: string
+  inspection: {
+    verdict?: string
+    coverageState?: string
+    robotsTxtState?: string
+    indexingState?: string
+    lastCrawlTime?: string
+    pageFetchState?: string
+    googleCanonical?: string
+    userCanonical?: string
+    referringUrls?: string[]
+    crawledAs?: string
+  } | null
+  error: string | null
+}
+
 /** Props for the AdminIntegrations component */
 export interface AdminIntegrationsProps {
   activeTab: IntegrationTab
