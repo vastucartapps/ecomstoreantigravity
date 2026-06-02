@@ -5,8 +5,9 @@ import Link from "next/link"
 import { primary, secondary, earth, bg, fonts, gradients, shadows } from "@/lib/theme"
 import type { AboutConfig } from "@/types/admin-storefront"
 import { useBranding } from "@/providers/announcement-provider"
-import { normalizeImageUrl } from "@/lib/image-url"
 import { BRAND_DEFAULTS } from "@/lib/brand-defaults"
+import { JsonLd } from "@/components/JsonLd"
+import { ORGANIZATION_ENTITY_ID } from "@/lib/schema/site-schema"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
 const PK = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
@@ -68,8 +69,6 @@ export function AboutPage({ config: propConfig }: Props) {
   const [config, setConfig] = useState<AboutConfig>(propConfig ?? DEFAULT_ABOUT_CONFIG)
   const [loaded, setLoaded] = useState(!!propConfig)
   const branding = useBranding()
-  const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
-  const logoAbs = normalizeImageUrl(branding.logoUrl) || `${SITE_URL}/VastuCartLogo.png`
 
   useEffect(() => {
     if (propConfig) return
@@ -93,32 +92,25 @@ export function AboutPage({ config: propConfig }: Props) {
     .toUpperCase()
     .slice(0, 2)
 
+  // Additive fragment that MERGES into the canonical Organization node emitted
+  // site-wide by site-schema.ts (same @id). We only contribute the founder here
+  // — name/url/logo/description/foundingDate/contactPoint are owned by the
+  // canonical node, so we must NOT re-declare them (the old standalone node set
+  // a conflicting foundingDate "2014" vs the canonical "2024", which Google saw
+  // as two competing Organizations).
   const orgSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: branding.storeName,
-    url: SITE_URL,
-    logo: logoAbs,
-    description: config.heroSubtext,
-    foundingDate: "2014",
+    "@id": ORGANIZATION_ENTITY_ID,
     founder: {
       "@type": "Person",
       name: config.founderName,
-    },
-    contactPoint: {
-      "@type": "ContactPoint",
-      telephone: branding.contactPhone,
-      contactType: "customer service",
-      availableLanguage: ["English", "Hindi"],
     },
   }
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
-      />
+      <JsonLd data={orgSchema} id="about-organization" />
 
       {/* ── Section 1: Hero ─────────────────────────────────────────────────── */}
       <section

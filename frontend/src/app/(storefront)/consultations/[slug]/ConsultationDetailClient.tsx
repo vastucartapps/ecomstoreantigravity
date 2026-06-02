@@ -4,8 +4,9 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Check, Clock, Monitor, MapPin, Users, ChevronLeft, ChevronRight, Award, ArrowRight, Phone, ArrowLeft } from "lucide-react"
 import { normalizeImageUrl } from "@/lib/image-url"
-import { useBranding } from "@/providers/announcement-provider"
 import type { ConsultationDetailType } from "./page"
+import { JsonLd } from "@/components/JsonLd"
+import { ORGANIZATION_ENTITY_ID } from "@/lib/schema/site-schema"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
 const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://sapi.vastucart.in"
@@ -190,7 +191,6 @@ function OtherConsultations({ currentId }: { currentId: string }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ConsultationDetailClient({ serviceType: s }: { serviceType: ConsultationDetailType }) {
-  const branding = useBranding()
   const included = parseIncluded(s.what_is_included)
   const images = [s.image_1, s.image_2, s.image_3].filter(Boolean)
 
@@ -203,12 +203,9 @@ export default function ConsultationDetailClient({ serviceType: s }: { serviceTy
     description: s.description || undefined,
     url: pageUrl,
     ...(images.length > 0 ? { image: images.map(toOgUrl).filter(Boolean) } : {}),
-    provider: {
-      "@type": "Organization",
-      name: branding.storeName,
-      url: SITE_URL,
-      logo: `${SITE_URL}/icon.png`,
-    },
+    // Reference the canonical Organization (emitted site-wide by site-schema)
+    // instead of a competing standalone node — one entity, not two.
+    provider: { "@id": ORGANIZATION_ENTITY_ID },
     offers: {
       "@type": "Offer",
       price: s.price,
@@ -233,8 +230,8 @@ export default function ConsultationDetailClient({ serviceType: s }: { serviceTy
   return (
     <>
       {/* JSON-LD */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
+      <JsonLd data={serviceJsonLd} id="consultation-service" />
+      <JsonLd data={breadcrumbJsonLd} id="consultation-breadcrumb" />
 
       <div style={{ minHeight: "100vh", background: "#fffbf5" }}>
 

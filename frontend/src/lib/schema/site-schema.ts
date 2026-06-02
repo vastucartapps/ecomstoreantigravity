@@ -17,6 +17,12 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in
 const BRAND_URL = process.env.NEXT_PUBLIC_BRAND_URL || "https://vastucart.in"
 const ORG_ID = `${BRAND_URL}/#organization`
 const WEBSITE_ID = `${SITE_URL}/#website`
+/**
+ * Shared cross-cluster contract: this subdomain is canonically a `Store`
+ * entity at `<site>/#store` (NOT #website), a child of the brand Organization.
+ * Other cluster sites + the parent brand reference this @id — DO NOT change it.
+ */
+const STORE_ID = `${SITE_URL}/#store`
 
 /** Ensure a URL is absolute — schema.org parsers reject relative paths for logos. */
 function toAbsolute(url: string | undefined | null): string {
@@ -178,8 +184,33 @@ export function buildSiteGraph(input: SiteSchemaInput = {}) {
     },
   }
 
+  // The storefront itself as a Store entity (cross-cluster #store contract),
+  // a child of the brand Organization. Kept minimal + online-only: no address
+  // or geo, so it never implies a physical/visitable location or triggers
+  // LocalBusiness rich-result expectations. currenciesAccepted reflects the
+  // geo-detected INR/USD regions.
+  const store = {
+    "@type": "Store",
+    "@id": STORE_ID,
+    name,
+    description,
+    url: SITE_URL,
+    image: { "@id": `${BRAND_URL}/#logo` },
+    currenciesAccepted: "INR, USD",
+    parentOrganization: { "@id": ORG_ID },
+  }
+
   return {
     "@context": "https://schema.org",
-    "@graph": [organization, website],
+    "@graph": [organization, store, website],
   }
 }
+
+/** Canonical @id of the storefront Store entity — import where an Offer/seller
+ *  or breadcrumb needs to reference the store as one graph node. */
+export const STORE_ENTITY_ID = STORE_ID
+
+/** Canonical @id of the brand Organization. Any other component emitting an
+ *  Organization fragment (About page, consultation provider, etc.) MUST use
+ *  this @id so Google merges them into ONE entity instead of competing nodes. */
+export const ORGANIZATION_ENTITY_ID = ORG_ID
