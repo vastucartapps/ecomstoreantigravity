@@ -1,43 +1,64 @@
 import type { MetadataRoute } from "next"
-import { fetchClusterSites, clusterSitemapsFrom } from "@/lib/cluster-sites-ssr"
-import { BRAND_URL } from "@/lib/cluster-sites"
+import { getSiteUrl } from "@/lib/brand-defaults"
 
 const BACKEND_URL =
   process.env.MEDUSA_INTERNAL_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY =
   process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
 
-async function defaultRules(): Promise<MetadataRoute.Robots> {
-  // Cluster sitemaps fetched dynamically — admin can add a 10th sister
-  // site and robots.txt will list it on the next revalidate (5 min).
-  const sites = await fetchClusterSites()
+// Private + transactional + auth surfaces — bot crawl wastes the crawl budget
+// and risks leaking PII or token-bearing URLs into the search index. Layouts
+// also send noindex meta but Disallow here keeps the URLs out of "site:"
+// listings entirely.
+const DISALLOW_DEFAULT = [
+  "/admin/",
+  "/admin-login",
+  "/account/",
+  "/cart/",
+  "/cart/recover/",
+  "/checkout/",
+  "/order-confirmation/",
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/auth/",
+  "/api/",
+]
+
+/**
+ * The sitemap(s) a subdomain declares MUST be its own only. Declaring the
+ * parent brand's or sibling cluster sitemaps (or a parked domain like
+ * vastucart.com) wastes crawl budget and poisons crawler trust — each
+ * subdomain has its own GSC property and cross-references aren't authoritative.
+ *
+ * We force the canonical own-origin sitemap and accept only same-origin
+ * admin-added sitemaps (e.g. a future /sitemap-image.xml), filtering out any
+ * cross-domain entry regardless of what stale admin metadata may contain.
+ */
+function ownSitemaps(adminSitemaps: string[] = []): string[] {
+  const site = getSiteUrl()
+  let origin = ""
+  try {
+    origin = new URL(site).origin
+  } catch {
+    origin = ""
+  }
+  const own = `${site}/sitemap.xml`
+  const sameOrigin = adminSitemaps.filter((u) => {
+    try {
+      return origin !== "" && new URL(u).origin === origin
+    } catch {
+      return false
+    }
+  })
+  return Array.from(new Set([own, ...sameOrigin]))
+}
+
+function defaultRules(): MetadataRoute.Robots {
   return {
-    rules: [
-      {
-        userAgent: "*",
-        allow: "/",
-        // Private + transactional + auth surfaces — bot crawl wastes the
-        // crawl budget and risks leaking PII or token-bearing URLs into
-        // the search index. Layouts also send noindex meta but Disallow
-        // here keeps the URLs out of "site:" listings entirely.
-        disallow: [
-          "/admin/",
-          "/admin-login",
-          "/account/",
-          "/cart/",
-          "/cart/recover/",
-          "/checkout/",
-          "/order-confirmation/",
-          "/login",
-          "/register",
-          "/forgot-password",
-          "/reset-password",
-          "/auth/",
-          "/api/",
-        ],
-      },
-    ],
-    sitemap: clusterSitemapsFrom(sites, BRAND_URL),
+    rules: [{ userAgent: "*", allow: "/", disallow: DISALLOW_DEFAULT }],
+    sitemap: ownSitemaps(),
   }
 }
 
@@ -45,11 +66,12 @@ async function defaultRules(): Promise<MetadataRoute.Robots> {
  * Parse a raw robots.txt string into Next.js MetadataRoute.Robots format.
  * Handles: User-agent, Allow, Disallow, Sitemap directives.
  *
- * Async because cluster sitemaps are now resolved from admin (the
- * /store/storefront-config response) — admin can edit the cluster
- * without a deploy.
+ * The Sitemap directive(s) in the admin string are NOT trusted verbatim — they
+ * are filtered to this subdomain's own origin by ownSitemaps(), so a stale
+ * admin value (e.g. a parked vastucart.com sitemap) or cross-cluster entries
+ * can never poison the served robots.txt.
  */
-async function parseRobotsTxt(raw: string): Promise<MetadataRoute.Robots> {
+function parseRobotsTxt(raw: string): MetadataRoute.Robots {
   const rules: Array<{
     userAgent: string
     allow: string[]
@@ -85,12 +107,9 @@ async function parseRobotsTxt(raw: string): Promise<MetadataRoute.Robots> {
 
   if (rules.length === 0) return defaultRules()
 
-  // Always merge cluster sitemaps with any admin-defined ones so the whole
-  // ecosystem is discoverable regardless of admin config. Dedupe on URL.
-  const sites = await fetchClusterSites()
-  const sitemap = Array.from(
-    new Set([...adminSitemaps, ...clusterSitemapsFrom(sites, BRAND_URL)])
-  )
+  // Own-origin sitemap(s) only — never trust the admin string's Sitemap line
+  // verbatim (it may carry a stale parked-domain or cross-cluster entry).
+  const sitemap = ownSitemaps(adminSitemaps)
 
   return {
     rules: rules.map((r) => ({
@@ -115,7 +134,7 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
     if (res.ok) {
       const data = await res.json()
       if (data.seoDefaults?.robotsTxt) {
-        return await parseRobotsTxt(data.seoDefaults.robotsTxt)
+        return parseRobotsTxt(data.seoDefaults.robotsTxt)
       }
     }
   } catch {
