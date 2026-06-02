@@ -55,6 +55,11 @@ export async function GET(): Promise<Response> {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
       "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+      // Google ignores llms.txt for ranking (Illyes, Jul 2025) — no penalty,
+      // not cloaking, not duplicate content. The only advised tweak (Mueller,
+      // Jul 2025) is noindex so the raw file can't itself surface in SERPs if
+      // someone links to it. A .txt can't carry a meta tag, hence the header.
+      "X-Robots-Tag": "noindex",
     },
   })
 }
