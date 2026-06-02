@@ -31,7 +31,7 @@ export const BRAND_DEFAULTS = {
     "Authentic spiritual products, crystals, yantras, and Vastu Shastra tools — delivered across India.",
   logoUrl: "/VastuCartLogo.png",
   faviconUrl: "/favicon.png",
-  contactEmail: "support@vastucart.com",
+  contactEmail: "support@vastucart.in",
   contactPhone: "+91 94611 94356",
   whatsapp: "+91 94611 94356",
   streetAddress: "42 Temple Lane",
@@ -53,11 +53,11 @@ export const BRAND_DEFAULTS = {
    * edit propagates everywhere.
    */
   supportEmails: {
-    wholesale: "wholesale@vastucart.com",
-    returns: "returns@vastucart.com",
-    grievance: "grievance@vastucart.com",
-    privacy: "privacy@vastucart.com",
-    legal: "legal@vastucart.com",
+    wholesale: "wholesale@vastucart.in",
+    returns: "returns@vastucart.in",
+    grievance: "grievance@vastucart.in",
+    privacy: "privacy@vastucart.in",
+    legal: "legal@vastucart.in",
     orders: "orders@vastucart.in",
   },
   /** Display name used in admin-issued reviews replies, Q&A answers, and

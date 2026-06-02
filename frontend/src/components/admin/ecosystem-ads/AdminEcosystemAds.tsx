@@ -352,7 +352,7 @@ function BannerForm({
               type="url"
               value={form.cta_url}
               onChange={(e) => setForm({ ...form, cta_url: e.target.value })}
-              placeholder="https://vastucart.com/..."
+              placeholder="https://vastucart.in/..."
               className="w-full px-3 py-2 rounded-lg border text-sm"
               style={{ ...inputStyle, fontFamily: fonts.mono, fontSize: "12px" }}
             />
@@ -1360,7 +1360,7 @@ function PlacementsTab({
                 type="text"
                 value={siteSubdomain}
                 onChange={(e) => setSiteSubdomain(e.target.value)}
-                placeholder="e.g. blog.vastucart.com"
+                placeholder="e.g. blog.vastucart.in"
                 className="w-full px-3 py-2 rounded-lg border text-sm"
                 style={{ borderColor: earth[300], color: earth[700], fontFamily: fonts.mono }}
               />
@@ -2164,7 +2164,7 @@ function SocialTab({
                     type="url"
                     value={publishForm.linkUrl}
                     onChange={(e) => setPublishForm({ ...publishForm, linkUrl: e.target.value })}
-                    placeholder="https://vastucart.com/..."
+                    placeholder="https://vastucart.in/..."
                     className="w-full px-3 py-2 rounded-lg border text-sm"
                     style={{
                       borderColor: earth[300],

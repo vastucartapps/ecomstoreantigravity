@@ -121,7 +121,7 @@ export function interpolatePolicy(
  */
 export const POLICY_VARIABLE_HELP: ReadonlyArray<{ name: string; example: string; source: string }> = [
   { name: "{{storeName}}",                example: "VastuCart",                 source: "Storefront → Branding" },
-  { name: "{{contactEmail}}",             example: "support@vastucart.com",     source: "Storefront → Branding" },
+  { name: "{{contactEmail}}",             example: "support@vastucart.in",     source: "Storefront → Branding" },
   { name: "{{contactPhone}}",             example: "+91 94611 94356",           source: "Storefront → Branding" },
   { name: "{{whatsapp}}",                 example: "+91 94611 94356",           source: "Storefront → Contact" },
   { name: "{{fullAddress}}",              example: "42 Temple Lane, Varanasi…", source: "Storefront → Branding" },
@@ -141,11 +141,11 @@ export const POLICY_VARIABLE_HELP: ReadonlyArray<{ name: string; example: string
   { name: "{{legalName}}",                example: "Prashant Kumar",            source: "Payments & Tax → GST" },
   { name: "{{gstin}}",                    example: "08AWUPV3378A1ZY",           source: "Payments & Tax → GST" },
   { name: "{{registeredAddress}}",        example: "VastuCart Premiere Enc, HN 2…", source: "Payments & Tax → GST" },
-  { name: "{{wholesaleEmail}}",           example: "wholesale@vastucart.com",   source: "Storefront → Support Emails" },
-  { name: "{{returnsEmail}}",             example: "returns@vastucart.com",     source: "Storefront → Support Emails" },
-  { name: "{{grievanceEmail}}",           example: "grievance@vastucart.com",   source: "Storefront → Support Emails" },
-  { name: "{{privacyEmail}}",             example: "privacy@vastucart.com",     source: "Storefront → Support Emails" },
-  { name: "{{legalEmail}}",               example: "legal@vastucart.com",       source: "Storefront → Support Emails" },
+  { name: "{{wholesaleEmail}}",           example: "wholesale@vastucart.in",   source: "Storefront → Support Emails" },
+  { name: "{{returnsEmail}}",             example: "returns@vastucart.in",     source: "Storefront → Support Emails" },
+  { name: "{{grievanceEmail}}",           example: "grievance@vastucart.in",   source: "Storefront → Support Emails" },
+  { name: "{{privacyEmail}}",             example: "privacy@vastucart.in",     source: "Storefront → Support Emails" },
+  { name: "{{legalEmail}}",               example: "legal@vastucart.in",       source: "Storefront → Support Emails" },
   { name: "{{ordersEmail}}",              example: "orders@vastucart.in",       source: "Storefront → Support Emails" },
   { name: "{{clusterDomainsList}}",       example: "- store.vastucart.in\\n- vastucart.in\\n- …", source: "Storefront → Cluster Sites" },
 ]

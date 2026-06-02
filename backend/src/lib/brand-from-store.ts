@@ -11,7 +11,7 @@
  * Falls back through:
  *   1. store.metadata.storefront_config.branding (admin canonical)
  *   2. STORE_NAME / SUPPORT_EMAIL / etc. env vars (legacy ops fallback)
- *   3. Hardcoded "VastuCart" / "support@vastucart.com" (last resort)
+ *   3. Hardcoded "VastuCart" / "support@vastucart.in" (last resort)
  *
  * Use from any subscriber, route, workflow, or service that has access to
  * the VastuCart DI container or `req.scope`:
@@ -55,18 +55,18 @@ const HARDCODED_FALLBACK: BackendBrand = {
   storeName: "VastuCart",
   legalName: "Prashant Kumar",
   tagline: "Sacred Essentials for Your Spiritual Journey",
-  contactEmail: "support@vastucart.com",
+  contactEmail: "support@vastucart.in",
   contactPhone: "+91 94611 94356",
   storeUrl: "https://store.vastucart.in",
   logoUrl: "/VastuCartLogo.png",
   founderName: "Prashant Kumar",
   teamSignature: "VastuCart Team",
   supportEmails: {
-    wholesale: "wholesale@vastucart.com",
-    returns: "returns@vastucart.com",
-    grievance: "grievance@vastucart.com",
-    privacy: "privacy@vastucart.com",
-    legal: "legal@vastucart.com",
+    wholesale: "wholesale@vastucart.in",
+    returns: "returns@vastucart.in",
+    grievance: "grievance@vastucart.in",
+    privacy: "privacy@vastucart.in",
+    legal: "legal@vastucart.in",
     orders: "orders@vastucart.in",
   },
 }
