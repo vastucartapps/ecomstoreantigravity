@@ -213,6 +213,12 @@ services:
       - BACKEND_URL=${BACKEND_URL:-https://sapi.vastucart.in}
       - STORE_URL=${STORE_URL:-https://store.vastucart.in}
       - SUPPORT_EMAIL=${SUPPORT_EMAIL:-support@vastucart.in}
+      # SEO freshness: shared secret for the frontend /api/revalidate webhook
+      # (must match the frontend) + IndexNow key (must match the file the
+      # frontend serves at /indexnow-key.txt). Defaults work out-of-the-box;
+      # override both here AND on the frontend to rotate.
+      - REVALIDATE_SECRET=${REVALIDATE_SECRET:-vc-revalidate-2026-shared-secret-change-me}
+      - INDEXNOW_KEY=${INDEXNOW_KEY:-a7f3c9e1b2d84056f1a9c3e7b5d20486}
       # Error monitoring (optional — no-ops when DSN missing)
       - SENTRY_DSN=${SENTRY_DSN:-}
       - SENTRY_TRACES_SAMPLE_RATE=${SENTRY_TRACES_SAMPLE_RATE:-0.1}
@@ -283,6 +289,10 @@ services:
       - NEXT_PUBLIC_POSTHOG_KEY=${POSTHOG_API_KEY:-}
       - NEXT_PUBLIC_POSTHOG_HOST=${POSTHOG_HOST:-https://eu.i.posthog.com}
       - NEXT_PUBLIC_GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID:-}
+      # SEO freshness: must match the backend's values (revalidate webhook auth
+      # + IndexNow key served at /indexnow-key.txt). Defaults work as-is.
+      - REVALIDATE_SECRET=${REVALIDATE_SECRET:-vc-revalidate-2026-shared-secret-change-me}
+      - INDEXNOW_KEY=${INDEXNOW_KEY:-a7f3c9e1b2d84056f1a9c3e7b5d20486}
     ports:
       - "3000:3000"
     healthcheck:

@@ -1,6 +1,11 @@
 import type { MetadataRoute } from "next"
 import { normalizeImageUrl } from "@/lib/image-url"
 
+// Render the sitemap dynamically (never statically cached at build) so it can
+// never be frozen empty from a build that ran during a backend cutover, and
+// always reflects the live catalog. Paired with cache:"no-store" fetches below.
+export const dynamic = "force-dynamic"
+
 const BACKEND_URL =
   process.env.MEDUSA_INTERNAL_URL || process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || ""
 const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
@@ -138,7 +143,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const cfgRes = await fetch(`${BACKEND_URL}/store/integrations-config`, {
       headers: { "x-publishable-api-key": PUB_KEY },
-      next: { revalidate: 3600 },
+      cache: "no-store",
     })
     if (cfgRes.ok) {
       const data = await cfgRes.json()
@@ -149,8 +154,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // If we can't reach backend, still serve sitemap (fail open for SEO)
   }
 
+  // ALWAYS fetch the catalog live (cache: "no-store"). The sitemap is crawled
+  // infrequently, so per-request generation is cheap — and it makes poisoning
+  // impossible: a previous build that ran during a backend boot/cutover window
+  // (or any transient empty result) can never be cached and locked in for the
+  // revalidate window. The sitemap therefore always mirrors the live catalog,
+  // including products the owner adds or removes at any time.
   const storeHeaders = { "x-publishable-api-key": PUB_KEY }
-  const fetchOpts = { headers: storeHeaders, next: { revalidate: 3600 } }
+  const fetchOpts = { headers: storeHeaders, cache: "no-store" as const }
 
   // Paginate the full catalog (products + categories); consultations are a small
   // fixed set. `thumbnail`/`images` + category metadata feed the image-sitemap

@@ -30,6 +30,8 @@ export default async function StorefrontLayout({
   const [categoriesRes, trackingRes, storefrontRes] = await Promise.allSettled([
     fetch(
       `${BACKEND_URL}/store/product-categories?limit=20&parent_category_id=null&fields=id,name,handle,metadata`,
+      // 300s ISR; the catalog-change webhook also revalidates the root layout
+      // (revalidatePath("/", "layout")) so the nav refreshes on demand.
       { headers: pubKeyHeader, next: { revalidate: 300 } }
     ),
     fetch(`${BACKEND_URL}/store/integrations-config`, {
