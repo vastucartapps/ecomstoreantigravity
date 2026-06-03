@@ -4,6 +4,7 @@ import type {
 } from "@medusajs/framework/http"
 import { LOYALTY_MODULE } from "../../../../../../modules/loyalty"
 import type { ILoyaltyService } from "../../../../../../lib/service-types"
+import { isLoyaltyEnabled } from "../../../../../../lib/loyalty-config"
 
 export async function POST(
   req: AuthenticatedMedusaRequest,
@@ -12,6 +13,12 @@ export async function POST(
   const customerId = req.auth_context?.actor_id
   if (!customerId) {
     res.status(401).json({ message: "Not authenticated" })
+    return
+  }
+
+  // Block redemption the moment the admin disables the program.
+  if (!(await isLoyaltyEnabled(req.scope))) {
+    res.status(403).json({ message: "Loyalty program is currently disabled" })
     return
   }
 
