@@ -64,8 +64,17 @@ export default async function syncContentModelsLoader({
 
     logger.info("Connected to Contentful")
   } catch (error) {
-    logger.error(`Contentful connection failed: ${error}`)
-    throw error
+    // Degrade gracefully: a transient Contentful outage / bad token at boot
+    // must NEVER crash the whole backend (this loader makes 4 network calls at
+    // module init). Register null clients + log; the Contentful service no-ops
+    // until the next successful boot, exactly like the unconfigured path above.
+    logger.error(
+      `Contentful initialization failed — continuing without Contentful: ${error}`
+    )
+    container.register({
+      contentfulManagementClient: asValue(null),
+      contentfulDeliveryClient: asValue(null),
+    })
   }
 }
 

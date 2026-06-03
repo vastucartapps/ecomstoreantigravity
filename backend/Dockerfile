@@ -6,8 +6,12 @@ WORKDIR /app
 # Install dependencies (cached unless package.json/lock changes)
 COPY package.json package-lock.json* ./
 COPY .npmrc* ./
+# npm ci = deterministic install straight from package-lock.json (errors if the
+# lock is out of sync). Eliminates the "works on a cached Docker layer, fails on
+# a clean rebuild" outage class caused by npm install re-resolving/re-hoisting
+# transitive deps. --legacy-peer-deps required by plugins pinned to older cores.
 RUN --mount=type=cache,target=/root/.npm \
-    npm install --legacy-peer-deps
+    npm ci --legacy-peer-deps
 
 # Copy source
 COPY . .

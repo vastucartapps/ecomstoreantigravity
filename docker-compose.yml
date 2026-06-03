@@ -213,12 +213,12 @@ services:
       - BACKEND_URL=${BACKEND_URL:-https://sapi.vastucart.in}
       - STORE_URL=${STORE_URL:-https://store.vastucart.in}
       - SUPPORT_EMAIL=${SUPPORT_EMAIL:-support@vastucart.in}
-      # SEO freshness: shared secret for the frontend /api/revalidate webhook
-      # (must match the frontend) + IndexNow key (must match the file the
-      # frontend serves at /indexnow-key.txt). Defaults work out-of-the-box;
-      # override both here AND on the frontend to rotate.
-      - REVALIDATE_SECRET=${REVALIDATE_SECRET:-vc-revalidate-2026-shared-secret-change-me}
-      - INDEXNOW_KEY=${INDEXNOW_KEY:-a7f3c9e1b2d84056f1a9c3e7b5d20486}
+      # Internal docker URL of the storefront — used to call the on-demand
+      # revalidation webhook over the private network (no Traefik/CF), which is
+      # how that webhook is authenticated (network isolation, no shared secret).
+      # Infra service-discovery, like MEDUSA_INTERNAL_URL — NOT config/secret.
+      # (IndexNow key + any SEO secrets now live in store.metadata, auto-generated.)
+      - STORE_INTERNAL_URL=${STORE_INTERNAL_URL:-http://ecomstore-frontend:3000}
       # Error monitoring (optional — no-ops when DSN missing)
       - SENTRY_DSN=${SENTRY_DSN:-}
       - SENTRY_TRACES_SAMPLE_RATE=${SENTRY_TRACES_SAMPLE_RATE:-0.1}
@@ -238,10 +238,16 @@ services:
       # the server bound to 9000. The TCP check just confirms the port is
       # accepting connections, which is exactly what depends_on needs to know.
       test: ["CMD-SHELL", "node -e \"require('net').createConnection(9000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1)); setTimeout(()=>process.exit(2),3000)\""]
-      interval: 15s
+      # start_period covers the worst-case cold boot: migrations + ~25 modules
+      # binding port 9000 can take well over a minute. During start_period,
+      # probe failures don't count against retries; start_interval (Docker 25+)
+      # probes fast so readiness is detected quickly once up. After boot, 5
+      # consecutive failures (50s) mark it unhealthy so restart:always recycles.
+      interval: 10s
       timeout: 5s
-      retries: 15
-      start_period: 60s
+      retries: 5
+      start_period: 240s
+      start_interval: 5s
 
   frontend:
     build:
@@ -257,16 +263,23 @@ services:
         - NEXT_PUBLIC_GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID:-}
     restart: always
     networks:
-      ecomstore-internal: {}  # reaches ecomstore-backend/ecomstore-minio
-      coolify: {}             # Traefik proxies HTTPS to this
+      ecomstore-internal:
+        aliases:
+          - ecomstore-frontend  # backend calls the revalidate webhook via this
+      coolify: {}               # Traefik proxies HTTPS to this
     depends_on:
-      # service_healthy — frontend must wait for backend's TCP healthcheck
-      # on port 9000 to pass before starting. This guarantees the storefront
-      # never serves traffic against a backend that hasn't bound its port yet
-      # (otherwise the first wave of SSR requests would hit Traefik's
-      # "no available server" 503 until Medusa finishes booting).
+      # service_started (NOT service_healthy): the storefront must NOT be gated
+      # on the backend's healthcheck. With a hard health gate, any backend boot
+      # lag/crash made the frontend never start → the ENTIRE deploy failed →
+      # both domains 503 (the repeated outage). The storefront does not need the
+      # backend at boot: pages are ISR/static with fail-open fetches, and all
+      # /store|/admin|/auth calls are proxied per-request by middleware. So it
+      # starts immediately; its OWN healthcheck gates Traefik, and Traefik
+      # isolates backend 503s to API routes only (self-healing once backend is
+      # up). Trade-off: a few backend-dependent calls may transiently fail
+      # during backend boot — strictly better than a total outage.
       backend:
-        condition: service_healthy
+        condition: service_started
     labels:
       # Traefik routing — Coolify's shared proxy needs explicit rule/entrypoints/tls
       # to terminate HTTPS for the storefront. Mirrors backend labels (lines 211-218).
@@ -289,13 +302,8 @@ services:
       - NEXT_PUBLIC_POSTHOG_KEY=${POSTHOG_API_KEY:-}
       - NEXT_PUBLIC_POSTHOG_HOST=${POSTHOG_HOST:-https://eu.i.posthog.com}
       - NEXT_PUBLIC_GA4_MEASUREMENT_ID=${GA4_MEASUREMENT_ID:-}
-      # SEO freshness: must match the backend's values (revalidate webhook auth
-      # + IndexNow key served at /indexnow-key.txt). Defaults work as-is.
-      - REVALIDATE_SECRET=${REVALIDATE_SECRET:-vc-revalidate-2026-shared-secret-change-me}
-      - INDEXNOW_KEY=${INDEXNOW_KEY:-a7f3c9e1b2d84056f1a9c3e7b5d20486}
-      # UCP discovery: optional public signing key (JWK JSON) published in
-      # /.well-known/ucp. Empty until UCP checkout is activated for the region.
-      - UCP_SIGNING_PUBLIC_JWK=${UCP_SIGNING_PUBLIC_JWK:-}
+      # (SEO freshness needs no env: the IndexNow key lives in store.metadata
+      # and the revalidate webhook is authenticated by network isolation.)
     ports:
       - "3000:3000"
     healthcheck:

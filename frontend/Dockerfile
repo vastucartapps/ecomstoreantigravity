@@ -4,8 +4,10 @@ WORKDIR /app
 
 # Install dependencies (cached unless package.json/lock changes)
 COPY package.json package-lock.json* ./
+# npm ci = deterministic install from package-lock.json (errors if out of sync).
+# Eliminates the "works cached, fails on clean rebuild" outage class.
 RUN --mount=type=cache,target=/root/.npm \
-    npm install
+    npm ci
 
 # Copy source
 COPY . .

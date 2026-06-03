@@ -88,16 +88,12 @@ const plugins: any[] = [
   },
 ]
 
-if (process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET) {
-  plugins.push({
-    resolve: "@rsc-labs/medusa-paypal-payment",
-    options: {
-      oAuthClientId: process.env.PAYPAL_CLIENT_ID,
-      oAuthClientSecret: process.env.PAYPAL_CLIENT_SECRET,
-      environment: process.env.PAYPAL_ENVIRONMENT || "sandbox",
-    },
-  })
-}
+// NOTE: PayPal is wired only as a payment PROVIDER (see paymentProviders above).
+// The package @rsc-labs/medusa-paypal-payment ships no plugin entrypoints
+// (modules/workflows/api/links) — only an admin extension (and admin is
+// disabled here). Registering it as a plugin would scan an empty package and
+// can throw during plugin resolution once PAYPAL creds are set. The provider
+// registration is the complete + correct integration, so no plugin entry.
 
 // GA4 is admin-driven (SSoT), consistent with Stripe/Razorpay and the GA4
 // reporting dashboard: the storefront's gtag — injected by TrackingScripts from
@@ -121,27 +117,43 @@ const modules: any[] = [
     options: { providers: authProviders },
   },
 
-  // File Storage (S3 / MinIO)
+  // File Storage — S3/MinIO when fully configured, else local-disk fallback.
+  // The S3 provider validates its options at boot and THROWS if any required
+  // value is missing → a single unset S3 env var would crash the whole backend.
+  // Gating on the required vars (and degrading to file-local) makes a missing/
+  // misconfigured S3 env a graceful downgrade, never a total-boot-failure.
   {
     resolve: "@medusajs/medusa/file",
     options: {
-      providers: [
-        {
-          resolve: "@medusajs/medusa/file-s3",
-          id: "s3",
-          options: {
-            file_url: process.env.S3_FILE_URL,
-            access_key_id: process.env.S3_ACCESS_KEY_ID,
-            secret_access_key: process.env.S3_SECRET_ACCESS_KEY,
-            region: process.env.S3_REGION || "us-east-1",
-            bucket: process.env.S3_BUCKET,
-            endpoint: process.env.S3_ENDPOINT,
-            additional_client_config: {
-              forcePathStyle: true,
-            },
-          },
-        },
-      ],
+      providers:
+        process.env.S3_BUCKET &&
+        process.env.S3_ACCESS_KEY_ID &&
+        process.env.S3_SECRET_ACCESS_KEY &&
+        process.env.S3_ENDPOINT
+          ? [
+              {
+                resolve: "@medusajs/medusa/file-s3",
+                id: "s3",
+                options: {
+                  file_url: process.env.S3_FILE_URL,
+                  access_key_id: process.env.S3_ACCESS_KEY_ID,
+                  secret_access_key: process.env.S3_SECRET_ACCESS_KEY,
+                  region: process.env.S3_REGION || "us-east-1",
+                  bucket: process.env.S3_BUCKET,
+                  endpoint: process.env.S3_ENDPOINT,
+                  additional_client_config: {
+                    forcePathStyle: true,
+                  },
+                },
+              },
+            ]
+          : [
+              {
+                resolve: "@medusajs/medusa/file-local",
+                id: "local",
+                options: { upload_dir: "static", backend_url: `${process.env.BACKEND_URL || ""}/static` },
+              },
+            ],
     },
   },
 

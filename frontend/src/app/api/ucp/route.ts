@@ -10,7 +10,8 @@
  * SCOPE (deliberate, honest readiness — see task #167):
  *  - Declares profile version, merchant identity, and product-discovery via the
  *    live GMC product feed (the confirmed feed-first eligibility lever).
- *  - Publishes signing_keys from env (UCP_SIGNING_PUBLIC_JWK) when provisioned.
+ *  - signing_keys is empty until checkout is enabled; the keypair will then be
+ *    generated + stored in the admin system (store.metadata), public JWK here.
  *  - Does NOT advertise a live checkout endpoint — UCP checkout is US/CA/AU
  *    select-merchant only and India-ineligible as of 2026-06; adding the
  *    checkout service block + REST handlers is a one-file follow-up when Google
@@ -21,17 +22,6 @@ const STORE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.
 const FEED_URL =
   (process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "https://sapi.vastucart.in").replace(/\/$/, "") +
   "/store/gmc-feed"
-
-function signingKeys(): unknown[] {
-  const raw = process.env.UCP_SIGNING_PUBLIC_JWK
-  if (!raw) return []
-  try {
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : [parsed]
-  } catch {
-    return []
-  }
-}
 
 export async function GET(): Promise<Response> {
   const profile = {
@@ -50,7 +40,10 @@ export async function GET(): Promise<Response> {
         },
       },
     },
-    signing_keys: signingKeys(),
+    // Empty until UCP checkout is enabled (deferred — US/CA/AU-only today). When
+    // checkout is wired, the signing keypair will be generated + stored in the
+    // admin system (store.metadata) and its public JWK published here.
+    signing_keys: [],
     merchant: {
       name: "VastuCart",
       url: STORE_URL,

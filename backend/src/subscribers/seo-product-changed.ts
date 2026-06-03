@@ -15,6 +15,7 @@
 import { SubscriberArgs, type SubscriberConfig } from "@medusajs/framework"
 import { Modules } from "@medusajs/framework/utils"
 import { pingIndexNow, revalidateStorefront, storefrontUrl } from "../lib/seo-notify"
+import { getSeoRuntime } from "../lib/seo-runtime"
 
 export default async function handleSeoProductChanged({
   event,
@@ -58,9 +59,10 @@ export default async function handleSeoProductChanged({
     paths.add("/")
     urls.add(`${site}/`)
 
+    const { indexnowKey } = await getSeoRuntime(container)
     await Promise.all([
-      revalidateStorefront({ paths: [...paths] }, logger),
-      pingIndexNow([...urls], logger),
+      revalidateStorefront([...paths], logger),
+      pingIndexNow([...urls], indexnowKey, logger),
     ])
   } catch (err: any) {
     logger.warn(`[seo-notify] ${name} (${id}) failed: ${err?.message}`)

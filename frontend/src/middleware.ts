@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 
-const BACKEND_URL = process.env.MEDUSA_INTERNAL_URL || "http://backend:9000"
+// Fallback matches the docker-compose service alias (ecomstore-backend); the
+// real value comes from MEDUSA_INTERNAL_URL env. A wrong fallback would silently
+// 503 all proxied /store|/admin|/auth API calls if the env were ever missing.
+const BACKEND_URL = process.env.MEDUSA_INTERNAL_URL || "http://ecomstore-backend:9000"
 
 /**
  * Next.js middleware that:
