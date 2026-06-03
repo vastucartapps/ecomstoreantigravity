@@ -99,16 +99,13 @@ if (process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET) {
   })
 }
 
-if (process.env.GA4_MEASUREMENT_ID && process.env.GA4_API_SECRET) {
-  plugins.push({
-    resolve: "@variablevic/google-analytics-medusa",
-    options: {
-      measurementId: process.env.GA4_MEASUREMENT_ID,
-      apiSecret: process.env.GA4_API_SECRET,
-      debug: process.env.NODE_ENV !== "production",
-    },
-  })
-}
+// GA4 is admin-driven (SSoT), consistent with Stripe/Razorpay and the GA4
+// reporting dashboard: the storefront's gtag — injected by TrackingScripts from
+// store.metadata.integrations_config — is the SINGLE source of GA4 events, and
+// the admin service-account key powers the reporting dashboard. The legacy
+// env-var server-side plugin (@variablevic/google-analytics-medusa, gated on
+// GA4_MEASUREMENT_ID + GA4_API_SECRET) was removed to avoid a second event
+// pipeline that could double-count and to keep GA4 config in one place (admin).
 
 // ─── Modules ──────────────────────────────────────────────
 const modules: any[] = [
