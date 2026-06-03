@@ -56,6 +56,9 @@ export interface GmcProduct {
   customLabel2?: string
   customLabel3?: string
   customLabel4?: string
+  /** Parent product title — groups variants under one human/AI-readable name
+   *  (supports AI-Mode/Gemini variant understanding). */
+  itemGroupTitle?: string
 }
 
 export interface RawMedusaProduct {
@@ -247,6 +250,7 @@ export function toGmcPayload(
     ...(customLabel2 ? { customLabel2 } : {}),
     ...(customLabel3 ? { customLabel3 } : {}),
     ...(customLabel4 ? { customLabel4 } : {}),
+    ...(product.title ? { itemGroupTitle: cleanText(product.title) } : {}),
   }
 }
 
@@ -272,6 +276,9 @@ export function buildXmlFeed(
       let xml = `    <item>\n`
       xml += `      <g:id>${escapeXml(gmc.offerId)}</g:id>\n`
       xml += `      <g:item_group_id>${escapeXml(gmc.itemGroupId)}</g:item_group_id>\n`
+      if (gmc.itemGroupTitle) {
+        xml += `      <g:item_group_title>${escapeXml(gmc.itemGroupTitle)}</g:item_group_title>\n`
+      }
       xml += `      <title>${escapeXml(gmc.title)}</title>\n`
       xml += `      <description>${escapeXml(gmc.description)}</description>\n`
       xml += `      <link>${escapeXml(gmc.link)}</link>\n`
