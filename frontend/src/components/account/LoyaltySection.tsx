@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Star, TrendingUp, TrendingDown, Minus, Loader2, Gift, ShoppingBag } from "lucide-react"
 import { useDashboardData } from "@/hooks/useDashboardData"
+import { useLoyaltyEnabled } from "@/providers/announcement-provider"
 import { primary, earth, bg, fonts, gradients } from "@/lib/theme"
 import type { LoyaltyBalance, LoyaltyTransaction } from "@/types/dashboard"
 
@@ -13,16 +14,27 @@ const TYPE_CONFIG = {
 }
 
 export function LoyaltySection() {
+  const loyaltyEnabled = useLoyaltyEnabled()
   const { fetchLoyalty } = useDashboardData()
   const [data, setData] = useState<LoyaltyBalance>({ balance: 0, transactions: [] })
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    fetchLoyalty().then((d) => {
-      setData(d)
-      setIsLoading(false)
-    }).catch(() => setIsLoading(false))
-  }, [])
+    if (!loyaltyEnabled) return // disabled: skip fetch (rendered below)
+    let cancelled = false
+    fetchLoyalty()
+      .then((d) => {
+        if (cancelled) return
+        setData(d)
+        setIsLoading(false)
+      })
+      .catch(() => {
+        if (!cancelled) setIsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [loyaltyEnabled])
 
   // Calculate stats
   const totalEarned = data.transactions.filter((t) => t.type === "earned").reduce((s, t) => s + t.points, 0)
@@ -31,6 +43,16 @@ export function LoyaltySection() {
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+
+  // System-wide loyalty toggle is OFF — hide the program entirely.
+  if (!loyaltyEnabled) {
+    return (
+      <div className="py-16 text-center" style={{ color: earth[600], fontFamily: fonts.body }}>
+        <Star className="w-8 h-8 mx-auto mb-3" style={{ color: earth[300] }} />
+        <p className="text-sm">The rewards program is currently unavailable.</p>
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (

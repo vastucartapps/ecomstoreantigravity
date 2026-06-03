@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/providers/auth-provider"
 import { useWishlist } from "@/providers/wishlist-provider"
+import { useLoyaltyEnabled } from "@/providers/announcement-provider"
 import { useDashboardData } from "@/hooks/useDashboardData"
 import { primary, earth, bg, fonts, gradients } from "@/lib/theme"
 import type { Order, LoyaltyBalance, Coupon } from "@/types/dashboard"
@@ -33,6 +34,7 @@ const STATUS_STYLES: Record<string, { label: string; color: string; bg: string; 
 export function DashboardHome() {
   const { user } = useAuth()
   const { wishlistCount } = useWishlist()
+  const loyaltyEnabled = useLoyaltyEnabled()
   const { fetchOrders, fetchLoyalty, fetchCoupons } = useDashboardData()
 
   const [recentOrders, setRecentOrders] = useState<Order[]>([])
@@ -84,14 +86,19 @@ export function DashboardHome() {
       color: "#EF4444",
       bg: "#FEF2F2",
     },
-    {
-      label: "Loyalty Points",
-      value: loyalty.balance.toLocaleString("en-IN"),
-      icon: Star,
-      href: "/account/loyalty",
-      color: "#F59E0B",
-      bg: "#FFFBEB",
-    },
+    // Loyalty Points card only when the program is enabled system-wide.
+    ...(loyaltyEnabled
+      ? [
+          {
+            label: "Loyalty Points",
+            value: loyalty.balance.toLocaleString("en-IN"),
+            icon: Star,
+            href: "/account/loyalty",
+            color: "#F59E0B",
+            bg: "#FFFBEB",
+          },
+        ]
+      : []),
     {
       label: "Active Coupons",
       value: String(couponsCount),

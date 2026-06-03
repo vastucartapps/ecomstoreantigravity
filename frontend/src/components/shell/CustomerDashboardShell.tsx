@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react"
 import { useAuth } from "@/providers/auth-provider"
+import { useLoyaltyEnabled } from "@/providers/announcement-provider"
 import { primary, secondary, earth, bg, gradients, fonts, shadows } from "./theme"
 
 interface CustomerDashboardShellProps {
@@ -83,6 +84,11 @@ interface SidebarContentProps {
 // MUST be module-level — not inside CustomerDashboardShell — otherwise React creates a new
 // component type on every render, causing unnecessary unmount/remount on every state update.
 function SidebarContent({ user, pathname, handleLogout, unreadCount }: SidebarContentProps) {
+  const loyaltyEnabled = useLoyaltyEnabled()
+  // Hide the Loyalty Points nav item when the program is disabled system-wide.
+  const visibleNavItems = navItems.filter(
+    (item) => loyaltyEnabled || item.href !== "/account/loyalty"
+  )
   return (
     <div
       style={{
@@ -183,7 +189,7 @@ function SidebarContent({ user, pathname, handleLogout, unreadCount }: SidebarCo
           overflowY: "auto",
         }}
       >
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const active = isActiveItem(item.href, pathname)
           const Icon = item.icon
           return (

@@ -96,6 +96,7 @@ interface StorefrontContextValue {
   footer: FooterValue
   // Feature flags
   consultationsRouteEnabled: boolean
+  loyaltyEnabled: boolean
   // Operational policies (drives trust ribbon, homepage badge, legal pages)
   operationalPolicies: OperationalPolicies
   // Region (drives currency formatting in operational values)
@@ -195,6 +196,7 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
   const [branding, setBranding] = useState<BrandingValue>(DEFAULT_BRANDING)
   const [footer, setFooter] = useState<FooterValue>(DEFAULT_FOOTER)
   const [consultationsRouteEnabled, setConsultationsRouteEnabled] = useState(true)
+  const [loyaltyEnabled, setLoyaltyEnabled] = useState(true)
   const [operationalPolicies, setOperationalPolicies] =
     useState<OperationalPolicies>(DEFAULT_OPERATIONAL_POLICIES)
   // Region defaults to IN (we ship from India); flips to INTERNATIONAL on
@@ -228,6 +230,11 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
         })
         if (!res.ok) return
         const data = await res.json()
+        // Loyalty flag is a top-level sibling of `config` — read it before the
+        // early return so it applies even if storefront_config is unset.
+        if (typeof data.loyaltyEnabled === "boolean") {
+          setLoyaltyEnabled(data.loyaltyEnabled)
+        }
         const config = data.config
         if (!config) return
 
@@ -370,6 +377,7 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
         branding,
         footer,
         consultationsRouteEnabled,
+        loyaltyEnabled,
         operationalPolicies,
         region,
         clusterSites,
@@ -404,6 +412,13 @@ export function useConsultationsEnabled(): boolean {
   const ctx = useContext(StorefrontContext)
   if (!ctx) throw new Error("useConsultationsEnabled must be used within AnnouncementProvider")
   return ctx.consultationsRouteEnabled
+}
+
+/** System-wide loyalty on/off flag (admin SSoT). Hides loyalty UI when off. */
+export function useLoyaltyEnabled(): boolean {
+  const ctx = useContext(StorefrontContext)
+  if (!ctx) throw new Error("useLoyaltyEnabled must be used within AnnouncementProvider")
+  return ctx.loyaltyEnabled
 }
 
 /**
