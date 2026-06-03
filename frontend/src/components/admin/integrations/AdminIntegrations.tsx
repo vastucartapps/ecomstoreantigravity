@@ -40,6 +40,8 @@ import type {
   GmcStatusResponse,
   MetaStatusResponse,
   GA4ReportResponse,
+  GscReportResponse,
+  GscInspectResponse,
 } from "@/types/admin-integrations"
 
 const c = {
@@ -1862,6 +1864,202 @@ function Ga4AnalyticsPanel({
 }
 
 /* ─── Main Component ─── */
+/* ─── GSC Search Analytics Panel ─── */
+function GscAnalyticsPanel({
+  gscReport,
+  onFetch,
+  onSubmitSitemap,
+  onInspectUrl,
+}: {
+  gscReport: GscReportResponse | null | undefined
+  onFetch?: (days?: number) => Promise<void>
+  onSubmitSitemap?: () => Promise<void>
+  onInspectUrl?: (url: string) => Promise<GscInspectResponse>
+}) {
+  const [loading, setLoading] = useState(false)
+  const [days, setDays] = useState(28)
+  const [submitting, setSubmitting] = useState(false)
+  const [inspectUrl, setInspectUrl] = useState("")
+  const [inspecting, setInspecting] = useState(false)
+  const [inspectResult, setInspectResult] = useState<GscInspectResponse | null>(null)
+
+  const handleFetch = async (d = days) => {
+    setLoading(true)
+    try {
+      await onFetch?.(d)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmit = async () => {
+    setSubmitting(true)
+    try {
+      await onSubmitSitemap?.()
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleInspect = async () => {
+    if (!inspectUrl.trim() || !onInspectUrl) return
+    setInspecting(true)
+    try {
+      setInspectResult(await onInspectUrl(inspectUrl.trim()))
+    } finally {
+      setInspecting(false)
+    }
+  }
+
+  const totals = gscReport?.report?.totals
+  const pct = (n: number) => `${(n * 100).toFixed(2)}%`
+
+  return (
+    <div className="rounded-xl overflow-hidden mb-6" style={{ backgroundColor: c.card, boxShadow: c.shadow }}>
+      <div className="h-1" style={{ background: "linear-gradient(90deg, #4285F4, #34A853, #FBBC05, #EA4335)" }} />
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h3 className="flex items-center gap-2 text-base font-semibold" style={{ fontFamily: fonts.heading, color: c.earth700 }}>
+            <Search size={18} style={{ color: "#4285F4" }} />
+            Search Console — Last {days} Days
+          </h3>
+          <div className="flex items-center gap-2">
+            <select
+              value={days}
+              onChange={(e) => { const d = parseInt(e.target.value, 10); setDays(d); handleFetch(d) }}
+              className="px-2 py-1 rounded-md text-xs border outline-none"
+              style={{ borderColor: c.primary100, color: c.earth700, fontFamily: fonts.body, backgroundColor: c.bg }}
+            >
+              {[7, 28, 90].map((d) => <option key={d} value={d}>{d} days</option>)}
+            </select>
+            <button
+              onClick={() => handleFetch()}
+              disabled={loading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-white"
+              style={{ backgroundColor: "#4285F4", fontFamily: fonts.body, opacity: loading ? 0.7 : 1 }}
+            >
+              <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+              {loading ? "Loading…" : "Refresh"}
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium"
+              style={{ border: `1px solid ${c.primary100}`, color: c.earth700, fontFamily: fonts.body, opacity: submitting ? 0.7 : 1 }}
+            >
+              <ExternalLink size={12} />
+              {submitting ? "Submitting…" : "Submit sitemap"}
+            </button>
+          </div>
+        </div>
+
+        {!gscReport ? (
+          <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: c.primary50 }}>
+            <AlertCircle size={16} style={{ color: c.warning }} />
+            <p className="text-sm" style={{ color: c.earth600, fontFamily: fonts.body }}>Click Refresh to load your Search Console data.</p>
+          </div>
+        ) : !gscReport.isConfigured ? (
+          <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: c.primary50 }}>
+            <AlertCircle size={16} style={{ color: c.warning }} />
+            <div>
+              <p className="text-sm font-medium" style={{ color: c.earth700, fontFamily: fonts.body }}>Search Console not configured</p>
+              <p className="text-xs mt-0.5" style={{ color: c.earth500, fontFamily: fonts.body }}>Enter your Site URL + Service Account Key in the Google Search Console card above, then save.</p>
+            </div>
+          </div>
+        ) : gscReport.error ? (
+          <div className="flex items-center gap-3 p-3 rounded-lg" style={{ backgroundColor: c.errorLight }}>
+            <AlertCircle size={16} style={{ color: c.error }} />
+            <p className="text-sm" style={{ color: c.error, fontFamily: fonts.body }}>{gscReport.error}</p>
+          </div>
+        ) : gscReport.report ? (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+              {[
+                { label: "Clicks", value: totals?.clicks ?? 0, color: "#4285F4" },
+                { label: "Impressions", value: totals?.impressions ?? 0, color: "#34A853" },
+                { label: "CTR", value: pct(totals?.ctr ?? 0), color: "#FBBC05" },
+                { label: "Avg Position", value: (totals?.position ?? 0).toFixed(1), color: "#EA4335" },
+              ].map((m) => (
+                <div key={m.label} className="p-3 rounded-lg" style={{ backgroundColor: c.bg }}>
+                  <div className="text-xs" style={{ color: c.earth500, fontFamily: fonts.body }}>{m.label}</div>
+                  <div className="text-lg font-semibold" style={{ color: m.color, fontFamily: fonts.heading }}>
+                    {typeof m.value === "number" ? m.value.toLocaleString("en-IN") : m.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <h4 className="text-xs font-semibold mb-2" style={{ color: c.earth700, fontFamily: fonts.heading }}>Top Queries</h4>
+                {(gscReport.report.topQueries || []).slice(0, 8).map((r, i) => (
+                  <div key={i} className="flex items-center justify-between py-1.5 text-xs border-b" style={{ borderColor: c.primary50, color: c.earth600, fontFamily: fonts.body }}>
+                    <span className="truncate pr-2">{r.keys?.[0] || "—"}</span>
+                    <span className="shrink-0" style={{ color: c.earth500 }}>{r.clicks} clk · {r.impressions} imp</span>
+                  </div>
+                ))}
+                {gscReport.report.topQueries.length === 0 && <p className="text-xs" style={{ color: c.earth500 }}>No query data yet.</p>}
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold mb-2" style={{ color: c.earth700, fontFamily: fonts.heading }}>Top Pages</h4>
+                {(gscReport.report.topPages || []).slice(0, 8).map((r, i) => (
+                  <div key={i} className="flex items-center justify-between py-1.5 text-xs border-b" style={{ borderColor: c.primary50, color: c.earth600, fontFamily: fonts.body }}>
+                    <span className="truncate pr-2">{(r.keys?.[0] || "—").replace(/^https?:\/\/[^/]+/, "")}</span>
+                    <span className="shrink-0" style={{ color: c.earth500 }}>{r.clicks} clk</span>
+                  </div>
+                ))}
+                {gscReport.report.topPages.length === 0 && <p className="text-xs" style={{ color: c.earth500 }}>No page data yet.</p>}
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {/* URL Inspection */}
+        <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${c.primary50}` }}>
+          <h4 className="flex items-center gap-1.5 text-xs font-semibold mb-2" style={{ color: c.earth700, fontFamily: fonts.heading }}>
+            <Globe size={13} /> URL Inspection
+          </h4>
+          <div className="flex items-center gap-2">
+            <input
+              value={inspectUrl}
+              onChange={(e) => setInspectUrl(e.target.value)}
+              placeholder="https://store.vastucart.in/product/…"
+              className="flex-1 px-3 py-1.5 rounded-md text-xs border outline-none"
+              style={{ borderColor: c.primary100, color: c.earth700, fontFamily: fonts.body, backgroundColor: c.bg }}
+            />
+            <button
+              onClick={handleInspect}
+              disabled={inspecting || !inspectUrl.trim()}
+              className="px-3 py-1.5 rounded-md text-xs font-medium text-white"
+              style={{ backgroundColor: "#34A853", fontFamily: fonts.body, opacity: inspecting || !inspectUrl.trim() ? 0.6 : 1 }}
+            >
+              {inspecting ? "Inspecting…" : "Inspect"}
+            </button>
+          </div>
+          {inspectResult && (
+            <div className="mt-2 p-3 rounded-lg text-xs" style={{ backgroundColor: c.bg, color: c.earth600, fontFamily: fonts.body }}>
+              {inspectResult.error ? (
+                <span style={{ color: c.error }}>{inspectResult.error}</span>
+              ) : inspectResult.inspection ? (
+                <div className="flex items-center gap-2">
+                  {inspectResult.inspection.verdict === "PASS" ? (
+                    <CheckCircle2 size={14} style={{ color: "#34A853" }} />
+                  ) : (
+                    <AlertCircle size={14} style={{ color: c.warning }} />
+                  )}
+                  <span><strong>{inspectResult.inspection.coverageState || inspectResult.inspection.verdict || "Unknown"}</strong>
+                    {inspectResult.inspection.lastCrawlTime ? ` · last crawled ${new Date(inspectResult.inspection.lastCrawlTime).toLocaleDateString("en-IN")}` : ""}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function AdminIntegrations({
   activeTab: initialTab,
   integrations,
@@ -1871,6 +2069,7 @@ export function AdminIntegrations({
   gmcStatus,
   metaStatus,
   ga4Report,
+  gscReport,
   onChangeTab,
   onToggleConnection,
   onTestConnection,
@@ -1883,6 +2082,9 @@ export function AdminIntegrations({
   onGmcSync,
   onMetaSync,
   onFetchGa4Report,
+  onFetchGscReport,
+  onSubmitGscSitemap,
+  onInspectGscUrl,
 }: AdminIntegrationsProps) {
   const [tab, setTab] = useState<IntegrationTab>(initialTab)
 
@@ -1971,6 +2173,16 @@ export function AdminIntegrations({
             {/* GA4 Analytics Panel — shown when GA4 card exists */}
             {integrations.some((i) => i.id === "ga4") && (
               <Ga4AnalyticsPanel ga4Report={ga4Report} onFetch={onFetchGa4Report} />
+            )}
+
+            {/* GSC Search Analytics Panel — shown when GSC card exists */}
+            {integrations.some((i) => i.id === "gsc") && (
+              <GscAnalyticsPanel
+                gscReport={gscReport}
+                onFetch={onFetchGscReport}
+                onSubmitSitemap={onSubmitGscSitemap}
+                onInspectUrl={onInspectGscUrl}
+              />
             )}
 
           {/* Card grid */}

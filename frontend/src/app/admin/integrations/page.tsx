@@ -13,6 +13,8 @@ import type {
   GmcStatusResponse,
   MetaStatusResponse,
   GA4ReportResponse,
+  GscReportResponse,
+  GscInspectResponse,
 } from "@/types/admin-integrations"
 
 export default function IntegrationsSEOPage() {
@@ -28,6 +30,7 @@ export default function IntegrationsSEOPage() {
   const [metaStatus, setMetaStatus] = useState<MetaStatusResponse | null>(null)
   const metaPollRef = useRef<NodeJS.Timeout | null>(null)
   const [ga4Report, setGa4Report] = useState<GA4ReportResponse | null>(null)
+  const [gscReport, setGscReport] = useState<GscReportResponse | null>(null)
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -75,6 +78,30 @@ export default function IntegrationsSEOPage() {
       // Silently fail — panel shows error state
     }
   }, [])
+
+  const handleFetchGscReport = useCallback(async (days = 28) => {
+    try {
+      setGscReport(await hook.fetchGscReport(days))
+    } catch {
+      // Silently fail — panel shows error state
+    }
+  }, [])
+
+  const handleSubmitGscSitemap = useCallback(async () => {
+    try {
+      await hook.submitGscSitemap()
+      showToast("Sitemap submitted to Google Search Console")
+    } catch {
+      showToast("Sitemap submission failed — check GSC connection")
+    }
+  }, [])
+
+  const handleInspectGscUrl = useCallback(
+    async (url: string): Promise<GscInspectResponse> => {
+      return hook.inspectGscUrl(url)
+    },
+    []
+  )
 
   useEffect(() => {
     loadConfig()
@@ -348,6 +375,7 @@ export default function IntegrationsSEOPage() {
         gmcStatus={gmcStatus}
         metaStatus={metaStatus}
         ga4Report={ga4Report}
+        gscReport={gscReport}
         onChangeTab={setActiveTab}
         onToggleConnection={handleToggleConnection}
         onTestConnection={handleTestConnection}
@@ -360,6 +388,9 @@ export default function IntegrationsSEOPage() {
         onGmcSync={handleGmcSync}
         onMetaSync={handleMetaSync}
         onFetchGa4Report={handleFetchGa4Report}
+        onFetchGscReport={handleFetchGscReport}
+        onSubmitGscSitemap={handleSubmitGscSitemap}
+        onInspectGscUrl={handleInspectGscUrl}
       />
 
       {/* Toast */}

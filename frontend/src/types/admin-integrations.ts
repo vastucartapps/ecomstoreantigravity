@@ -205,6 +205,7 @@ export interface AdminIntegrationsProps {
   gmcStatus?: GmcStatusResponse | null
   metaStatus?: MetaStatusResponse | null
   ga4Report?: GA4ReportResponse | null
+  gscReport?: GscReportResponse | null
   onChangeTab?: (tab: IntegrationTab) => void
   onToggleConnection?: (integrationId: string) => Promise<void>
   onTestConnection?: (integrationId: string) => Promise<void>
@@ -220,4 +221,7 @@ export interface AdminIntegrationsProps {
   onGmcSync?: () => Promise<void>
   onMetaSync?: () => Promise<void>
   onFetchGa4Report?: (days?: number) => Promise<void>
+  onFetchGscReport?: (days?: number) => Promise<void>
+  onSubmitGscSitemap?: () => Promise<void>
+  onInspectGscUrl?: (url: string) => Promise<GscInspectResponse>
 }
