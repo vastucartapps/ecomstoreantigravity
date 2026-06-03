@@ -108,7 +108,8 @@ async function fetchReviews(productId: string) {
 
 function buildSchemaInput(
   p: RawProduct,
-  reviewData: { reviews: unknown[]; rating_breakdown: { average: number; total: number } }
+  reviewData: { reviews: unknown[]; rating_breakdown: { average: number; total: number } },
+  policy: SchemaProductInput["policy"]
 ): SchemaProductInput {
   const meta = (p.metadata || {}) as Record<string, unknown>
 
@@ -217,6 +218,7 @@ function buildSchemaInput(
           }
         : null,
     tags: (p.tags || []).map((t) => t.value),
+    policy,
   }
 }
 
@@ -304,7 +306,15 @@ export default async function ProductPage({
   }
 
   const reviewData = await fetchReviews(product.id)
-  const schemaInput = buildSchemaInput(product, reviewData)
+  // Pull shipping + return policy from admin SSoT (never hardcoded in schema).
+  const b = await fetchBrandingForMetadata()
+  const schemaInput = buildSchemaInput(product, reviewData, {
+    returnWindowDays: b.returnWindowDays,
+    shippingRateInr: b.shippingRateInr,
+    shippingRateUsd: b.shippingRateUsd,
+    freeShippingThresholdInr: b.freeShippingInr,
+    freeShippingThresholdUsd: b.freeShippingUsd,
+  })
   const graph = buildProductGraph(schemaInput)
 
   return (

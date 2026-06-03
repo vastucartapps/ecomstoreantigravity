@@ -62,6 +62,17 @@ export interface SchemaCategory {
   handle: string
 }
 
+export interface SchemaPolicy {
+  /** Admin return-policy window (days). */
+  returnWindowDays: number
+  /** Base shipping rate below the free-shipping threshold, per region. */
+  shippingRateInr: number
+  shippingRateUsd: number
+  /** Order/price at/above which shipping is free, per region. */
+  freeShippingThresholdInr: number
+  freeShippingThresholdUsd: number
+}
+
 export interface SchemaProductInput {
   id: string
   slug: string
@@ -77,6 +88,8 @@ export interface SchemaProductInput {
   reviews: SchemaReview[]
   aggregateRating: { average: number; total: number } | null
   tags: string[]
+  /** Admin-configured shipping + return policy (SSoT — never hardcoded). */
+  policy: SchemaPolicy
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────
@@ -221,14 +234,25 @@ function buildReviews(slug: string, reviews: SchemaReview[]) {
   }))
 }
 
-function buildShippingDetails(currency: "INR" | "USD") {
-  // VastuCart offers free shipping across India.
-  // Emit one valid ShippingRate — Google uses this for the free-shipping badge.
+function buildShippingDetails(
+  currency: "INR" | "USD",
+  price: number,
+  policy: SchemaPolicy
+) {
+  // Honest, per-offer shipping rate from admin SSoT: free (0) only when this
+  // product's price clears the free-shipping threshold for its region;
+  // otherwise the actual base rate. Never claims unconditional free shipping
+  // (which would misrepresent the ₹/$ charged below the threshold).
+  const baseRate = currency === "INR" ? policy.shippingRateInr : policy.shippingRateUsd
+  const threshold =
+    currency === "INR" ? policy.freeShippingThresholdInr : policy.freeShippingThresholdUsd
+  const rate = threshold > 0 && price >= threshold ? 0 : baseRate
+
   return {
     "@type": "OfferShippingDetails",
     shippingRate: {
       "@type": "MonetaryAmount",
-      value: 0,
+      value: rate,
       currency,
     },
     shippingDestination: {
@@ -253,24 +277,23 @@ function buildShippingDetails(currency: "INR" | "USD") {
   }
 }
 
-function buildReturnPolicy(currency: "INR" | "USD") {
+function buildReturnPolicy(currency: "INR" | "USD", returnWindowDays: number) {
   return {
     "@type": "MerchantReturnPolicy",
     applicableCountry: currency === "INR" ? "IN" : "US",
     returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
-    merchantReturnDays: 7,
+    merchantReturnDays: returnWindowDays,
     returnMethod: "https://schema.org/ReturnByMail",
     returnFees: "https://schema.org/FreeReturn",
   }
 }
 
 function buildOffers(input: SchemaProductInput) {
-  const { slug, variants, currency, merchantCentre } = input
+  const { slug, variants, currency, merchantCentre, policy } = input
   const validUntil = priceValidUntil()
   const sellerRef = { "@id": ORG_ID }
   const condition = conditionUrl(merchantCentre.condition)
-  const shipping = buildShippingDetails(currency)
-  const returns = buildReturnPolicy(currency)
+  const returns = buildReturnPolicy(currency, policy.returnWindowDays)
 
   const offerList = variants.map((v) => {
     const offerUrl = `${SITE_URL}/product/${slug}?variant=${v.id}`
@@ -287,7 +310,8 @@ function buildOffers(input: SchemaProductInput) {
       url: offerUrl,
       seller: sellerRef,
       hasMerchantReturnPolicy: returns,
-      shippingDetails: shipping,
+      // Per-offer: free when this variant's price clears the threshold.
+      shippingDetails: buildShippingDetails(currency, v.price, policy),
     }
   })
 

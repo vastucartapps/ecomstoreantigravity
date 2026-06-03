@@ -33,6 +33,12 @@ export interface MetadataBranding {
   siteUrl: string
   /** From shipping_config.freeShipping.thresholdINR — used in policy SEO meta. */
   freeShippingInr: number
+  /** From shipping_config.freeShipping.thresholdUSD. */
+  freeShippingUsd: number
+  /** Base domestic (INR) shipping rate below the free threshold. */
+  shippingRateInr: number
+  /** Base international (USD) shipping rate below the free threshold. */
+  shippingRateUsd: number
   /** From return_policy.windowDays — used in refund-policy SEO meta. */
   returnWindowDays: number
   /** Admin-pasted Google Search Console site-verification token (or ""). */
@@ -57,6 +63,9 @@ export async function fetchBrandingForMetadata(): Promise<MetadataBranding> {
     contactPhone: BRAND_DEFAULTS.contactPhone,
     siteUrl: SITE_URL,
     freeShippingInr: 999,
+    freeShippingUsd: 50,
+    shippingRateInr: 49,
+    shippingRateUsd: 15,
     returnWindowDays: 7,
     googleSiteVerification: "",
   }
@@ -89,6 +98,16 @@ export async function fetchBrandingForMetadata(): Promise<MetadataBranding> {
       if (config?.freeShipping?.thresholdINR) {
         out.freeShippingInr = config.freeShipping.thresholdINR
       }
+      if (config?.freeShipping?.thresholdUSD) {
+        out.freeShippingUsd = config.freeShipping.thresholdUSD
+      }
+      // Base shipping rate per region (below the free-shipping threshold).
+      const zones: Array<{ rate?: number; currency?: string; isEnabled?: boolean }> =
+        config?.zones || []
+      const inrZone = zones.find((z) => z.currency === "INR")
+      const usdZone = zones.find((z) => z.currency === "USD")
+      if (typeof inrZone?.rate === "number") out.shippingRateInr = inrZone.rate
+      if (typeof usdZone?.rate === "number") out.shippingRateUsd = usdZone.rate
     }
 
     if (returnRes.ok) {
