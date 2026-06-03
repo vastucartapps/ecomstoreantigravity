@@ -293,6 +293,9 @@ services:
       # + IndexNow key served at /indexnow-key.txt). Defaults work as-is.
       - REVALIDATE_SECRET=${REVALIDATE_SECRET:-vc-revalidate-2026-shared-secret-change-me}
       - INDEXNOW_KEY=${INDEXNOW_KEY:-a7f3c9e1b2d84056f1a9c3e7b5d20486}
+      # UCP discovery: optional public signing key (JWK JSON) published in
+      # /.well-known/ucp. Empty until UCP checkout is activated for the region.
+      - UCP_SIGNING_PUBLIC_JWK=${UCP_SIGNING_PUBLIC_JWK:-}
     ports:
       - "3000:3000"
     healthcheck:

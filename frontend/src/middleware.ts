@@ -20,6 +20,13 @@ const BACKEND_URL = process.env.MEDUSA_INTERNAL_URL || "http://backend:9000"
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl
 
+  // UCP discovery profile is served by the storefront itself (app router ignores
+  // leading-dot folders, so we rewrite to a normal route). Must come BEFORE the
+  // generic /.well-known/* → backend proxy below.
+  if (pathname === "/.well-known/ucp") {
+    return NextResponse.rewrite(new URL("/api/ucp" + search, request.url))
+  }
+
   // /store/*, /auth/*, /.well-known/*, /health — always proxy to backend
   // Exception: /auth/google/callback is a Next.js page (OAuth token landing),
   // not a backend route — let it render as a page.
