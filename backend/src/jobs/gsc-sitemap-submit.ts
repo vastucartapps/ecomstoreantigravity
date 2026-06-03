@@ -36,5 +36,6 @@ export default async function gscSitemapSubmitJob(container: MedusaContainer) {
 }
 
 export const config = {
+  name: "gsc-sitemap-submit", // required by Medusa v2 JobLoader
   schedule: "30 3 * * *", // 03:30 UTC daily
 }
