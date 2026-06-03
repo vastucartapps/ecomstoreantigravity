@@ -26,6 +26,46 @@ const DISALLOW_DEFAULT = [
   "/api/",
 ]
 
+// AI-citation crawlers — ALLOWED. These fetch pages to cite us in AI answers
+// (ChatGPT/Perplexity/Claude/Gemini/etc.), driving referral traffic. We want
+// maximum visibility here. Same DISALLOW_DEFAULT applies (no private surfaces).
+const CITATION_BOTS = [
+  "ChatGPT-User",
+  "OAI-SearchBot",
+  "PerplexityBot",
+  "Perplexity-User",
+  "Claude-User",
+  "Claude-SearchBot",
+  "Claude-Web",
+  "Google-Extended",
+  "Applebot-Extended",
+  "DuckAssistBot",
+  "YouBot",
+  "PhindBot",
+  "MistralAI-User",
+  "Meta-ExternalFetcher",
+]
+
+// Pure training / scraper bots — BLOCKED. They take content for model training
+// or SEO databases and return no citation, no traffic. Blocking them protects
+// content + crawl budget without hurting discoverability or AI citations.
+const BLOCKED_BOTS = [
+  "GPTBot",
+  "ClaudeBot",
+  "anthropic-ai",
+  "CCBot",
+  "Bytespider",
+  "Amazonbot",
+  "Meta-ExternalAgent",
+  "Diffbot",
+  "cohere-ai",
+  "ImagesiftBot",
+  "Omgilibot",
+  "AhrefsBot",
+  "SemrushBot",
+  "MJ12bot",
+]
+
 /**
  * The sitemap(s) a subdomain declares MUST be its own only. Declaring the
  * parent brand's or sibling cluster sitemaps (or a parked domain like
@@ -55,73 +95,57 @@ function ownSitemaps(adminSitemaps: string[] = []): string[] {
   return Array.from(new Set([own, ...sameOrigin]))
 }
 
+/**
+ * The curated bot policy is AUTHORITATIVE and always emitted: citation crawlers
+ * allowed, training/scraper bots blocked, everyone else allowed with the
+ * private-surface disallows. The admin robots.txt editor can only ADD extra
+ * disallow paths to the `*` rule (merged below) — it cannot override the bot
+ * policy, so a stale admin string can never silently drop our AI-citation rules.
+ */
+function buildRules(extraDisallow: string[] = []): MetadataRoute.Robots["rules"] {
+  const starDisallow = Array.from(new Set([...DISALLOW_DEFAULT, ...extraDisallow]))
+  return [
+    ...CITATION_BOTS.map((ua) => ({ userAgent: ua, allow: "/", disallow: DISALLOW_DEFAULT })),
+    ...BLOCKED_BOTS.map((ua) => ({ userAgent: ua, disallow: "/" })),
+    { userAgent: "*", allow: "/", disallow: starDisallow },
+  ]
+}
+
 function defaultRules(): MetadataRoute.Robots {
-  return {
-    rules: [{ userAgent: "*", allow: "/", disallow: DISALLOW_DEFAULT }],
-    sitemap: ownSitemaps(),
-  }
+  return { rules: buildRules(), sitemap: ownSitemaps() }
 }
 
 /**
- * Parse a raw robots.txt string into Next.js MetadataRoute.Robots format.
- * Handles: User-agent, Allow, Disallow, Sitemap directives.
- *
- * The Sitemap directive(s) in the admin string are NOT trusted verbatim — they
- * are filtered to this subdomain's own origin by ownSitemaps(), so a stale
- * admin value (e.g. a parked vastucart.com sitemap) or cross-cluster entries
- * can never poison the served robots.txt.
+ * Parse a raw admin robots.txt only for the extra `*` disallow paths and any
+ * Sitemap directives. The bot allow/block policy is NOT taken from the admin
+ * string — it is always the curated buildRules() baseline. Sitemaps are
+ * filtered to this subdomain's own origin (ownSitemaps), so a stale admin
+ * value (parked .com / cross-cluster) can never poison the served file.
  */
 function parseRobotsTxt(raw: string): MetadataRoute.Robots {
-  const rules: Array<{
-    userAgent: string
-    allow: string[]
-    disallow: string[]
-  }> = []
-  let current: { userAgent: string; allow: string[]; disallow: string[] } | null = null
   const adminSitemaps: string[] = []
+  const starDisallow: string[] = []
+  let currentIsStar = false
 
   for (const line of raw.split("\n")) {
     const t = line.trim()
     if (!t || t.startsWith("#")) continue
+    const lower = t.toLowerCase()
 
-    if (t.toLowerCase().startsWith("user-agent:")) {
-      if (current) rules.push(current)
-      current = {
-        userAgent: t.slice(11).trim(),
-        allow: [],
-        disallow: [],
-      }
-    } else if (t.toLowerCase().startsWith("allow:") && current) {
-      const path = t.slice(6).trim()
-      if (path) current.allow.push(path)
-    } else if (t.toLowerCase().startsWith("disallow:") && current) {
+    if (lower.startsWith("user-agent:")) {
+      currentIsStar = t.slice(11).trim() === "*"
+    } else if (lower.startsWith("disallow:") && currentIsStar) {
       const path = t.slice(9).trim()
-      if (path) current.disallow.push(path)
-    } else if (t.toLowerCase().startsWith("sitemap:")) {
+      if (path && !DISALLOW_DEFAULT.includes(path)) starDisallow.push(path)
+    } else if (lower.startsWith("sitemap:")) {
       const url = t.slice(8).trim()
       if (url) adminSitemaps.push(url)
     }
   }
 
-  if (current) rules.push(current)
-
-  if (rules.length === 0) return defaultRules()
-
-  // Own-origin sitemap(s) only — never trust the admin string's Sitemap line
-  // verbatim (it may carry a stale parked-domain or cross-cluster entry).
-  const sitemap = ownSitemaps(adminSitemaps)
-
   return {
-    rules: rules.map((r) => ({
-      userAgent: r.userAgent,
-      ...(r.allow.length > 0 && {
-        allow: r.allow.length === 1 ? r.allow[0] : r.allow,
-      }),
-      ...(r.disallow.length > 0 && {
-        disallow: r.disallow.length === 1 ? r.disallow[0] : r.disallow,
-      }),
-    })),
-    sitemap,
+    rules: buildRules(starDisallow),
+    sitemap: ownSitemaps(adminSitemaps),
   }
 }
 
