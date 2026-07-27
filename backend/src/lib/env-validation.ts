@@ -43,9 +43,9 @@ export function validateEnv(): void {
       missing.push(`  • ${key}: ${description}`)
     } else if (
       (key === "JWT_SECRET" || key === "COOKIE_SECRET") &&
-      value.length < 20
+      (value.length < 20 || value.includes("supersecret") || value.includes("change-in-production"))
     ) {
-      weak.push(`  • ${key} is too short (${value.length} chars, recommend ≥ 32)`)
+      weak.push(`  • ${key} is insecure or using default placeholder string`)
     }
   }
 

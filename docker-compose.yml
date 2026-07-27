@@ -18,36 +18,10 @@ services:
       ecomstore-internal:
         aliases:
           - ecomstore-postgres
-    # Custom entrypoint: patches pg_hba.conf in the data volume on every startup,
-    # then hands off to the official docker-entrypoint.sh. This ensures trust auth
-    # for both IPv4 and IPv6 connections on every start — even on existing volumes.
-    entrypoint:
-      - "sh"
-      - "-c"
-      - |
-        DATA=/var/lib/postgresql/data
-        HBA=$DATA/pg_hba.conf
-        if [ -f "$HBA" ]; then
-          printf '%s\n' \
-            'local   all  all               trust' \
-            'host    all  all  127.0.0.1/32  trust' \
-            'host    all  all  ::1/128       trust' \
-            'host    all  all  0.0.0.0/0     trust' \
-            'host    all  all  ::/0          trust' \
-            'local   replication all              trust' \
-            'host    replication all 0.0.0.0/0    trust' \
-            'host    replication all ::/0          trust' \
-            > "$HBA"
-        fi
-        exec docker-entrypoint.sh "$@"
-      - "sh"
     environment:
       POSTGRES_USER: medusa
-      POSTGRES_PASSWORD: medusa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medusa}
       POSTGRES_DB: medusa
-      # For fresh-volume init: use trust so initdb writes a trust pg_hba.conf
-      POSTGRES_HOST_AUTH_METHOD: trust
-      POSTGRES_INITDB_ARGS: "--auth-host=trust"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     # shm_size prevents shared memory issues on heavy queries
