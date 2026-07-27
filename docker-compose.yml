@@ -135,8 +135,8 @@ services:
       # Core
       - DATABASE_URL=postgres://medusa:medusa@ecomstore-postgres:5432/medusa?sslmode=disable
       - REDIS_URL=redis://ecomstore-redis:6379
-      - JWT_SECRET=${JWT_SECRET:-supersecret-change-in-production}
-      - COOKIE_SECRET=${COOKIE_SECRET:-supersecret-change-in-production}
+      - JWT_SECRET=${JWT_SECRET}
+      - COOKIE_SECRET=${COOKIE_SECRET}
       - NODE_ENV=production
       # Node.js memory tuning — 2048MB headroom for nightly GMC/Meta full-syncs
       # (each iterates the full product catalog in 500-item batches) and burst
