@@ -197,7 +197,7 @@ services:
       - SENTRY_DSN=${SENTRY_DSN:-}
       - SENTRY_TRACES_SAMPLE_RATE=${SENTRY_TRACES_SAMPLE_RATE:-0.1}
     ports:
-      - "9000:9000"
+      - "${BACKEND_PORT:-9004}:9000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.backend.rule=Host(`${BACKEND_DOMAIN:-sapi.vastucart.in}`)"
@@ -279,7 +279,7 @@ services:
       # (SEO freshness needs no env: the IndexNow key lives in store.metadata
       # and the revalidate webhook is authenticated by network isolation.)
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3004}:3000"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 || exit 1"]
       interval: 15s
