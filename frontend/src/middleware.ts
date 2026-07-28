@@ -36,7 +36,7 @@ export function middleware(request: NextRequest) {
     pathname === "/gmc-feed.xml" ||
     pathname === "/feed/gmc.xml"
   ) {
-    return NextResponse.rewrite(new URL("/gmc-feed", BACKEND_URL))
+    return NextResponse.rewrite(new URL("/gmc-feed.xml", BACKEND_URL))
   }
 
   // /store/*, /auth/*, /.well-known/*, /health — always proxy to backend
