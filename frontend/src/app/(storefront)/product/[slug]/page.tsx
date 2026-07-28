@@ -77,7 +77,6 @@ async function fetchProduct(slug: string): Promise<RawProduct | null> {
     "variants.id", "variants.title", "variants.sku",
     "variants.inventory_quantity", "variants.manage_inventory",
     "variants.options.option_id", "variants.options.value",
-    "variants.prices.amount", "variants.prices.currency_code",
   ].join(",")
 
   try {
