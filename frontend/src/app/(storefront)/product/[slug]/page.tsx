@@ -18,7 +18,7 @@ const BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ||
   "https://sapi.vastucart.in"
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://store.vastucart.in"
-const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || ""
+const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_983f495c4d12fe8c760e3f167e4da827c5ac78c6534604a43446592831d4a601"
 
 const headers = { "x-publishable-api-key": PUB_KEY }
 

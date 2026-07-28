@@ -18,7 +18,7 @@ export default async function StorefrontLayout({
 }) {
   const pubKeyHeader = {
     "x-publishable-api-key":
-      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
+      process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_983f495c4d12fe8c760e3f167e4da827c5ac78c6534604a43446592831d4a601",
   }
 
   // Resolve cluster sites (admin override or default seed) for DNS prefetch

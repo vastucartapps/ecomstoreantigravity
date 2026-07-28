@@ -2,7 +2,7 @@ import Medusa from "@medusajs/js-sdk"
 
 export const medusa = new Medusa({
   baseUrl: process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "",
-  publishableKey: process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY,
+  publishableKey: process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_983f495c4d12fe8c760e3f167e4da827c5ac78c6534604a43446592831d4a601",
 })
 
 /**
