@@ -119,13 +119,14 @@ function getOptionValue(
   return ""
 }
 
-/** Get INR price from variant prices array. Returns price in major units (₹). */
+/** Get INR price from variant prices array or metadata. Returns price in major units (₹). */
 function resolvePrice(variant: RawMedusaVariant): number {
-  const prices = variant.prices || []
-  const inr = prices.find((p) => p.currency_code?.toLowerCase() === "inr")
-  const any = prices[0]
-  const amount = inr?.amount ?? any?.amount ?? 0
-  return amount / 100
+  const prices = (variant as any).prices || []
+  const inr = Array.isArray(prices) ? prices.find((p: any) => p.currency_code?.toLowerCase() === "inr") : null
+  const any = Array.isArray(prices) ? prices[0] : null
+  const metaPrice = (variant.metadata?.price as number) || (variant.metadata?.amount as number)
+  const amount = inr?.amount ?? any?.amount ?? metaPrice ?? 0
+  return amount > 1000 ? amount / 100 : amount
 }
 
 /** Build GMC-compliant title from MTSD spec: {brand} {gender} {title} {color} {size} */

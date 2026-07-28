@@ -21,7 +21,6 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
         skip: 0,
         relations: [
           "variants",
-          "variants.prices",
           "variants.options",
           "images",
           "options",
