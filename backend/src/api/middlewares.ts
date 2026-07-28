@@ -120,8 +120,26 @@ function invalidateSessionsOnPasswordUpdate(
   next()
 }
 
+// ─── Inject default publishable API key for public RSS feed crawler ─────────────
+function injectDefaultPublishableKey(
+  req: import("express").Request,
+  _res: import("express").Response,
+  next: import("express").NextFunction
+) {
+  if (!req.headers["x-publishable-api-key"]) {
+    req.headers["x-publishable-api-key"] = "apk_01KYJATQFPHKWB21CDER964WTS"
+  }
+  next()
+}
+
 export default defineMiddlewares({
   routes: [
+    // ─── Public GMC product feed bypass ──────────────────────────────────────
+    {
+      matcher: "/store/gmc-feed",
+      middlewares: [injectDefaultPublishableKey],
+    },
+
     // ─── API version header on all routes ────────────────────────────────────
     {
       matcher: "/**",
