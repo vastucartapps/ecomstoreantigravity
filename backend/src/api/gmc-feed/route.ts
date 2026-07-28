@@ -19,7 +19,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
   try {
     const productModule = req.scope.resolve(Modules.PRODUCT) as any
 
-    const [products] = await productModule.listAndCount(
+    const [products] = await productModule.listAndCountProducts(
       { status: "published" },
       {
         take: 5000,

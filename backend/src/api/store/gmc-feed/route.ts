@@ -24,7 +24,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     const productModule = req.scope.resolve(Modules.PRODUCT) as any
 
     // Fetch all published products with variant prices + category metadata
-    const [products] = await productModule.listAndCount(
+    const [products] = await productModule.listAndCountProducts(
       { status: "published" },
       {
         take: 5000,
