@@ -331,7 +331,7 @@ if (process.env.POSTHOG_API_KEY) {
 
 module.exports = defineConfig({
   admin: {
-    disable: true,
+    disable: false,
   },
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,

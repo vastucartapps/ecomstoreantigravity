@@ -30,6 +30,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.rewrite(new URL("/api/ucp" + search, request.url))
   }
 
+  // Public GMC product feed rewrites for Google Merchant Center crawler
+  if (
+    pathname === "/gmc-feed" ||
+    pathname === "/gmc-feed.xml" ||
+    pathname === "/feed/gmc.xml"
+  ) {
+    return NextResponse.rewrite(new URL("/gmc-feed", BACKEND_URL))
+  }
+
   // /store/*, /auth/*, /.well-known/*, /health — always proxy to backend
   // Exception: /auth/google/callback is a Next.js page (OAuth token landing),
   // not a backend route — let it render as a page.
